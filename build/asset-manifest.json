@@ -1,0 +1,18 @@
+{
+  "files": {
+    "main.css": "/static/css/main.d809caf2.css",
+    "main.js": "/static/js/main.d4d0b87c.js",
+    "static/js/453.d7446e4a.chunk.js": "/static/js/453.d7446e4a.chunk.js",
+    "static/media/mesupres.png": "/static/media/mesupres.5d1ed32f50b6a822ed92.png",
+    "static/media/mesupres-logo.png": "/static/media/mesupres-logo.a40be1ba808f67aa528a.png",
+    "static/media/rep-logo.png": "/static/media/rep-logo.2efe67e0a759a20209f0.png",
+    "index.html": "/index.html",
+    "main.d809caf2.css.map": "/static/css/main.d809caf2.css.map",
+    "main.d4d0b87c.js.map": "/static/js/main.d4d0b87c.js.map",
+    "453.d7446e4a.chunk.js.map": "/static/js/453.d7446e4a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d809caf2.css",
+    "static/js/main.d4d0b87c.js"
+  ]
+}
