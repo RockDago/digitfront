@@ -1,9 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, X } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { AuthService } from "../../services";
+
+const MAX_BCRYPT_LENGTH = 72;
+
+function roleToPath(role) {
+  const normalizedRole = String(role).trim().toLowerCase();
+
+  switch (normalizedRole) {
+    case "etablissement":
+    case "établissement":
+      return "/dashboard/institut";
+    case "requerant":
+    case "requérant":
+      return "/dashboard/requerant";
+    case "sae":
+      return "/dashboard/sae";
+    case "sicp":
+      return "/dashboard/sicp";
+    case "admin":
+    case "administrateur":
+      return "/dashboard/admin";
+    case "cnh":
+      return "/dashboard/cnh";
+    case "expert":
+      return "/dashboard/expert";
+    case "universite":
+    case "université":
+      return "/dashboard/universite";
+    default:
+      return "/";
+  }
+}
 
 const Login = ({ isModal = false, onClose = null }) => {
   const navigate = useNavigate();
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -11,9 +47,14 @@ const Login = ({ isModal = false, onClose = null }) => {
   const [loading, setLoading] = useState(false);
 
   const [showGoogleRoleModal, setShowGoogleRoleModal] = useState(false);
+  const [pendingGoogleCredential, setPendingGoogleCredential] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("info");
+
+  const [showEmailSuggestionsLogin, setShowEmailSuggestionsLogin] =
+    useState(false);
+  const [emailSuggestionsLogin, setEmailSuggestionsLogin] = useState([]);
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [emailSuggestions, setEmailSuggestions] = useState([]);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
@@ -25,21 +66,12 @@ const Login = ({ isModal = false, onClose = null }) => {
     username: "",
     password: "",
     confirmation: "",
-    role: "", // ✅ Initialisé à vide pour forcer le choix
+    role: "",
   });
 
   const [loginIdentifier, setLoginIdentifier] = useState("");
-
-  const [errors, setErrors] = useState({
-    nom: "",
-    prenom: "",
-    email: "",
-    username: "",
-    password: "",
-    confirmation: "",
-    role: "", // ✅ Ajout erreur rôle
-    general: "",
-  });
+  const [activeRoles, setActiveRoles] = useState([]);
+  const [errors, setErrors] = useState({});
 
   const emailDomains = [
     "gmail.com",
@@ -52,16 +84,6 @@ const Login = ({ isModal = false, onClose = null }) => {
     "mail.com",
     "aol.com",
     "zoho.com",
-    "live.com",
-    "msn.com",
-    "orange.fr",
-    "free.fr",
-    "laposte.net",
-    "wanadoo.fr",
-    "sfr.fr",
-    "outlook.fr",
-    "gmx.com",
-    "yandex.com",
   ];
 
   const roleOptions = [
@@ -79,6 +101,10 @@ const Login = ({ isModal = false, onClose = null }) => {
     },
   ];
 
+  useEffect(() => {
+    setActiveRoles(roleOptions);
+  }, []);
+
   const triggerToast = (message, type = "info") => {
     setToastMessage(message);
     setToastType(type);
@@ -91,29 +117,133 @@ const Login = ({ isModal = false, onClose = null }) => {
     navigate("/forgot-password");
   };
 
-  const handleGoogleLoginClick = () => {
-    if (isLogin) {
-      performGoogleAuth();
-    } else {
-      setShowGoogleRoleModal(true);
-    }
-  };
+  // ✅ Fonction pour obtenir le token reCAPTCHA
+  const getRecaptchaToken = useCallback(
+    async (action) => {
+      if (!executeRecaptcha) {
+        console.log("reCAPTCHA not loaded yet");
+        return null;
+      }
 
-  const confirmGoogleRole = (role) => {
-    setShowGoogleRoleModal(false);
-    performGoogleAuth(role);
-  };
+      try {
+        const token = await executeRecaptcha(action);
+        return token;
+      } catch (error) {
+        console.error("Erreur reCAPTCHA:", error);
+        triggerToast("Erreur de vérification reCAPTCHA", "error");
+        return null;
+      }
+    },
+    [executeRecaptcha]
+  );
 
-  const performGoogleAuth = (role = null) => {
+  // ✅ Authentification Google OAuth avec reCAPTCHA
+  const performGoogleAuth = async (credentialToken, role = null) => {
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const recaptchaToken = await getRecaptchaToken("google_auth");
+
+      if (!recaptchaToken) {
+        throw new Error("Vérification reCAPTCHA échouée");
+      }
+
+      const result = await AuthService.googleAuth({
+        token: credentialToken,
+        role: role,
+        recaptchaToken: recaptchaToken,
+      });
+
+      const user = result.user || result;
+
+      if (!user || !user.email) {
+        throw new Error("Données utilisateur manquantes");
+      }
+
       const message = role
         ? `Compte Google créé en tant que ${role} !`
         : "Connexion Google réussie !";
       triggerToast(message, "success");
+
+      const targetPath = roleToPath(user.role);
+      setTimeout(() => {
+        if (isModal && onClose) onClose();
+        navigate(targetPath, { replace: true });
+      }, 1000);
+    } catch (err) {
+      console.error("Erreur Google Auth:", err);
+      let errorMsg = "Erreur lors de la connexion Google";
+
+      if (err.response?.data) {
+        const data = err.response.data;
+        errorMsg = data.detail || data.message || errorMsg;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+
+      triggerToast(errorMsg, "error");
+    } finally {
       setLoading(false);
-      if (isModal && onClose) onClose();
-    }, 1500);
+    }
+  };
+
+  const handleGoogleSuccess = (credentialResponse) => {
+    console.log("Google credential reçu:", credentialResponse);
+
+    if (!isLogin && !form.role) {
+      setPendingGoogleCredential(credentialResponse.credential);
+      setShowGoogleRoleModal(true);
+      return;
+    }
+
+    performGoogleAuth(
+      credentialResponse.credential,
+      isLogin ? null : form.role
+    );
+  };
+
+  const handleGoogleError = (error) => {
+    console.error("Erreur Google:", error);
+    triggerToast("Erreur lors de la connexion Google", "error");
+  };
+
+  // ✅ CORRECTION : Fonction confirmGoogleRole simplifiée
+  const confirmGoogleRole = (role) => {
+    setShowGoogleRoleModal(false);
+
+    if (pendingGoogleCredential) {
+      // Cas 1: Un credential Google est déjà reçu
+      performGoogleAuth(pendingGoogleCredential, role);
+      setPendingGoogleCredential(null);
+    } else {
+      // Cas 2: Pas encore de credential, sauvegarder le rôle et déclencher Google
+      setForm((prev) => ({ ...prev, role: role }));
+
+      // ✅ Délai pour laisser le state se mettre à jour
+      setTimeout(() => {
+        const googleButton = document.querySelector(
+          '[role="button"][aria-labelledby]'
+        );
+        if (googleButton) {
+          googleButton.click();
+        }
+      }, 300);
+    }
+  };
+
+  // ✅ CORRECTION : Fonction handleGoogleButtonClick optimisée
+  const handleGoogleButtonClick = () => {
+    if (!isLogin && !form.role) {
+      setShowGoogleRoleModal(true);
+      return; // ✅ Arrêter ici, ne pas déclencher le bouton Google
+    }
+
+    const googleButton = document.querySelector(
+      '[role="button"][aria-labelledby]'
+    );
+    if (googleButton) {
+      googleButton.click();
+    }
   };
 
   const passwordCriteria = {
@@ -122,20 +252,23 @@ const Login = ({ isModal = false, onClose = null }) => {
     lowercase: { regex: /[a-z]/, label: "Minuscule" },
     digit: { regex: /\d/, label: "Chiffre" },
     validSymbols: {
-      regex: /[~!?@#$%^&*_\-+()[\]{}><\/\\|"'.,:;]/,
+      regex: /[~!?@#$%^&*_\-+()\[\]{}<>\/\\|"'.,:;]/,
       label: "Symbole",
       required: true,
     },
   };
 
-  const validatePasswordCriteria = (password) => {
-    return {
-      minLength: passwordCriteria.minLength.regex.test(password),
-      uppercase: passwordCriteria.uppercase.regex.test(password),
-      lowercase: passwordCriteria.lowercase.regex.test(password),
-      digit: passwordCriteria.digit.regex.test(password),
-      validSymbols: passwordCriteria.validSymbols.regex.test(password),
-    };
+  const validatePasswordCriteria = (password) => ({
+    minLength: passwordCriteria.minLength.regex.test(password),
+    uppercase: passwordCriteria.uppercase.regex.test(password),
+    lowercase: passwordCriteria.lowercase.regex.test(password),
+    digit: passwordCriteria.digit.regex.test(password),
+    validSymbols: passwordCriteria.validSymbols.regex.test(password),
+  });
+
+  const allPasswordCriteriaMet = (password) => {
+    const criteria = validatePasswordCriteria(password);
+    return Object.values(criteria).every((val) => val === true);
   };
 
   const handlePasswordChange = (e) => {
@@ -143,11 +276,6 @@ const Login = ({ isModal = false, onClose = null }) => {
     const valueWithoutSpaces = value.replace(/\s/g, "");
     setForm((prev) => ({ ...prev, [name]: valueWithoutSpaces }));
     setErrors((prev) => ({ ...prev, [name]: "", general: "" }));
-  };
-
-  const allPasswordCriteriaMet = (password) => {
-    const criteria = validatePasswordCriteria(password);
-    return Object.values(criteria).every((val) => val === true);
   };
 
   const handleNameChange = (e) => {
@@ -171,7 +299,7 @@ const Login = ({ isModal = false, onClose = null }) => {
       if (username && domain.length >= 0) {
         const filtered = emailDomains
           .filter((d) => d.toLowerCase().startsWith(domain.toLowerCase()))
-          .slice(0, 3)
+          .slice(0, 10)
           .map((d) => `${username}@${d}`);
         setEmailSuggestions(filtered);
         setShowEmailSuggestions(filtered.length > 0);
@@ -188,9 +316,38 @@ const Login = ({ isModal = false, onClose = null }) => {
     setShowEmailSuggestions(false);
   };
 
+  const handleLoginIdentifierChange = (e) => {
+    const value = e.target.value;
+    setLoginIdentifier(value);
+    setErrors((prev) => ({ ...prev, general: "" }));
+
+    if (value.includes("@")) {
+      const parts = value.split("@");
+      const username = parts[0];
+      const domain = parts[1] || "";
+      if (username && domain.length >= 0) {
+        const filtered = emailDomains
+          .filter((d) => d.toLowerCase().startsWith(domain.toLowerCase()))
+          .slice(0, 10)
+          .map((d) => `${username}@${d}`);
+        setEmailSuggestionsLogin(filtered);
+        setShowEmailSuggestionsLogin(filtered.length > 0);
+      } else {
+        setShowEmailSuggestionsLogin(false);
+      }
+    } else {
+      setShowEmailSuggestionsLogin(false);
+    }
+  };
+
+  const selectEmailSuggestionLogin = (suggestion) => {
+    setLoginIdentifier(suggestion);
+    setShowEmailSuggestionsLogin(false);
+  };
+
   const handleRoleSelect = (value) => {
     setForm((prev) => ({ ...prev, role: value }));
-    setErrors((prev) => ({ ...prev, role: "" })); // Clear error on select
+    setErrors((prev) => ({ ...prev, role: "" }));
     setShowRoleDropdown(false);
   };
 
@@ -204,8 +361,6 @@ const Login = ({ isModal = false, onClose = null }) => {
       setErrors((prev) => ({ ...prev, [name]: "", general: "" }));
     }
   };
-
-  const handleLoginChange = (e) => setLoginIdentifier(e.target.value);
 
   const canHaveUsername = () =>
     form.role === "Requerant" || form.role === "Etablissement";
@@ -222,9 +377,7 @@ const Login = ({ isModal = false, onClose = null }) => {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       newErrors.email = "Invalide";
 
-    // Validation du rôle obligatoire
     if (!form.role) newErrors.role = "Veuillez sélectionner un rôle";
-
     if (canHaveUsername() && !form.username.trim())
       newErrors.username = "Requis";
     if (!form.password.trim()) newErrors.password = "Requis";
@@ -240,39 +393,205 @@ const Login = ({ isModal = false, onClose = null }) => {
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+
     setLoading(true);
-    if (!loginIdentifier.trim()) {
-      setErrors((prev) => ({ ...prev, general: "Identifiants requis" }));
+    setErrors({});
+
+    if (!loginIdentifier.trim() || !form.password.trim()) {
+      const msg = "Veuillez remplir tous les champs";
+      setErrors({ general: msg });
+      triggerToast(msg, "error");
       setLoading(false);
       return;
     }
-    if (!form.password.trim()) {
-      setErrors((prev) => ({ ...prev, general: "Mot de passe requis" }));
+
+    const recaptchaToken = await getRecaptchaToken("login");
+
+    if (!recaptchaToken) {
+      setErrors({ general: "Vérification reCAPTCHA échouée" });
       setLoading(false);
       return;
     }
-    setTimeout(() => {
-      triggerToast("Connexion réussie! Redirection...", "success");
+
+    const passwordToSend = form.password.slice(0, MAX_BCRYPT_LENGTH);
+
+    try {
+      const result = await AuthService.login({
+        email: loginIdentifier,
+        password: passwordToSend,
+        recaptchaToken: recaptchaToken,
+      });
+
+      if (!result || result.error || result.detail) {
+        throw new Error(result?.error || result?.detail || "Erreur inconnue");
+      }
+
+      const user = result.user || result;
+
+      if (!user || !user.email) {
+        throw new Error("Données utilisateur manquantes");
+      }
+
+      localStorage.setItem("user", JSON.stringify(user));
+
+      if (rememberMe) {
+        localStorage.setItem("rememberMe", "true");
+        localStorage.setItem("userEmail", loginIdentifier);
+      } else {
+        localStorage.removeItem("rememberMe");
+        localStorage.removeItem("userEmail");
+      }
+
+      triggerToast("Connexion réussie ! Redirection...", "success");
+
+      const targetPath = roleToPath(user.role);
+
+      setTimeout(() => {
+        if (isModal && onClose) onClose();
+        navigate(targetPath, { replace: true });
+      }, 1000);
+    } catch (err) {
+      console.error("Erreur complète:", err);
+
+      let errorMsg = "Une erreur est survenue";
+
+      if (err.response?.data) {
+        const data = err.response.data;
+        const status = err.response.status;
+
+        if (typeof data.detail === "string") {
+          errorMsg = data.detail;
+        } else if (Array.isArray(data.detail)) {
+          errorMsg = data.detail
+            .map((e) => `${e.loc?.join(".")}: ${e.msg}`)
+            .join(", ");
+        } else if (data.message) {
+          errorMsg = data.message;
+        } else if (status === 401 || status === 400) {
+          errorMsg = "Email ou mot de passe incorrect";
+        } else if (status === 404) {
+          errorMsg = "Utilisateur introuvable";
+        } else if (status >= 500) {
+          errorMsg = "Erreur serveur, veuillez réessayer";
+        }
+      } else if (err.request) {
+        errorMsg =
+          "Impossible de contacter le serveur. Vérifiez que votre backend tourne.";
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+
+      const finalErrorMsg = String(errorMsg);
+      setErrors({ general: finalErrorMsg });
+      triggerToast(finalErrorMsg, "error");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+
     setLoading(true);
+    setErrors({});
+
     if (!validateForm()) {
+      triggerToast("Veuillez corriger les erreurs du formulaire", "error");
       setLoading(false);
       return;
     }
-    setTimeout(() => {
-      triggerToast("Compte créé avec succès!", "success");
+
+    const recaptchaToken = await getRecaptchaToken("register");
+
+    if (!recaptchaToken) {
+      setErrors({ general: "Vérification reCAPTCHA échouée" });
       setLoading(false);
-    }, 1500);
+      return;
+    }
+
+    const passwordToSend = form.password.slice(0, MAX_BCRYPT_LENGTH);
+
+    try {
+      const result = await AuthService.register({
+        nom: form.nom,
+        prenom: form.prenom,
+        email: form.email,
+        password: passwordToSend,
+        role: form.role,
+        recaptchaToken: recaptchaToken,
+        ...(canHaveUsername() && { username: form.username }),
+      });
+
+      const user = result.user || result;
+
+      if (!user || !user.email) {
+        throw new Error("Données utilisateur manquantes");
+      }
+
+      localStorage.setItem("user", JSON.stringify(user));
+
+      triggerToast("Compte créé avec succès ! Redirection...", "success");
+
+      const targetPath = roleToPath(user.role);
+
+      setTimeout(() => {
+        if (isModal && onClose) onClose();
+        navigate(targetPath, { replace: true });
+      }, 1000);
+    } catch (err) {
+      console.error("Erreur complète:", err);
+
+      let errorMsg = "Une erreur est survenue lors de l'inscription";
+      const newErrors = {};
+
+      if (err.response?.data) {
+        const data = err.response.data;
+        const status = err.response.status;
+
+        if (status === 400) {
+          errorMsg = "Cet email est déjà utilisé";
+        } else if (status === 422 && Array.isArray(data.detail)) {
+          data.detail.forEach((error) => {
+            const field = error.loc?.[1];
+            const message = error.msg;
+
+            if (field) {
+              newErrors[field] = message;
+            }
+          });
+          errorMsg = "Veuillez corriger les champs invalides";
+        } else if (typeof data.detail === "string") {
+          errorMsg = data.detail;
+        } else if (data.message) {
+          errorMsg = data.message;
+        } else if (status >= 500) {
+          errorMsg = "Erreur serveur, veuillez réessayer";
+        }
+      } else if (err.request) {
+        errorMsg = "Impossible de contacter le serveur";
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+
+      const finalErrorMsg = String(errorMsg);
+      setErrors({ ...newErrors, general: finalErrorMsg });
+      triggerToast(finalErrorMsg, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = (e) => {
-    if (isLogin) handleLoginSubmit(e);
-    else handleRegisterSubmit(e);
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isLogin) {
+      handleLoginSubmit(e);
+    } else {
+      handleRegisterSubmit(e);
+    }
   };
 
   const passwordValidation = validatePasswordCriteria(form.password);
@@ -294,7 +613,7 @@ const Login = ({ isModal = false, onClose = null }) => {
           : "min-h-screen flex items-center justify-center bg-white sm:bg-gradient-to-br sm:from-blue-50 sm:to-indigo-100 sm:p-4"
       }
     >
-      {/* MODALE SELECTION ROLE GOOGLE */}
+      {/* ✅ MODALE SELECTION ROLE GOOGLE - CORRIGÉE */}
       {showGoogleRoleModal && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-white/95 backdrop-blur-sm p-4 rounded-2xl animate-fade-in-up">
           <div className="w-full max-w-sm">
@@ -336,7 +655,10 @@ const Login = ({ isModal = false, onClose = null }) => {
               ))}
             </div>
             <button
-              onClick={() => setShowGoogleRoleModal(false)}
+              onClick={() => {
+                setShowGoogleRoleModal(false);
+                setPendingGoogleCredential(null);
+              }}
               className="mt-6 w-full text-center text-sm text-gray-500 hover:text-gray-800"
             >
               Annuler
@@ -345,7 +667,7 @@ const Login = ({ isModal = false, onClose = null }) => {
         </div>
       )}
 
-      {/* Toast */}
+      {/* Toast Notification */}
       <div
         className={`fixed top-4 right-4 z-[100] transition-all duration-300 ${
           showToast ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
@@ -362,7 +684,11 @@ const Login = ({ isModal = false, onClose = null }) => {
         >
           <div className="flex-1 ml-2">
             <p className="text-xs font-bold text-gray-800">
-              {toastType === "success" ? "Succès" : "Notification"}
+              {toastType === "success"
+                ? "✓ Succès"
+                : toastType === "error"
+                ? "✗ Erreur"
+                : "ℹ Info"}
             </p>
             <p className="text-xs text-gray-600 leading-tight">
               {toastMessage}
@@ -371,8 +697,7 @@ const Login = ({ isModal = false, onClose = null }) => {
         </div>
       </div>
 
-      {/* --- CONTENEUR PRINCIPAL --- */}
-      {/* Adaptation de la largeur : max-w-md (login) vs max-w-2xl (inscription) */}
+      {/* CONTENEUR PRINCIPAL */}
       <div
         className={
           isModal
@@ -384,7 +709,6 @@ const Login = ({ isModal = false, onClose = null }) => {
               } rounded-2xl shadow-xl animate-fade-in-up mx-auto flex flex-col my-4 transition-all duration-300`
         }
       >
-        {/* BOUTON FERMER (Interne à la carte) */}
         {isModal && onClose && (
           <button
             onClick={onClose}
@@ -425,16 +749,23 @@ const Login = ({ isModal = false, onClose = null }) => {
         {/* Formulaire */}
         <div className="flex-1 px-8 pb-8">
           {errors.general && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg text-xs font-medium text-center animate-shake">
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg text-xs font-medium text-center animate-shake flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
               {errors.general}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* 1. NOM / PRÉNOM */}
+            {/* Nom/Prénom - INSCRIPTION uniquement */}
             {!isLogin && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="relative group w-full">
+                <div className="relative group">
                   <input
                     type="text"
                     id="nom"
@@ -457,7 +788,7 @@ const Login = ({ isModal = false, onClose = null }) => {
                     </p>
                   )}
                 </div>
-                <div className="relative group w-full">
+                <div className="relative group">
                   <input
                     type="text"
                     id="prenom"
@@ -483,7 +814,7 @@ const Login = ({ isModal = false, onClose = null }) => {
               </div>
             )}
 
-            {/* 2. EMAIL & USERNAME */}
+            {/* EMAIL avec suggestions (LOGIN et REGISTER) */}
             <div
               className={`grid ${
                 !isLogin && canHaveUsername()
@@ -491,25 +822,35 @@ const Login = ({ isModal = false, onClose = null }) => {
                   : "grid-cols-1"
               }`}
             >
-              {/* EMAIL */}
-              <div className="relative group w-full">
+              <div className="relative group">
                 <input
-                  type={isLogin ? "text" : "email"}
+                  type="text"
                   id="email_login"
                   name={isLogin ? "loginIdentifier" : "email"}
                   value={isLogin ? loginIdentifier : form.email}
-                  onChange={isLogin ? handleLoginChange : handleChange}
-                  onBlur={() =>
-                    !isLogin &&
-                    setTimeout(() => setShowEmailSuggestions(false), 200)
+                  onChange={
+                    isLogin ? handleLoginIdentifierChange : handleChange
                   }
+                  onBlur={() => {
+                    setTimeout(() => {
+                      setShowEmailSuggestions(false);
+                      setShowEmailSuggestionsLogin(false);
+                    }, 200);
+                  }}
                   onFocus={() => {
                     if (
+                      isLogin &&
+                      loginIdentifier.includes("@") &&
+                      emailSuggestionsLogin.length > 0
+                    ) {
+                      setShowEmailSuggestionsLogin(true);
+                    } else if (
                       !isLogin &&
                       form.email.includes("@") &&
                       emailSuggestions.length > 0
-                    )
+                    ) {
                       setShowEmailSuggestions(true);
+                    }
                   }}
                   className="block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer"
                   placeholder=" "
@@ -527,11 +868,29 @@ const Login = ({ isModal = false, onClose = null }) => {
                   </p>
                 )}
 
-                {/* Suggestions */}
+                {/* Suggestions LOGIN */}
+                {isLogin &&
+                  showEmailSuggestionsLogin &&
+                  emailSuggestionsLogin.length > 0 && (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {emailSuggestionsLogin.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => selectEmailSuggestionLogin(suggestion)}
+                          className="w-full px-4 py-2 text-left text-xs hover:bg-blue-50 transition-colors block text-gray-700"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                {/* Suggestions REGISTER */}
                 {!isLogin &&
                   showEmailSuggestions &&
                   emailSuggestions.length > 0 && (
-                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {emailSuggestions.map((suggestion, index) => (
                         <button
                           key={index}
@@ -546,9 +905,8 @@ const Login = ({ isModal = false, onClose = null }) => {
                   )}
               </div>
 
-              {/* USERNAME */}
               {!isLogin && canHaveUsername() && (
-                <div className="relative group w-full">
+                <div className="relative group">
                   <input
                     type="text"
                     id="username"
@@ -574,13 +932,13 @@ const Login = ({ isModal = false, onClose = null }) => {
               )}
             </div>
 
-            {/* 3. MOT DE PASSE */}
+            {/* Mot de passe + Confirmation */}
             <div
               className={`grid ${
                 !isLogin ? "grid-cols-1 sm:grid-cols-2 gap-4" : "grid-cols-1"
               }`}
             >
-              <div className="relative group w-full">
+              <div className="relative group">
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
@@ -642,15 +1000,18 @@ const Login = ({ isModal = false, onClose = null }) => {
               </div>
 
               {!isLogin && (
-                <div className="relative group w-full">
+                <div className="relative group">
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     id="confirmation"
                     name="confirmation"
                     value={form.confirmation}
                     onChange={handleChange}
+                    disabled={!isPasswordValid}
                     className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 peer ${
-                      passwordsDontMatch
+                      !isPasswordValid
+                        ? "bg-gray-100 cursor-not-allowed border-gray-200"
+                        : passwordsDontMatch
                         ? "border-red-400 focus:ring-red-300"
                         : passwordsMatch
                         ? "border-emerald-400 focus:ring-emerald-300"
@@ -661,53 +1022,62 @@ const Login = ({ isModal = false, onClose = null }) => {
                   />
                   <label
                     htmlFor="confirmation"
-                    className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
+                    className={`absolute text-sm duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1 ${
+                      !isPasswordValid
+                        ? "text-gray-400"
+                        : "text-gray-500 peer-focus:text-blue-600"
+                    }`}
                   >
-                    Confirmer
+                    Confirmer{" "}
+                    {!isPasswordValid && "(Complétez le mot de passe d'abord)"}
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                    tabIndex="-1"
-                  >
-                    {showConfirmPassword ? (
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                  {form.confirmation && (
+                  {isPasswordValid && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                      tabIndex="-1"
+                    >
+                      {showConfirmPassword ? (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                  {form.confirmation && isPasswordValid && (
                     <p
                       className={`text-[10px] mt-1 font-medium absolute -bottom-4 left-0 ${
                         passwordsMatch ? "text-emerald-600" : "text-red-500"
@@ -720,7 +1090,7 @@ const Login = ({ isModal = false, onClose = null }) => {
               )}
             </div>
 
-            {/* CRITÈRES */}
+            {/* Critères de mot de passe */}
             {showPasswordCriteria && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
                 {[
@@ -752,10 +1122,9 @@ const Login = ({ isModal = false, onClose = null }) => {
               </div>
             )}
 
-            {/* RÔLE */}
+            {/* Sélection du rôle (inscription uniquement) */}
             {!isLogin && (
               <div className="relative">
-                {/* AJOUT D'UN LABEL CLAIR */}
                 <label className="block text-sm font-medium text-gray-700 mb-1 ml-1">
                   Rôle
                 </label>
@@ -793,7 +1162,6 @@ const Login = ({ isModal = false, onClose = null }) => {
                       </>
                     ) : (
                       <>
-                        {/* Placeholder Icon */}
                         <svg
                           className="w-5 h-5 text-gray-400"
                           fill="none"
@@ -831,7 +1199,6 @@ const Login = ({ isModal = false, onClose = null }) => {
                     />
                   </svg>
                 </button>
-                {/* Message d'erreur pour le rôle */}
                 {errors.role && (
                   <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
                     {errors.role}
@@ -845,70 +1212,72 @@ const Login = ({ isModal = false, onClose = null }) => {
                       onClick={() => setShowRoleDropdown(false)}
                     ></div>
                     <div className="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl animate-dropdown">
-                      {roleOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => handleRoleSelect(option.value)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                            form.role === option.value
-                              ? "bg-blue-50 border-l-4 border-blue-600"
-                              : "hover:bg-gray-50 border-l-4 border-transparent"
-                          }`}
-                        >
-                          <svg
-                            className={`w-5 h-5 ${
+                      {(activeRoles.length > 0 ? activeRoles : roleOptions).map(
+                        (option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleRoleSelect(option.value)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
                               form.role === option.value
-                                ? "text-blue-600"
-                                : "text-gray-400"
+                                ? "bg-blue-50 border-l-4 border-blue-600"
+                                : "hover:bg-gray-50 border-l-4 border-transparent"
                             }`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d={option.icon}
-                            />
-                          </svg>
-                          <div className="flex-1">
-                            <p
-                              className={`text-sm font-semibold ${
-                                form.role === option.value
-                                  ? "text-blue-900"
-                                  : "text-gray-900"
-                              }`}
-                            >
-                              {option.label}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {option.description}
-                            </p>
-                          </div>
-                          {form.role === option.value && (
                             <svg
-                              className="w-4 h-4 text-blue-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
+                              className={`w-5 h-5 ${
+                                form.role === option.value
+                                  ? "text-blue-600"
+                                  : "text-gray-400"
+                              }`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
                               <path
-                                fillRule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clipRule="evenodd"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d={option.icon}
                               />
                             </svg>
-                          )}
-                        </button>
-                      ))}
+                            <div className="flex-1">
+                              <p
+                                className={`text-sm font-semibold ${
+                                  form.role === option.value
+                                    ? "text-blue-900"
+                                    : "text-gray-900"
+                                }`}
+                              >
+                                {option.label}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {option.description}
+                              </p>
+                            </div>
+                            {form.role === option.value && (
+                              <svg
+                                className="w-4 h-4 text-blue-600"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            )}
+                          </button>
+                        )
+                      )}
                     </div>
                   </>
                 )}
               </div>
             )}
 
-            {/* REMEMBER ME / FORGOT */}
+            {/* Remember me / Forgot password */}
             {isLogin && (
               <div className="flex items-center justify-between pt-1">
                 <label className="flex items-center space-x-2 cursor-pointer group">
@@ -936,7 +1305,7 @@ const Login = ({ isModal = false, onClose = null }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition duration-200 font-bold shadow-lg shadow-blue-500/30 disabled:opacity-50 transform active:scale-[0.98] text-sm flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition duration-200 font-bold shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98] text-sm flex items-center justify-center space-x-2"
             >
               {loading ? (
                 <>
@@ -958,37 +1327,52 @@ const Login = ({ isModal = false, onClose = null }) => {
             <div className="h-px w-full bg-gray-200"></div>
           </div>
 
-          {/* GOOGLE */}
-          <button
-            type="button"
-            onClick={handleGoogleLoginClick}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 font-semibold py-2.5 rounded-xl transition-all duration-200 shadow-sm active:scale-[0.99]"
-          >
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+          {/* ✅ GOOGLE OAuth - Bouton personnalisé en français */}
+          <div className="w-full">
+            <button
+              type="button"
+              onClick={handleGoogleButtonClick}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm active:scale-[0.99] disabled:opacity-50"
             >
-              <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                fill="#4285F4"
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  fill="#EA4335"
+                />
+              </svg>
+              <span className="text-sm font-medium">
+                {isLogin
+                  ? "Se connecter avec Google"
+                  : "S'inscrire avec Google"}
+              </span>
+            </button>
+
+            {/* Bouton Google caché */}
+            <div className="hidden">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap={false}
               />
-              <path
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                fill="#34A853"
-              />
-              <path
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fill="#EA4335"
-              />
-            </svg>
-            <span className="text-sm">Google</span>
-          </button>
+            </div>
+          </div>
 
           {/* FOOTER SWITCH */}
           <div className="mt-4 pt-2 text-center">

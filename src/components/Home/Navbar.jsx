@@ -5,6 +5,7 @@ import Login from "../Login/Login";
 
 const NAV_ITEMS = [
   { id: "accueil", label: "Accueil" },
+  { id: "apropos", label: "À propos" },
   { id: "services", label: "Services" },
   { id: "actu", label: "Actualités" },
   { id: "faq", label: "FAQ" },
@@ -31,38 +32,47 @@ const Navbar = ({ children }) => {
 
   // --- GESTION SCROLL & OBSERVERS ---
   useEffect(() => {
+    // Si on n'est pas sur la page d'accueil, on ne track pas le scroll
     if (location.pathname !== "/") {
       setIsHeroVisible(false);
       return;
     }
 
-    const hero = document.querySelector("section[aria-label='hero']");
-    if (!hero) {
-      setIsHeroVisible(false);
-      return;
+    // 1. Observer pour le Hero (transparence navbar)
+    const hero = document.getElementById("accueil");
+    if (hero) {
+      const heroObserver = new IntersectionObserver(
+        ([entry]) => setIsHeroVisible(entry.isIntersecting),
+        { threshold: 0.1 } // Dès que 10% du hero est visible/invisible
+      );
+      heroObserver.observe(hero);
     }
 
-    const heroObserver = new IntersectionObserver(
-      ([entry]) => setIsHeroVisible(entry.isIntersecting),
-      { threshold: 0.1 }
-    );
-    heroObserver.observe(hero);
-
-    const sections = NAV_ITEMS.map((n) => document.getElementById(n.id)).filter(
-      Boolean
-    );
+    // 2. Observer pour les Sections (Active Link)
     const sectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) setActiveId(entry.target.id);
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
         });
       },
-      { threshold: 0.6 }
+      {
+        // ASTUCE PRO :
+        // On définit une zone de détection très fine au milieu de l'écran (-50% en haut, -50% en bas).
+        // L'élément qui croise cette ligne centrale est considéré comme "Actif".
+        rootMargin: "-45% 0px -45% 0px",
+        threshold: 0,
+      }
     );
-    sections.forEach((s) => sectionObserver.observe(s));
+
+    // On observe chaque section définie dans NAV_ITEMS
+    NAV_ITEMS.forEach((item) => {
+      const element = document.getElementById(item.id);
+      if (element) sectionObserver.observe(element);
+    });
 
     return () => {
-      heroObserver.disconnect();
       sectionObserver.disconnect();
     };
   }, [location.pathname]);
@@ -76,24 +86,41 @@ const Navbar = ({ children }) => {
       navigate("/", { state: { scrollTo: id } });
       return;
     }
-    if (id === "accueil") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      setActiveId("accueil");
-      return;
-    }
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
-    setActiveId(id);
+
+    const scrollToElement = () => {
+      const el = document.getElementById(id);
+      if (el) {
+        // Offset pour compenser la hauteur de la navbar fixe (environ 80px)
+        const headerOffset = 80;
+        const elementPosition = el.getBoundingClientRect().top;
+        const offsetPosition =
+          elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+        setActiveId(id); // Force l'actif immédiatement au clic
+      }
+    };
+
+    // Petit délai pour assurer la fluidité
+    setTimeout(scrollToElement, 100);
   };
 
+  // Gestion du scroll après navigation depuis une autre page
   useEffect(() => {
     if (location.state?.scrollTo && location.pathname === "/") {
-      const el = document.getElementById(location.state.scrollTo);
-      if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 100);
+      setTimeout(() => {
+        const el = document.getElementById(location.state.scrollTo);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 500); // Délai un peu plus long pour laisser le temps au rendu
     }
   }, [location]);
 
-  // Bloquer le scroll quand le menu mobile est ouvert
+  // Bloquer le scroll body quand le menu mobile est ouvert
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "unset";
   }, [isMobileMenuOpen]);
@@ -109,7 +136,7 @@ const Navbar = ({ children }) => {
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
           isHeroVisible && !isMobileMenuOpen
             ? "bg-transparent py-6"
-            : "bg-white/90 backdrop-blur-md shadow-sm py-4 border-b border-gray-100"
+            : "bg-white/95 backdrop-blur-md shadow-sm py-4 border-b border-gray-100"
         }`}
       >
         <div className="container px-4 mx-auto max-w-7xl flex items-center justify-between">
@@ -126,7 +153,7 @@ const Navbar = ({ children }) => {
             </span>
           </Link>
 
-          {/* DESKTOP NAV (Hidden on Mobile/Tablet) */}
+          {/* DESKTOP NAV */}
           <nav className="hidden lg:flex items-center gap-8">
             {NAV_ITEMS.map((item) => {
               const isActive = activeId === item.id;
@@ -144,6 +171,7 @@ const Navbar = ({ children }) => {
                   }`}
                 >
                   {item.label}
+                  {/* Ligne soulignée animée */}
                   <span
                     className={`absolute -bottom-1 left-0 h-0.5 bg-current transition-all duration-300 ${
                       isActive ? "w-full" : "w-0 group-hover:w-full"
@@ -195,7 +223,7 @@ const Navbar = ({ children }) => {
         </div>
       </header>
 
-      {/* --- MOBILE FULLSCREEN MENU OVERLAY --- */}
+      {/* --- MOBILE MENU --- */}
       <div
         className={`fixed inset-0 z-40 bg-white transition-all duration-500 ease-in-out lg:hidden flex flex-col items-center justify-center ${
           isMobileMenuOpen
@@ -203,7 +231,6 @@ const Navbar = ({ children }) => {
             : "opacity-0 invisible clip-circle-0"
         }`}
       >
-        {/* Decorative Background Elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
           <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-indigo-100 rounded-full blur-3xl opacity-50"></div>
@@ -253,25 +280,20 @@ const Navbar = ({ children }) => {
       <main className="flex-grow">{children}</main>
       <Footer />
 
-      {/* --- DESKTOP LOGIN MODAL --- */}
+      {/* --- LOGIN MODAL --- */}
       {showLoginModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
             onClick={() => setShowLoginModal(false)}
           ></div>
-
-          {/* ✅ CORRECTION ICI : Largeur fixée pour correspondre au Login */}
-          {/* On remplace w-auto/max-w-none par w-full/max-w-2xl */}
           <div className="relative z-10 animate-fade-in-up w-full max-w-2xl">
             <Login isModal={true} onClose={() => setShowLoginModal(false)} />
           </div>
         </div>
       )}
 
-      {/* STYLES PERSONNALISÉS */}
       <style jsx>{`
-        /* Animation fade-in du modal desktop */
         @keyframes fade-in-up {
           from {
             opacity: 0;
@@ -285,8 +307,6 @@ const Navbar = ({ children }) => {
         .animate-fade-in-up {
           animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-
-        /* Animation d'ouverture du menu mobile */
         .clip-circle-0 {
           clip-path: circle(0% at 100% 0);
           pointer-events: none;
@@ -294,6 +314,9 @@ const Navbar = ({ children }) => {
         .clip-circle-full {
           clip-path: circle(150% at 100% 0);
           pointer-events: auto;
+        }
+        :global(.Toastify__toast-container) {
+          z-index: 99999 !important;
         }
       `}</style>
     </div>
