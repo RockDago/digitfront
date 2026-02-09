@@ -43,7 +43,7 @@ const Navbar = ({ children }) => {
     if (hero) {
       const heroObserver = new IntersectionObserver(
         ([entry]) => setIsHeroVisible(entry.isIntersecting),
-        { threshold: 0.1 } // Dès que 10% du hero est visible/invisible
+        { threshold: 0.1 }, // Dès que 10% du hero est visible/invisible
       );
       heroObserver.observe(hero);
     }
@@ -63,7 +63,7 @@ const Navbar = ({ children }) => {
         // L'élément qui croise cette ligne centrale est considéré comme "Actif".
         rootMargin: "-45% 0px -45% 0px",
         threshold: 0,
-      }
+      },
     );
 
     // On observe chaque section définie dans NAV_ITEMS
@@ -143,7 +143,7 @@ const Navbar = ({ children }) => {
           {/* LOGO */}
           <Link to="/" className="relative z-50 flex items-center gap-2 group">
             <span
-              className={`text-2xl font-black tracking-tight transition-colors duration-300 ${
+              className={`text-2xl font-black tracking-tight transition-colors duration-300 font-cassannet ${
                 isHeroVisible && !isMobileMenuOpen
                   ? "text-white"
                   : "text-blue-600"
@@ -166,8 +166,8 @@ const Navbar = ({ children }) => {
                     isHeroVisible
                       ? "text-white/80 hover:text-white"
                       : isActive
-                      ? "text-blue-600"
-                      : "text-slate-600 hover:text-blue-600"
+                        ? "text-blue-600"
+                        : "text-slate-600 hover:text-blue-600"
                   }`}
                 >
                   {item.label}

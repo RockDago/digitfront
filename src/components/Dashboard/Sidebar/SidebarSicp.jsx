@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
@@ -26,10 +25,10 @@ export default function SidebarSicp({
 
   // --- MENU CONFIG ---
   const mainNavItems = [
-    { 
-      to: "/dashboard/sicp/tableau-de-bord", 
-      label: "Tableau de bord", 
-      icon: FaHome 
+    {
+      to: "/dashboard/sicp/tableau-de-bord",
+      label: "Tableau de bord",
+      icon: FaHome,
     },
   ];
 
@@ -40,7 +39,10 @@ export default function SidebarSicp({
 
   const suiviQualiteItems = [
     { label: "Formulaire", path: "/dashboard/sicp/formulaire" },
-    { label: "Suivi accréditation", path: "/dashboard/sicp/suivi-accreditation" },
+    {
+      label: "Suivi accréditation",
+      path: "/dashboard/sicp/suivi-accreditation",
+    },
   ];
 
   const goTo = (path) => {
@@ -63,7 +65,7 @@ export default function SidebarSicp({
   const renderAccordion = (title, icon, isOpen, setIsOpen, items) => {
     const Icon = icon;
     const isChildActive = items.some((item) =>
-      location.pathname.includes(item.path)
+      location.pathname.includes(item.path),
     );
     const effectiveIsOpen = isOpen || (isChildActive && !collapsed);
 
@@ -161,7 +163,7 @@ export default function SidebarSicp({
               to="/"
               className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-sans">
+              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
                 DAAQ
               </span>
             </Link>
@@ -221,7 +223,9 @@ export default function SidebarSicp({
             <div
               onClick={() => goTo("/dashboard/sicp/geolocalisation")}
               className={`${baseItemClass} ${
-                isLinkActive("/dashboard/sicp/geolocalisation") ? activeClass : inactiveClass
+                isLinkActive("/dashboard/sicp/geolocalisation")
+                  ? activeClass
+                  : inactiveClass
               }`}
               title={collapsed ? "Géolocalisation" : ""}
             >
@@ -252,7 +256,7 @@ export default function SidebarSicp({
               FaClipboardList,
               suiviInterneOpen,
               setSuiviInterneOpen,
-              suiviInterneItems
+              suiviInterneItems,
             )}
 
             {/* Accordéon Suivi qualité & inspection */}
@@ -261,7 +265,7 @@ export default function SidebarSicp({
               FaChartBar,
               suiviQualiteOpen,
               setSuiviQualiteOpen,
-              suiviQualiteItems
+              suiviQualiteItems,
             )}
           </div>
         </nav>

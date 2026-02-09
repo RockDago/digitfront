@@ -28,12 +28,11 @@ const AuthService = {
 
       const response = await API.post("/users/", payload);
 
-      // ✅ Sauvegarde automatique du user dans localStorage après inscription
-      if (response.data && response.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-      } else if (response.data && response.data.email) {
-        // Si le backend renvoie directement les données utilisateur (sans clé "user")
-        localStorage.setItem("user", JSON.stringify(response.data));
+      // ✅ CORRECTION : Sauvegarde automatique du user
+      const user = response.data.user || response.data;
+      if (user && user.id) {
+        localStorage.setItem("user", JSON.stringify(user));
+        // ✅ Note : L'authentification utilise X-User-ID header, pas JWT
       }
 
       return response.data;
@@ -62,12 +61,11 @@ const AuthService = {
 
       const response = await API.post("/users/login", payload);
 
-      // ✅ Sauvegarde automatique du user dans localStorage après connexion
-      if (response.data && response.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-      } else if (response.data && response.data.email) {
-        // Si le backend renvoie directement les données utilisateur (sans clé "user")
-        localStorage.setItem("user", JSON.stringify(response.data));
+      // ✅ CORRECTION : Sauvegarde automatique du user
+      const user = response.data.user || response.data;
+      if (user && user.id) {
+        localStorage.setItem("user", JSON.stringify(user));
+        // ✅ Note : L'authentification utilise X-User-ID header, pas JWT
       }
 
       return response.data;
@@ -100,11 +98,11 @@ const AuthService = {
 
       const response = await API.post("/users/auth/google", payload);
 
-      // ✅ Sauvegarde automatique du user dans localStorage
-      if (response.data && response.data.user) {
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-      } else if (response.data && response.data.email) {
-        localStorage.setItem("user", JSON.stringify(response.data));
+      // ✅ CORRECTION : Sauvegarde automatique du user
+      const user = response.data.user || response.data;
+      if (user && user.id) {
+        localStorage.setItem("user", JSON.stringify(user));
+        // ✅ Note : L'authentification utilise X-User-ID header, pas JWT
       }
 
       return response.data;
@@ -121,7 +119,6 @@ const AuthService = {
     localStorage.removeItem("user");
     localStorage.removeItem("rememberMe");
     localStorage.removeItem("userEmail");
-    localStorage.removeItem("token"); // Si vous utilisez des tokens JWT
   },
 
   /**

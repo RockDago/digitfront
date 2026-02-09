@@ -6,4 +6,4 @@ export { default as ArchiveService } from "./archive.service";
 
 // Export de l'instance Axios pour usage personnalisé
 export { default as API } from "../config/axios";
-export { API_URL, BASE_URL } from "../config/axios";
+export { API_URL } from "../config/axios";

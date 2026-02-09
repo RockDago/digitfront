@@ -1,77 +1,110 @@
 // src/config/axios.js
+
 import axios from "axios";
 
-export const API_URL = "http://127.0.0.1:8000/api";
-export const BASE_URL = "http://127.0.0.1:8000";
+// Utilisation d'une variable d'environnement ou fallback local/production
+// Pour créer une variable d'env, utiliser REACT_APP_API_URL dans .env
+export const API_URL =
+  process.env.REACT_APP_API_URL ||
+  (window.location.hostname === "localhost"
+    ? "http://127.0.0.1:8000"
+    : "https://qualite.mesupres.edu.mg");
 
-// Instance Axios principale
 const API = axios.create({
-  baseURL: API_URL,
+  baseURL: API_URL + "/api",
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
+    Accept: "application/json",
   },
-  timeout: 20000,
 });
 
-// ✅ Intercepteur pour ajouter le token ET l'ID utilisateur automatiquement
 API.interceptors.request.use(
   (config) => {
+   
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    // Ajouter le token si présent
-    if (user.token) {
-      config.headers.Authorization = `Bearer ${user.token}`;
-    }
-
-    // ✅ NOUVEAU : Ajouter l'ID utilisateur dans le header X-User-ID
-    if (user.id) {
+    // Envoyer l'ID utilisateur dans le header X-User-ID si disponible
+    if (user && user.id) {
       config.headers["X-User-ID"] = user.id;
     }
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// ✅ Intercepteur de réponse SANS REDIRECTION AUTOMATIQUE
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.code === "ECONNABORTED") {
-      console.error("⏱️ Timeout: le serveur met trop de temps à répondre.");
-    } else if (error.response) {
-      const status = error.response.status;
-
-      // ✅ Gestion des erreurs SANS refresh de page
-      switch (status) {
-        case 401:
-          console.log("🔒 Non autorisé (401)");
-          // ⚠️ NE PAS FAIRE window.location.href ici !
-          // ⚠️ Laissez le composant Login gérer l'erreur
-          break;
-        case 403:
-          console.log("⛔ Accès interdit (403)");
-          break;
-        case 404:
-          console.log("🔍 Ressource introuvable (404)");
-          break;
-        case 500:
-          console.log("💥 Erreur serveur interne (500)");
-          break;
-        default:
-          console.log("⚠️ Erreur API:", status);
-      }
-    } else if (error.request) {
-      console.log(
-        "❌ Aucune réponse du serveur. Vérifiez que le backend est lancé."
-      );
-    } else {
-      console.log("❌ Erreur inconnue:", error.message);
+    if (error.response?.status === 401) {
+      console.error("❌ [Axios] 401 détecté:", {
+        url: error.config?.url,
+        method: error.config?.method?.toUpperCase(),
+        message: error.response?.data?.message,
+        fullUrl: error.config?.baseURL + error.config?.url,
+      });
     }
 
-    // ✅ Toujours rejeter l'erreur pour que le composant puisse la gérer
+    if (error.response?.status === 403 && error.response.data?.requires_2fa) {
+      console.log("🔐 [Axios] 2FA Requise -> Redirection");
+
+      const currentPath = window.location.pathname;
+      if (currentPath !== "/two-factor-verify" && currentPath !== "/login") {
+        sessionStorage.setItem("redirect_after_2fa", currentPath);
+      }
+
+      window.location.href = "/two-factor-verify";
+      return Promise.reject({ ...error, handled: true });
+    }
+
+    if (error.response?.status === 401) {
+      const currentPath = window.location.pathname;
+
+      if (currentPath === "/login") {
+        return Promise.reject(error);
+      }
+
+      const safeRoutes = [
+        "/check-auth",
+        "/auth/check",
+        "/auth/user",
+        "/debug/token-info",
+      ];
+
+      const requestUrl = error.config?.url || "";
+      const isSafeRoute = safeRoutes.some((route) =>
+        requestUrl.includes(route),
+      );
+
+      if (isSafeRoute) {
+        console.warn(
+          "⚠️ [Axios] 401 sur route safe:",
+          requestUrl,
+          "- pas de logout",
+        );
+        return Promise.reject(error);
+      }
+
+      console.warn(
+        "⚠️ [Axios] Token invalide (401) sur:",
+        requestUrl,
+        "-> Logout",
+      );
+
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user_data");
+      localStorage.removeItem("just_logged_in");
+      sessionStorage.removeItem("auth_token");
+      sessionStorage.removeItem("user_data");
+      sessionStorage.removeItem("just_logged_in");
+
+      window.location.href = "/login";
+      return Promise.reject(error);
+    }
+
     return Promise.reject(error);
-  }
+  },
 );
 
 export default API;

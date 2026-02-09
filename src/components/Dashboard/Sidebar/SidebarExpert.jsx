@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
@@ -28,17 +27,26 @@ export default function SidebarExpert({
 
   // --- MENU CONFIG ---
   const mainNavItems = [
-    { 
-      to: "/dashboard/expert/tableau-de-bord", 
-      label: "Tableau de bord", 
-      icon: FaHome 
+    {
+      to: "/dashboard/expert/tableau-de-bord",
+      label: "Tableau de bord",
+      icon: FaHome,
     },
   ];
 
   const evaluationsItems = [
-    { label: "Évaluations en attente", path: "/dashboard/expert/evaluations-attente" },
-    { label: "Évaluations en cours", path: "/dashboard/expert/evaluations-cours" },
-    { label: "Historique d'évaluations", path: "/dashboard/expert/historique-evaluations" },
+    {
+      label: "Évaluations en attente",
+      path: "/dashboard/expert/evaluations-attente",
+    },
+    {
+      label: "Évaluations en cours",
+      path: "/dashboard/expert/evaluations-cours",
+    },
+    {
+      label: "Historique d'évaluations",
+      path: "/dashboard/expert/historique-evaluations",
+    },
   ];
 
   const avisItems = [
@@ -48,9 +56,18 @@ export default function SidebarExpert({
   ];
 
   const missionsItems = [
-    { label: "Missions assignées", path: "/dashboard/expert/missions-assignees" },
-    { label: "Calendrier des missions", path: "/dashboard/expert/calendrier-missions" },
-    { label: "Rapports de mission", path: "/dashboard/expert/rapports-mission" },
+    {
+      label: "Missions assignées",
+      path: "/dashboard/expert/missions-assignees",
+    },
+    {
+      label: "Calendrier des missions",
+      path: "/dashboard/expert/calendrier-missions",
+    },
+    {
+      label: "Rapports de mission",
+      path: "/dashboard/expert/rapports-mission",
+    },
   ];
 
   const goTo = (path) => {
@@ -73,7 +90,7 @@ export default function SidebarExpert({
   const renderAccordion = (title, icon, isOpen, setIsOpen, items) => {
     const Icon = icon;
     const isChildActive = items.some((item) =>
-      location.pathname.includes(item.path)
+      location.pathname.includes(item.path),
     );
     const effectiveIsOpen = isOpen || (isChildActive && !collapsed);
 
@@ -171,7 +188,7 @@ export default function SidebarExpert({
               to="/"
               className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-sans">
+              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
                 DAAQ
               </span>
             </Link>
@@ -231,7 +248,9 @@ export default function SidebarExpert({
             <div
               onClick={() => goTo("/dashboard/expert/recherche-dossiers")}
               className={`${baseItemClass} ${
-                isLinkActive("/dashboard/expert/recherche-dossiers") ? activeClass : inactiveClass
+                isLinkActive("/dashboard/expert/recherche-dossiers")
+                  ? activeClass
+                  : inactiveClass
               }`}
               title={collapsed ? "Recherche" : ""}
             >
@@ -261,7 +280,7 @@ export default function SidebarExpert({
               FaClipboardCheck,
               evaluationsOpen,
               setEvaluationsOpen,
-              evaluationsItems
+              evaluationsItems,
             )}
           </div>
 
@@ -278,7 +297,7 @@ export default function SidebarExpert({
               FaFileSignature,
               avisOpen,
               setAvisOpen,
-              avisItems
+              avisItems,
             )}
           </div>
 
@@ -295,7 +314,7 @@ export default function SidebarExpert({
               FaComments,
               missionsOpen,
               setMissionsOpen,
-              missionsItems
+              missionsItems,
             )}
           </div>
         </nav>

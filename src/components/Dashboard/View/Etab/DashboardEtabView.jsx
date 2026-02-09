@@ -1,340 +1,897 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
-  FaBuilding,
-  FaFileAlt,
-  FaClock,
-  FaCheckCircle,
-  FaUsers,
-  FaChartLine,
-  FaBell,
-  FaCalendarAlt,
-} from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+  Calendar,
+  Award,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  BarChart3,
+  FileText,
+  AlertTriangle,
+  Zap,
+  CheckCircle2,
+  Star,
+} from "lucide-react";
 
-export default function DashboardEtabView() {
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalDemandes: 0,
-    enAttente: 0,
-    approuvees: 0,
-    rejetees: 0,
-    etudiants: 0,
-  });
-
-  const [recentActivites, setRecentActivites] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Simulation de données
-  useEffect(() => {
-    setTimeout(() => {
-      setStats({
-        totalDemandes: 156,
-        enAttente: 23,
-        approuvees: 120,
-        rejetees: 13,
-        etudiants: 2450,
-      });
-
-      setRecentActivites([
-        {
-          id: 1,
-          type: "Nouvelle demande",
-          description: "Demande d'équivalence Bac S",
-          date: "2024-03-15 10:30",
-          etudiant: "Jean Dupont",
-        },
-        {
-          id: 2,
-          type: "Décision",
-          description: "Équivalence Master approuvée",
-          date: "2024-03-14 14:20",
-          etudiant: "Marie Curie",
-        },
-        {
-          id: 3,
-          type: "Document",
-          description: "Relevé de notes reçu",
-          date: "2024-03-13 09:15",
-          etudiant: "Paul Martin",
-        },
-        {
-          id: 4,
-          type: "Rappel",
-          description: "Échéance paiement allocation",
-          date: "2024-03-12 16:45",
-          etudiant: "Sophie Lambert",
-        },
-      ]);
-
-      setNotifications([
-        {
-          id: 1,
-          message: "5 nouvelles demandes en attente de traitement",
-          type: "warning",
-          date: "Il y a 2h",
-        },
-        {
-          id: 2,
-          message: "Allocation de 50,000 FCFA approuvée pour l'étudiant X",
-          type: "success",
-          date: "Il y a 1 jour",
-        },
-        {
-          id: 3,
-          message: "Rappel : Rapport trimestriel à soumettre avant le 30 mars",
-          type: "info",
-          date: "Il y a 2 jours",
-        },
-      ]);
-
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const statCards = [
-    {
-      title: "Total Demandes",
-      value: stats.totalDemandes,
-      icon: <FaFileAlt className="text-blue-500" />,
-      color: "bg-blue-50",
-      textColor: "text-blue-600",
-      trend: "+12% ce mois",
-    },
-    {
-      title: "En Attente",
-      value: stats.enAttente,
-      icon: <FaClock className="text-yellow-500" />,
-      color: "bg-yellow-50",
-      textColor: "text-yellow-600",
-      trend: "À traiter",
-    },
-    {
-      title: "Approuvées",
-      value: stats.approuvees,
-      icon: <FaCheckCircle className="text-green-500" />,
-      color: "bg-green-50",
-      textColor: "text-green-600",
-      trend: "78% de taux",
-    },
-    {
-      title: "Étudiants",
-      value: stats.etudiants,
-      icon: <FaUsers className="text-purple-500" />,
-      color: "bg-purple-50",
-      textColor: "text-purple-600",
-      trend: "Inscrits cette année",
-    },
-  ];
-
-  const getNotificationColor = (type) => {
-    const colors = {
-      warning: "bg-yellow-100 text-yellow-800",
-      success: "bg-green-100 text-green-800",
-      info: "bg-blue-100 text-blue-800",
-    };
-    return colors[type] || "bg-gray-100 text-gray-800";
+const DashboardEtabView = () => {
+  // Données simulées - Habilitation
+  const habilitationData = {
+    status: "Actif",
+    requestStatus: "Approuvée",
+    processingDays: 45,
+    startDate: "2020-03-15",
+    endDate: "2025-03-15",
+    remainingDays: 32,
+    daysTotal: 1825,
+    renewalDate: "2025-03-15",
+    certificateNumber: "HABIL-2020-00542",
+    history: [
+      { 
+        date: "2020-03-15", 
+        status: "Approuvée", 
+        type: "Habilitation initiale",
+        processingDays: 45,
+        certificateNumber: "HABIL-2020-00542"
+      },
+      { 
+        date: "2019-12-10", 
+        status: "En traitement", 
+        type: "Demande initiale",
+        processingDays: 30,
+        certificateNumber: "-"
+      },
+      { 
+        date: "2019-11-05", 
+        status: "Soumise", 
+        type: "Dossier de demande",
+        processingDays: 0,
+        certificateNumber: "-"
+      },
+    ],
   };
 
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* En-tête */}
-      <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              Tableau de Bord Établissement
-            </h1>
-            <p className="text-gray-600">
-              Bienvenue sur votre espace de gestion des équivalences
-            </p>
+  // Données simulées - Accréditation
+  const accreditationData = {
+    requestStatus: "En traitement",
+    processingDays: 60,
+    currentEval: {
+      date: "2024-02-05",
+      level: "excellent",
+      score: 92,
+      policies: [
+        {
+          name: "LA POLITIQUE DE FORMATION",
+          totalScore: 95,
+          level: "excellent",
+        },
+        {
+          name: "LA POLITIQUE DE GOUVERNANCE",
+          totalScore: 88,
+          level: "satisfait",
+        },
+        {
+          name: "LA POLITIQUE DE RECHERCHE",
+          totalScore: 92,
+          level: "excellent",
+        },
+      ],
+    },
+    accreditationHistory: [
+      { 
+        date: "2024-01-15", 
+        status: "Accrédité", 
+        type: "Accréditation",
+        validUntil: "2029-01-15",
+        certificateNumber: "ACCRED-2024-00123"
+      },
+      { 
+        date: "2023-10-20", 
+        status: "En traitement", 
+        type: "Demande d'accréditation",
+        validUntil: "-",
+        certificateNumber: "-"
+      },
+      { 
+        date: "2023-08-05", 
+        status: "Soumise", 
+        type: "Dossier de demande",
+        validUntil: "-",
+        certificateNumber: "-"
+      },
+    ],
+    evaluationHistory: [
+      { date: "2024-02-05", level: "excellent", score: 92, type: "Auto-évaluation" },
+      { date: "2023-11-10", level: "satisfait", score: 78, type: "Auto-évaluation" },
+      { date: "2023-08-22", level: "satisfait", score: 76, type: "Auto-évaluation" },
+      { date: "2023-05-15", level: "faible", score: 65, type: "Auto-évaluation" },
+      { date: "2023-02-03", level: "insuffisant", score: 52, type: "Auto-évaluation" },
+    ],
+    status: "En cours",
+    nextEvalDate: "2024-08-05",
+  };
+
+  // Mapping des niveaux de performance
+  const levelConfig = {
+    insuffisant: {
+      color: "bg-red-50 border-red-200",
+      badge: "bg-red-100 text-red-800",
+      bar: "bg-red-500",
+      bgCircle: "#FEE2E2",
+      circleColor: "#EF4444",
+      icon: AlertTriangle,
+      label: "Insuffisant",
+      range: "0-50",
+      min: 0,
+      max: 50,
+    },
+    faible: {
+      color: "bg-orange-50 border-orange-200",
+      badge: "bg-orange-100 text-orange-800",
+      bar: "bg-orange-500",
+      bgCircle: "#FEF3C7",
+      circleColor: "#F97316",
+      icon: Zap,
+      label: "Faible",
+      range: "51-70",
+      min: 51,
+      max: 70,
+    },
+    satisfait: {
+      color: "bg-blue-50 border-blue-200",
+      badge: "bg-blue-100 text-blue-800",
+      bar: "bg-blue-500",
+      bgCircle: "#DBEAFE",
+      circleColor: "#3B82F6",
+      icon: CheckCircle2,
+      label: "Satisfait",
+      range: "71-85",
+      min: 71,
+      max: 85,
+    },
+    excellent: {
+      color: "bg-green-50 border-green-200",
+      badge: "bg-green-100 text-green-800",
+      bar: "bg-green-500",
+      bgCircle: "#DCFCE7",
+      circleColor: "#22C55E",
+      icon: Star,
+      label: "Excellent",
+      range: "86-100",
+      min: 86,
+      max: 100,
+    },
+  };
+
+  const calculateProgress = (endDate) => {
+    const today = new Date();
+    const end = new Date(endDate);
+    const start = new Date(
+      new Date(endDate).setFullYear(new Date(endDate).getFullYear() - 5),
+    );
+
+    const total = (end - start) / (1000 * 60 * 60 * 24);
+    const remaining = (end - today) / (1000 * 60 * 60 * 24);
+
+    return Math.max(0, Math.min(100, ((total - remaining) / total) * 100));
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const getStatusIcon = (status) => {
+    return status === "Actif" ? (
+      <CheckCircle className="w-5 h-5" />
+    ) : (
+      <AlertCircle className="w-5 h-5" />
+    );
+  };
+
+  // Composant - Graphe en demi-cercle comme tableau de bord de voiture
+  const PerformanceCircleChart = ({ score, level }) => {
+    // Calculer l'angle pour le demi-cercle (0° = bas gauche, 180° = bas droite)
+    const getArrowRotation = () => {
+      // Score 0-100 mappé sur 0-180 degrés
+      return (score / 100) * 180;
+    };
+
+    const arrowRotation = getArrowRotation();
+
+    return (
+      <div className="flex flex-col items-center justify-center">
+        {/* Graphe en demi-cercle */}
+        <div className="relative w-80 h-48 mb-6">
+          <svg
+            viewBox="0 0 280 160"
+            className="w-full h-full"
+            style={{ 
+              filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.08))",
+              animation: "fadeIn 0.6s ease-out"
+            }}
+          >
+            <defs>
+              {/* Gradients pour chaque niveau */}
+              <linearGradient id="gradInsuffisant" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#EF4444" />
+                <stop offset="100%" stopColor="#FCA5A5" />
+              </linearGradient>
+              <linearGradient id="gradFaible" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#F97316" />
+                <stop offset="100%" stopColor="#FDB17C" />
+              </linearGradient>
+              <linearGradient id="gradSatisfait" x1="100%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#3B82F6" />
+                <stop offset="100%" stopColor="#93C5FD" />
+              </linearGradient>
+              <linearGradient id="gradExcellent" x1="100%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#22C55E" />
+                <stop offset="100%" stopColor="#86EFAC" />
+              </linearGradient>
+            </defs>
+
+            {/* Arc 1: Insuffisant (0-50) - Rouge */}
+            <path
+              d="M 30,140 A 110,110 0 0,1 85,36"
+              fill="none"
+              stroke="url(#gradInsuffisant)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              opacity="0.95"
+              style={{
+                animation: "arcAppear 1s ease-out 0.1s both"
+              }}
+            />
+
+            {/* Arc 2: Faible (51-70) - Orange */}
+            <path
+              d="M 85,36 A 110,110 0 0,1 140,20"
+              fill="none"
+              stroke="url(#gradFaible)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              opacity="0.95"
+              style={{
+                animation: "arcAppear 1s ease-out 0.2s both"
+              }}
+            />
+
+            {/* Arc 3: Satisfait (71-85) - Bleu */}
+            <path
+              d="M 140,20 A 110,110 0 0,1 195,36"
+              fill="none"
+              stroke="url(#gradSatisfait)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              opacity="0.95"
+              style={{
+                animation: "arcAppear 1s ease-out 0.3s both"
+              }}
+            />
+
+            {/* Arc 4: Excellent (86-100) - Vert */}
+            <path
+              d="M 195,36 A 110,110 0 0,1 250,140"
+              fill="none"
+              stroke="url(#gradExcellent)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              opacity="0.95"
+              style={{
+                animation: "arcAppear 1s ease-out 0.4s both"
+              }}
+            />
+
+            {/* Marqueurs de graduation */}
+            <line x1="30" y1="140" x2="36" y2="134" stroke="#999" strokeWidth="2" />
+            <line x1="250" y1="140" x2="244" y2="134" stroke="#999" strokeWidth="2" />
+            <line x1="140" y1="20" x2="140" y2="28" stroke="#999" strokeWidth="2" />
+          </svg>
+
+          {/* Labels des niveaux */}
+          <div className="absolute bottom-2 left-2">
+            <div className="bg-white px-2.5 py-1 rounded-lg shadow-sm border border-red-100">
+              <p className="text-[10px] font-semibold text-red-700">0</p>
+              <p className="text-[9px] text-red-500 text-center">Insuffisant</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
-              <FaCalendarAlt className="inline mr-2" />
-              Calendrier
-            </button>
-            <button
-              onClick={() => navigate("/dashboard/institut/creer-demande")}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+
+          <div className="absolute top-8 left-16">
+            <div className="bg-white px-2.5 py-1 rounded-lg shadow-sm border border-orange-100">
+              <p className="text-[10px] font-semibold text-orange-700">50</p>
+              <p className="text-[9px] text-orange-500">Faible</p>
+            </div>
+          </div>
+
+          <div className="absolute top-0 left-1/2 -translate-x-1/2">
+            <div className="bg-white px-2.5 py-1 rounded-lg shadow-sm border border-blue-100">
+              <p className="text-[10px] font-semibold text-blue-700 text-center">70-85</p>
+              <p className="text-[9px] text-blue-500 text-center">Satisfait</p>
+            </div>
+          </div>
+
+          <div className="absolute top-8 right-16">
+            <div className="bg-white px-2.5 py-1 rounded-lg shadow-sm border border-green-100">
+              <p className="text-[10px] font-semibold text-green-700">85+</p>
+              <p className="text-[9px] text-green-500">Excellent</p>
+            </div>
+          </div>
+
+          <div className="absolute bottom-2 right-2">
+            <div className="bg-white px-2.5 py-1 rounded-lg shadow-sm border border-green-100">
+              <p className="text-[10px] font-semibold text-green-700">100</p>
+            </div>
+          </div>
+
+          {/* Flèche indicatrice */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2" style={{ marginBottom: '20px' }}>
+            <div
+              style={{
+                transform: `rotate(${arrowRotation - 90}deg)`,
+                transition: "transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                transformOrigin: "bottom center",
+              }}
             >
-              Nouvelle Demande
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      {notifications.length > 0 && (
-        <div className="mb-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <FaBell className="text-blue-500" /> Notifications Récentes
-              </h2>
-              <span className="text-sm text-blue-600 font-medium">
-                {notifications.length} non lues
-              </span>
-            </div>
-            <div className="space-y-3">
-              {notifications.map((notif) => (
+              <div className="relative flex items-end justify-center" style={{ width: '4px', height: '95px' }}>
+                {/* Ligne de l'aiguille */}
                 <div
-                  key={notif.id}
-                  className={`p-3 rounded-lg ${getNotificationColor(
-                    notif.type
-                  )}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <p className="font-medium">{notif.message}</p>
-                    <span className="text-sm opacity-75">{notif.date}</span>
-                  </div>
-                </div>
-              ))}
+                  className="absolute bg-gradient-to-t from-slate-900 to-slate-700 rounded-full"
+                  style={{
+                    width: "4px",
+                    height: "95px",
+                    bottom: "0px",
+                    boxShadow: "0 3px 10px rgba(0, 0, 0, 0.3)",
+                  }}
+                />
+
+                {/* Pointe triangulaire */}
+                <div
+                  className="absolute"
+                  style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: "8px solid transparent",
+                    borderRight: "8px solid transparent",
+                    borderBottom: "12px solid rgb(15, 23, 42)",
+                    top: "-12px",
+                    left: "50%",
+                    transform: "translateX(-50%) rotate(180deg)",
+                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+                  }}
+                />
+              </div>
             </div>
+
+            {/* Cercle central pivot */}
+            <div
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full border-4 border-white"
+              style={{ boxShadow: "0 4px 12px rgba(0, 0, 0, 0.25)" }}
+            />
           </div>
         </div>
-      )}
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((card, index) => (
+        {/* Score et niveau actuel */}
+        <div className="text-center mt-4">
+          <div className="text-5xl font-bold bg-gradient-to-br from-slate-700 to-slate-900 bg-clip-text text-transparent mb-3" 
+               style={{ animation: "scoreAppear 0.8s ease-out 0.5s both" }}>
+            {score}
+          </div>
           <div
-            key={index}
-            className={`${card.color} rounded-2xl p-6 shadow-sm border border-gray-100`}
+            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm ${levelConfig[level].badge} shadow-sm`}
+            style={{ animation: "badgeAppear 0.6s ease-out 0.8s both" }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`text-2xl font-bold ${card.textColor}`}>
-                {loading ? "..." : card.value.toLocaleString()}
-              </div>
-              <div className="text-2xl">{card.icon}</div>
-            </div>
-            <div className="text-sm font-medium text-gray-600 mb-1">
-              {card.title}
-            </div>
-            <div className="text-xs text-gray-500">{card.trend}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Graphique et Activités */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Graphique de progression */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <FaChartLine className="text-blue-500" /> Activité Mensuelle
-            </h2>
-            <select className="text-sm border border-gray-300 rounded-lg px-3 py-1">
-              <option>Mars 2024</option>
-              <option>Février 2024</option>
-              <option>Janvier 2024</option>
-            </select>
-          </div>
-          <div className="h-64 flex items-end gap-2">
-            {["Sem 1", "Sem 2", "Sem 3", "Sem 4"].map((semaine, index) => (
-              <div key={semaine} className="flex-1 flex flex-col items-center">
-                <div className="text-xs text-gray-500 mb-2">{semaine}</div>
-                <div
-                  className="w-3/4 bg-gradient-to-t from-blue-500 to-blue-300 rounded-t-lg"
-                  style={{ height: `${(index + 1) * 25}%` }}
-                ></div>
-                <div className="text-xs text-gray-700 mt-1">
-                  {index * 10 + 15}
-                </div>
-              </div>
-            ))}
+            {React.createElement(levelConfig[level].icon, {
+              className: "w-5 h-5",
+            })}
+            {levelConfig[level].label}
           </div>
         </div>
 
-        {/* Activités récentes */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-6">
-            Activités Récentes
-          </h2>
-          <div className="space-y-4">
-            {loading ? (
-              <div className="text-center py-8 text-gray-500">
-                Chargement des activités...
-              </div>
-            ) : recentActivites.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                Aucune activité récente
-              </div>
-            ) : (
-              recentActivites.map((activite) => (
-                <div
-                  key={activite.id}
-                  className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0"
-                >
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <FaFileAlt className="text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <h4 className="font-medium text-gray-800">
-                        {activite.type}
-                      </h4>
-                      <span className="text-sm text-gray-500">
-                        {activite.date}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {activite.description}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Étudiant : {activite.etudiant}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+        <style jsx>{`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+
+          @keyframes arcAppear {
+            from {
+              opacity: 0;
+              stroke-dasharray: 1000;
+              stroke-dashoffset: 1000;
+            }
+            to {
+              opacity: 0.95;
+              stroke-dasharray: 1000;
+              stroke-dashoffset: 0;
+            }
+          }
+
+          @keyframes scoreAppear {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes badgeAppear {
+            from {
+              opacity: 0;
+              transform: scale(0.9);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+        `}</style>
+      </div>
+    );
+  };
+
+  // Composant - Carte Habilitation (SANS BOUTON)
+  const HabilitationCard = () => (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-lg hover:shadow-xl transition-all p-6">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900 mb-1">
+            Habilitation
+          </h3>
+          <p className="text-xs text-slate-500">
+            {habilitationData.certificateNumber}
+          </p>
+        </div>
+        <div
+          className={`flex items-center gap-2 px-3 py-1 rounded-full font-medium text-xs ${habilitationData.status === "Actif" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+        >
+          {getStatusIcon(habilitationData.status)}
+          {habilitationData.status}
         </div>
       </div>
 
-      {/* Actions rapides */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-6">
-          Actions Rapides
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button
-            onClick={() => navigate("/dashboard/institut/creer-demande")}
-            className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl text-left hover:from-blue-100 hover:to-blue-200 transition-all"
-          >
-            <FaFileAlt className="text-2xl text-blue-600 mb-3" />
-            <h3 className="font-semibold text-gray-800 mb-2">
-              Nouvelle Demande
-            </h3>
-            <p className="text-sm text-gray-600">
-              Soumettre une nouvelle demande d'équivalence pour un étudiant
-            </p>
-          </button>
+      <div className="space-y-4">
+        {/* Barre de progression */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-slate-700">
+              Durée restante
+            </span>
+            <span className="text-xs font-bold text-slate-900">
+              {habilitationData.remainingDays} jours
+            </span>
+          </div>
+          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+              style={{
+                width: `${calculateProgress(habilitationData.endDate)}%`,
+              }}
+            />
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Valide jusqu'au {formatDate(habilitationData.endDate)}
+          </p>
+        </div>
 
-          <button
-            onClick={() => navigate("/dashboard/institut/decisions")}
-            className="p-6 bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl text-left hover:from-green-100 hover:to-green-200 transition-all"
-          >
-            <FaCheckCircle className="text-2xl text-green-600 mb-3" />
-            <h3 className="font-semibold text-gray-800 mb-2">
-              Voir les Décisions
-            </h3>
-            <p className="text-sm text-gray-600">
-              Consulter les décisions et télécharger les arrêtés
+        {/* Grille d'informations */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+              Émise le
             </p>
-          </button>
-
-          <button className="p-6 bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl text-left hover:from-purple-100 hover:to-purple-200 transition-all">
-            <FaUsers className="text-2xl text-purple-600 mb-3" />
-            <h3 className="font-semibold text-gray-800 mb-2">
-              Gérer les Étudiants
-            </h3>
-            <p className="text-sm text-gray-600">
-              Liste des étudiants et suivi des dossiers
+            <p className="font-semibold text-slate-900 text-sm">
+              {formatDate(habilitationData.startDate)}
             </p>
-          </button>
+          </div>
+          <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+              Expire le
+            </p>
+            <p className="font-semibold text-slate-900 text-sm">
+              {formatDate(habilitationData.endDate)}
+            </p>
+          </div>
+          <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 col-span-2">
+            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
+              Renouvellement
+            </p>
+            <p className="font-semibold text-slate-900 text-sm">
+              {formatDate(habilitationData.renewalDate)}
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+
+  // Composant - Historique Habilitation
+  const HabilitationHistory = () => (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">
+            Historique des Demandes d'Habilitation
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            {habilitationData.history.length} dossiers soumis
+          </p>
+        </div>
+        <FileText className="w-5 h-5 text-slate-400" />
+      </div>
+
+      <div className="space-y-2">
+        {habilitationData.history.map((item, idx) => {
+          const isLatest = idx === 0;
+          const statusConfig = {
+            "Approuvée": { bg: "bg-green-50", border: "border-green-200", badge: "bg-green-100 text-green-800", icon: CheckCircle },
+            "En traitement": { bg: "bg-blue-50", border: "border-blue-200", badge: "bg-blue-100 text-blue-800", icon: Clock },
+            "Soumise": { bg: "bg-slate-50", border: "border-slate-200", badge: "bg-slate-100 text-slate-800", icon: FileText },
+          };
+          const config = statusConfig[item.status];
+
+          return (
+            <div
+              key={idx}
+              className={`flex items-center justify-between p-3 rounded-lg border transition-all text-sm ${
+                isLatest
+                  ? config.bg + " " + config.border
+                  : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${config.badge}`}>
+                  {React.createElement(config.icon, { className: "w-4 h-4" })}
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900 text-xs">
+                    {item.type}
+                  </p>
+                  <p className="text-xs text-slate-500">{formatDate(item.date)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-xs font-semibold text-slate-900">
+                    {item.status}
+                  </p>
+                  <p className="text-xs text-slate-500">{item.certificateNumber}</p>
+                </div>
+                {isLatest && (
+                  <div className="px-2 py-1 bg-blue-600 text-white text-xs font-medium rounded">
+                    Actuel
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // Composant - Accréditation avec graphe (SANS BOUTON)
+  const AccreditationWithChart = () => {
+    const current = accreditationData.currentEval;
+
+    return (
+      <div className="space-y-6">
+        {/* Graphe circulaire de performance */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8">
+          <h3 className="text-lg font-bold text-slate-900 mb-8 text-center">
+            Résultat de l'Auto-évaluation
+          </h3>
+          <PerformanceCircleChart score={current.score} level={current.level} />
+          <p className="text-center text-xs text-slate-500 mt-6">
+            Évaluation du {formatDate(current.date)}
+          </p>
+        </div>
+
+        {/* Politiques */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">
+            Évaluation des Politiques
+          </h3>
+          <div className="space-y-3">
+            {current.policies.map((policy, idx) => {
+              return (
+                <div
+                  key={idx}
+                  className="bg-white rounded-lg p-4 border border-blue-200 transition-all hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-slate-900 text-sm">
+                      {policy.name}
+                    </h4>
+                    <span className="text-sm font-bold text-blue-600">
+                      {policy.totalScore} pts
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-100 rounded-full h-2 overflow-hidden mt-2">
+                    <div
+                      className="h-full bg-blue-500"
+                      style={{ width: `${policy.totalScore}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Composant - Historique Unifié Accréditation
+  const AccreditationUnifiedHistory = () => (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">
+            Historique Accréditation
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            {accreditationData.evaluationHistory.length + accreditationData.accreditationHistory.length} entrées au total
+          </p>
+        </div>
+        <TrendingUp className="w-5 h-5 text-slate-400" />
+      </div>
+
+      <div className="space-y-2">
+        {/* Historique des demandes d'accréditation */}
+        {accreditationData.accreditationHistory.map((item, idx) => {
+          const isLatest = idx === 0;
+          const statusConfig = {
+            "Accrédité": { bg: "bg-green-50", border: "border-green-200", badge: "bg-green-100 text-green-800", icon: CheckCircle },
+            "En traitement": { bg: "bg-blue-50", border: "border-blue-200", badge: "bg-blue-100 text-blue-800", icon: Clock },
+            "Soumise": { bg: "bg-slate-50", border: "border-slate-200", badge: "bg-slate-100 text-slate-800", icon: FileText },
+          };
+          const config = statusConfig[item.status];
+
+          return (
+            <div
+              key={`accred-${idx}`}
+              className={`flex items-center justify-between p-3 rounded-lg border transition-all text-sm ${
+                isLatest
+                  ? config.bg + " " + config.border
+                  : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${config.badge}`}>
+                  {React.createElement(config.icon, { className: "w-4 h-4" })}
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900 text-xs">
+                    {item.type}
+                  </p>
+                  <p className="text-xs text-slate-500">{formatDate(item.date)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-xs font-semibold text-slate-900">
+                    {item.status}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {item.validUntil !== "-" ? `Valide jusqu'au ${formatDate(item.validUntil)}` : item.certificateNumber}
+                  </p>
+                </div>
+                {isLatest && (
+                  <div className="px-2 py-1 bg-green-600 text-white text-xs font-medium rounded">
+                    Actuel
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Historique des auto-évaluations */}
+        {accreditationData.evaluationHistory.map((evaluation, idx) => {
+          const config = levelConfig[evaluation.level];
+          const isLatest = idx === 0;
+
+          return (
+            <div
+              key={`eval-${idx}`}
+              className={`flex items-center justify-between p-3 rounded-lg border transition-all text-sm ${
+                isLatest
+                  ? config.color + " border-opacity-60"
+                  : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${config.badge}`}
+                >
+                  {React.createElement(config.icon, { className: "w-4 h-4" })}
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900 text-xs">
+                    Auto-évaluation
+                  </p>
+                  <p className="text-xs text-slate-500">{formatDate(evaluation.date)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-lg font-bold text-slate-900">
+                    {evaluation.score}
+                  </p>
+                  <p className="text-xs text-slate-500">{config.label} ({config.range})</p>
+                </div>
+                {isLatest && (
+                  <div className="px-2 py-1 bg-slate-700 text-white text-xs font-medium rounded">
+                    Récent
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // Composant - Statistiques
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div>
+            <h1 className="text-lg font-semibold text-slate-900 mb-1">
+              Tableau de Bord Établissement
+            </h1>
+            <p className="text-sm text-slate-500">
+              Gestion de votre habilitation et accréditation
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="space-y-12">
+          {/* Vue d'ensemble - Statistiques Principales */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              Vue d'ensemble
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Habilitation - Jours Restants */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6 hover:shadow-xl transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-2">
+                      Habilitation
+                    </p>
+                    <p className="text-sm text-slate-600 mb-3">
+                      Jours restants
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-blue-50">
+                    <Clock className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-slate-900 mb-3">
+                  {habilitationData.remainingDays}
+                </p>
+                <p className="text-xs text-slate-500">
+                  Statut: {habilitationData.requestStatus}
+                </p>
+              </div>
+
+              {/* Accréditation - Score */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6 hover:shadow-xl transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-2">
+                      Accréditation
+                    </p>
+                    <p className="text-sm text-slate-600 mb-3">
+                      Score d'évaluation
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-green-50">
+                    <BarChart3 className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-slate-900 mb-3">
+                  {accreditationData.currentEval.score}%
+                </p>
+                <p className="text-xs text-slate-500">
+                  Statut: {accreditationData.requestStatus}
+                </p>
+              </div>
+
+              {/* Politiques Évaluées */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6 hover:shadow-xl transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-2">
+                      Accréditation
+                    </p>
+                    <p className="text-sm text-slate-600 mb-3">
+                      Politiques évaluées
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-purple-50">
+                    <Award className="w-6 h-6 text-purple-600" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-slate-900 mb-3">
+                  {accreditationData.currentEval.policies.length}
+                </p>
+                <p className="text-xs text-slate-500">
+                  Niveau: {accreditationData.currentEval.level}
+                </p>
+              </div>
+
+              {/* Jours de Traitement */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-6 hover:shadow-xl transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-2">
+                      Traitement
+                    </p>
+                    <p className="text-sm text-slate-600 mb-3">Jours estimés</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-orange-50">
+                    <Calendar className="w-6 h-6 text-orange-600" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-slate-900 mb-3">
+                  {accreditationData.processingDays}
+                </p>
+                <p className="text-xs text-slate-500">Accréditation en cours</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Habilitation - Détails complets */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              Habilitation
+            </h2>
+            <div className="space-y-6">
+              <HabilitationCard />
+              <HabilitationHistory />
+            </div>
+          </div>
+
+          {/* Accréditation - Détails complets */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              Accréditation
+            </h2>
+            <AccreditationWithChart />
+          </div>
+
+          {/* Historique Accréditation Unifié */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              Historique
+            </h2>
+            <AccreditationUnifiedHistory />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardEtabView;

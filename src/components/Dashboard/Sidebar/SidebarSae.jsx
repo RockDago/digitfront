@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
@@ -27,21 +26,27 @@ export default function SidebarSae({
 
   // --- MENU CONFIG ---
   const mainNavItems = [
-    { 
-      to: "/dashboard/sae/tableau-de-bord", 
-      label: "Tableau de bord", 
-      icon: FaHome 
+    {
+      to: "/dashboard/sae/tableau-de-bord",
+      label: "Tableau de bord",
+      icon: FaHome,
     },
   ];
 
   const accreditationItems = [
     { label: "Liste accréditation", path: "/dashboard/sae/accreditation" },
-    { label: "Archivage accréditation", path: "/dashboard/sae/archivage-accreditation" },
+    {
+      label: "Archivage accréditation",
+      path: "/dashboard/sae/archivage-accreditation",
+    },
   ];
 
   const equivalenceItems = [
     { label: "Liste équivalence", path: "/dashboard/sae/equivalence" },
-    { label: "Archivage équivalence", path: "/dashboard/sae/archivage-equivalence" },
+    {
+      label: "Archivage équivalence",
+      path: "/dashboard/sae/archivage-equivalence",
+    },
   ];
 
   const habilitationItems = [
@@ -68,7 +73,7 @@ export default function SidebarSae({
   const renderAccordion = (title, icon, isOpen, setIsOpen, items) => {
     const Icon = icon;
     const isChildActive = items.some((item) =>
-      location.pathname.includes(item.path)
+      location.pathname.includes(item.path),
     );
     const effectiveIsOpen = isOpen || (isChildActive && !collapsed);
 
@@ -166,7 +171,7 @@ export default function SidebarSae({
               to="/"
               className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-sans">
+              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
                 DAAQ
               </span>
             </Link>
@@ -237,7 +242,7 @@ export default function SidebarSae({
               FaClipboardList,
               accreditationOpen,
               setAccreditationOpen,
-              accreditationItems
+              accreditationItems,
             )}
 
             {/* Accordéon Équivalence */}
@@ -246,7 +251,7 @@ export default function SidebarSae({
               FaExchangeAlt,
               equivalenceOpen,
               setEquivalenceOpen,
-              equivalenceItems
+              equivalenceItems,
             )}
 
             {/* Accordéon Habilitation */}
@@ -255,10 +260,9 @@ export default function SidebarSae({
               FaBook,
               habilitationOpen,
               setHabilitationOpen,
-              habilitationItems
+              habilitationItems,
             )}
           </div>
-
         </nav>
       </aside>
     </>

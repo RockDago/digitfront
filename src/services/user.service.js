@@ -1,5 +1,5 @@
 // src/services/user.service.js
-import API from "../config/axios";
+import API, { API_URL } from "../config/axios";
 
 const UserService = {
   // ============================================
@@ -118,19 +118,22 @@ const UserService = {
    */
   getMyProfile: async () => {
     try {
-      console.log("📡 Chargement du profil utilisateur connecté...");
+      // ✅ CORRECTION : L'interceptor Axios envoie automatiquement le header X-User-ID
+      // Pas besoin de token JWT - le backend utilise X-User-ID
       const response = await API.get("/users/me/profile");
-      console.log("✅ Profil chargé:", response.data);
-      console.log("🔍 VALEUR BRUTE profileData.logo:", response.data.logo); // ← DEBUG
+
       return response.data;
     } catch (error) {
-      console.error("❌ Erreur chargement profil:", error);
+      console.error(
+        "❌ Erreur chargement profil:",
+        error.response?.data || error.message,
+      );
       throw error;
     }
   },
 
   /**
-   * ✅ CORRECTION : Mettre à jour le profil avec mise à jour temps réel
+   * ✅ Mettre à jour le profil avec mise à jour temps réel
    * @param {Object} formData - Données du formulaire
    * @param {File} imageFile - Fichier image optionnel
    * @returns {Promise<Object>}
@@ -138,8 +141,6 @@ const UserService = {
   updateMyProfile: async (formData, imageFile = null) => {
     try {
       console.log("📤 1. Envoi mise à jour profil:", formData);
-      console.log("🖼️ 2. Fichier image:", imageFile);
-
       const data = new FormData();
 
       // Ajouter les champs texte
@@ -153,9 +154,9 @@ const UserService = {
         }
       });
 
-      // ✅ Le backend attend "image"
+      // ✅ Ajouter l'image seulement si elle existe
       if (imageFile) {
-        console.log("📎 3. Ajout de l'image au FormData avec clé 'image'");
+        console.log("📎 3. Ajout de l'image au FormData");
         data.append("image", imageFile);
       }
 
@@ -166,10 +167,8 @@ const UserService = {
       });
 
       console.log("✅ 4. Réponse reçue:", response.data);
-      console.log("🖼️ 5. Logo présent:", response.data.logo ? "Oui" : "Non");
-      console.log("🔍 VALEUR BRUTE response.data.logo:", response.data.logo); // ← DEBUG
 
-      // ✅ Mettre à jour localStorage et déclencher l'événement
+      // ✅ Mettre à jour localStorage et déclencher l'événement si le logo change
       if (response.data.logo) {
         await UserService.refreshProfileImageInStorage();
       }
@@ -182,13 +181,14 @@ const UserService = {
   },
 
   /**
-   * ✅ CORRIGÉ : Rafraîchir l'image avec nettoyage du double /api
+   * ✅ Rafraîchir l'image avec nettoyage du double /api
    */
   refreshProfileImageInStorage: async () => {
     try {
       console.log("🔄 Rafraîchissement de l'image de profil...");
 
       // 1. Récupérer les données à jour depuis l'API
+      // Note: getMyProfile gère déjà l'erreur de token
       const profileData = await UserService.getMyProfile();
 
       // 2. Récupérer l'utilisateur stocké
@@ -197,12 +197,10 @@ const UserService = {
       // 3. Construire l'URL complète de l'image
       let imageURL = null;
       if (profileData.logo) {
-        const baseURL = "http://127.0.0.1:8000";
-
-        // ✅ CORRECTION CRITIQUE : Nettoyer le double /api
+        const baseURL = API_URL;
         let cleanPath = profileData.logo;
 
-        // Si c'est déjà une URL complète, la retourner
+        // Si c'est déjà une URL complète
         if (
           cleanPath.startsWith("http://") ||
           cleanPath.startsWith("https://")
@@ -215,14 +213,10 @@ const UserService = {
           cleanPath = cleanPath.replace(/\/api\/api/g, "/api");
           imageURL = `${baseURL}${cleanPath}`;
         }
-        // Sinon, ajouter le /
+        // Sinon
         else {
           imageURL = `${baseURL}/${cleanPath}`;
         }
-
-        console.log("🔍 Chemin original:", profileData.logo);
-        console.log("🧹 Chemin nettoyé:", cleanPath);
-        console.log("✅ URL finale construite:", imageURL);
       }
 
       // 4. Mettre à jour localStorage
@@ -247,26 +241,25 @@ const UserService = {
       return imageURL;
     } catch (error) {
       console.error("❌ Erreur rafraîchissement image:", error);
-      throw error;
+      // Ne pas throw ici pour éviter de bloquer l'UI principale si juste l'image échoue
+      return null;
     }
   },
 
   /**
-   * ✅ CORRIGÉ : Construire l'URL avec nettoyage du double /api
+   * ✅ Construire l'URL avec nettoyage du double /api
    * @param {String} logoPath - Chemin de l'image depuis la BDD
    * @returns {String} - URL complète
    */
   buildProfileImageUrl: (logoPath) => {
     if (!logoPath) return null;
 
-    const baseURL = "http://127.0.0.1:8000";
+    const baseURL = API_URL;
 
-    // Si c'est déjà une URL complète
     if (logoPath.startsWith("http://") || logoPath.startsWith("https://")) {
       return logoPath;
     }
 
-    // ✅ Nettoyer le double /api si présent
     let cleanPath = logoPath;
     if (logoPath.startsWith("/")) {
       cleanPath = logoPath.replace(/\/api\/api/g, "/api");
@@ -305,10 +298,7 @@ const UserService = {
   deleteMyProfileImage: async () => {
     try {
       const response = await API.delete("/users/me/image");
-
-      // ✅ Mettre à jour après suppression
       await UserService.refreshProfileImageInStorage();
-
       return response.data;
     } catch (error) {
       throw error;

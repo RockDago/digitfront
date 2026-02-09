@@ -7,7 +7,6 @@ import {
   FaTrash,
   FaBars,
   FaChevronDown,
-  FaTimes,
 } from "react-icons/fa";
 import UserService from "../../../services/user.service";
 
@@ -40,7 +39,7 @@ export default function Navbar({
       Admin: "/dashboard/admin/profile",
       admin: "/dashboard/admin/profile",
       Requerant: "/dashboard/requerant/profile",
-      Etablissement: "/dashboard/institut/profile",
+      Etablissement: "/dashboard/etablissement/profile",
       SAE: "/dashboard/sae/profile",
       SICP: "/dashboard/sicp/profile",
       CNH: "/dashboard/cnh/profile",
@@ -54,24 +53,31 @@ export default function Navbar({
   useEffect(() => {
     const loadProfileImage = () => {
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      // ✅ CORRECTION ICI : Récupérer le token pour vérifier l'auth
+      const token = localStorage.getItem("token");
+
       if (storedUser.profileImage) {
         setProfileImage(storedUser.profileImage);
-      } else if (storedUser.id) {
+      } else if (storedUser.id && token) {
+        // ✅ On vérifie token avant d'appeler
         const fetchProfileImage = async () => {
           try {
             const profileData = await UserService.getMyProfile();
             if (profileData.logo) {
               const imageURL = UserService.buildProfileImageUrl(
-                profileData.logo
+                profileData.logo,
               );
               setProfileImage(imageURL);
               localStorage.setItem(
                 "user",
-                JSON.stringify({ ...storedUser, profileImage: imageURL })
+                JSON.stringify({ ...storedUser, profileImage: imageURL }),
               );
             }
           } catch (error) {
-            console.error("Erreur chargement image profil:", error);
+            // Ignorer l'erreur si c'est juste le token qui manque (cas logout)
+            if (error.message !== "Token d'authentification manquant") {
+              console.error("Erreur chargement image profil:", error);
+            }
           }
         };
         fetchProfileImage();

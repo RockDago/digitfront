@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
@@ -29,27 +28,45 @@ export default function SidebarUni({
 
   // --- MENU CONFIG ---
   const mainNavItems = [
-    { 
-      to: "/dashboard/universite/tableau-de-bord", 
-      label: "Tableau de bord", 
-      icon: FaHome 
+    {
+      to: "/dashboard/universite/tableau-de-bord",
+      label: "Tableau de bord",
+      icon: FaHome,
     },
   ];
 
   const programmesItems = [
     { label: "Mes programmes", path: "/dashboard/universite/mes-programmes" },
-    { label: "Créer un programme", path: "/dashboard/universite/creer-programme" },
-    { label: "Modifier programme", path: "/dashboard/universite/modifier-programme" },
+    {
+      label: "Créer un programme",
+      path: "/dashboard/universite/creer-programme",
+    },
+    {
+      label: "Modifier programme",
+      path: "/dashboard/universite/modifier-programme",
+    },
   ];
 
   const demandesItems = [
-    { label: "Nouvelle demande", path: "/dashboard/universite/nouvelle-demande" },
-    { label: "Demandes en cours", path: "/dashboard/universite/demandes-cours" },
-    { label: "Historique demandes", path: "/dashboard/universite/historique-demandes" },
+    {
+      label: "Nouvelle demande",
+      path: "/dashboard/universite/nouvelle-demande",
+    },
+    {
+      label: "Demandes en cours",
+      path: "/dashboard/universite/demandes-cours",
+    },
+    {
+      label: "Historique demandes",
+      path: "/dashboard/universite/historique-demandes",
+    },
   ];
 
   const suiviItems = [
-    { label: "Suivi des évaluations", path: "/dashboard/universite/suivi-evaluations" },
+    {
+      label: "Suivi des évaluations",
+      path: "/dashboard/universite/suivi-evaluations",
+    },
     { label: "Notifications", path: "/dashboard/universite/notifications" },
     { label: "Calendrier", path: "/dashboard/universite/calendrier" },
   ];
@@ -74,7 +91,7 @@ export default function SidebarUni({
   const renderAccordion = (title, icon, isOpen, setIsOpen, items) => {
     const Icon = icon;
     const isChildActive = items.some((item) =>
-      location.pathname.includes(item.path)
+      location.pathname.includes(item.path),
     );
     const effectiveIsOpen = isOpen || (isChildActive && !collapsed);
 
@@ -172,7 +189,7 @@ export default function SidebarUni({
               to="/"
               className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-sans">
+              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
                 DAAQ
               </span>
             </Link>
@@ -232,7 +249,9 @@ export default function SidebarUni({
             <div
               onClick={() => goTo("/dashboard/universite/informations")}
               className={`${baseItemClass} ${
-                isLinkActive("/dashboard/universite/informations") ? activeClass : inactiveClass
+                isLinkActive("/dashboard/universite/informations")
+                  ? activeClass
+                  : inactiveClass
               }`}
               title={collapsed ? "Informations" : ""}
             >
@@ -262,7 +281,7 @@ export default function SidebarUni({
               FaGraduationCap,
               programmesOpen,
               setProgrammesOpen,
-              programmesItems
+              programmesItems,
             )}
           </div>
 
@@ -279,7 +298,7 @@ export default function SidebarUni({
               FaFileUpload,
               demandesOpen,
               setDemandesOpen,
-              demandesItems
+              demandesItems,
             )}
           </div>
 
@@ -296,14 +315,16 @@ export default function SidebarUni({
               FaHistory,
               suiviOpen,
               setSuiviOpen,
-              suiviItems
+              suiviItems,
             )}
 
             {/* Tableau de bord analytique */}
             <div
               onClick={() => goTo("/dashboard/universite/analytique")}
               className={`${baseItemClass} ${
-                isLinkActive("/dashboard/universite/analytique") ? activeClass : inactiveClass
+                isLinkActive("/dashboard/universite/analytique")
+                  ? activeClass
+                  : inactiveClass
               }`}
               title={collapsed ? "Analytique" : ""}
             >

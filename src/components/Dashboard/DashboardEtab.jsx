@@ -25,7 +25,7 @@ export default function DashboardEtab() {
     if (!user.id) return;
     try {
       const res = await fetch(
-        `${API_URL}/notifications-accreditation?profil_id=${user.id}`
+        `${API_URL}/notifications-accreditation?profil_id=${user.id}`,
       );
       if (!res.ok) throw new Error("Erreur fetch notifications");
       const data = await res.json();
@@ -53,7 +53,7 @@ export default function DashboardEtab() {
 
   const handleMarkAsRead = (id) =>
     setNotifications((p) =>
-      p.map((n) => (n.id === id ? { ...n, read: true } : n))
+      p.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
 
   const handleDeleteNotif = async (id) => {
@@ -74,7 +74,7 @@ export default function DashboardEtab() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* 1. SIDEBAR */}
       <SidebarEtab
         isSidebarCollapsed={isSidebarCollapsed}
@@ -100,13 +100,13 @@ export default function DashboardEtab() {
             onMarkAllAsRead={handleMarkAllAsRead}
             onMarkAsRead={handleMarkAsRead}
             onDeleteNotif={handleDeleteNotif}
-            onLogoutClick={performLogout} // ✅ Même prop que DashboardAdmin
-            onMobileMenuClick={() => setIsMobileOpen(true)} // ✅ Même prop que DashboardAdmin
+            onLogoutClick={performLogout}
+            onMobileMenuClick={() => setIsMobileOpen(true)}
           />
         </div>
 
         {/* CONTENT */}
-        <main className="flex-1 px-8 pt-6 pb-8 bg-gray-50 overflow-x-hidden">
+        <main className="flex-1 px-8 pt-6 pb-8 bg-white overflow-x-hidden">
           <Outlet />
         </main>
       </div>

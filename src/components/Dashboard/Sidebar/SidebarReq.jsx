@@ -39,11 +39,6 @@ export default function SidebarReq({
       icon: FaRegFileAlt,
       label: "Créer demandes",
     },
-    {
-      to: "/dashboard/requerant/decisions-allocations",
-      icon: FaTasks,
-      label: "Décisions & Allocations",
-    },
   ];
 
   const isLinkActive = (path) =>
@@ -79,7 +74,7 @@ export default function SidebarReq({
               className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
               onClick={() => goTo("/dashboard/requerant")}
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-sans">
+              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
                 DAAQ
               </span>
             </div>

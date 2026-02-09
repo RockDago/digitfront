@@ -14,8 +14,7 @@ import { AuthService } from "./services";
 import Navbar from "./components/Home/Navbar";
 import Home from "./components/Home/Home";
 import AllActu from "./components/Home/AllActu";
-import ArreteAccreditation from "./components/Home/ArreteAccreditation";
-import DecretAccreditation from "./components/Home/DecretAccreditation";
+
 import APropos from "./components/Home/APropos";
 
 // Components Auth
@@ -40,18 +39,28 @@ import HomeParam from "./components/Dashboard/View/Admin/HomeParam";
 import ServicesParam from "./components/Dashboard/View/Admin/ServicesParam";
 import ContactParam from "./components/Dashboard/View/Admin/ContactParam";
 import ActualiteParam from "./components/Dashboard/View/Admin/ActualiteParam";
+import FaqParam from "./components/Dashboard/View/Admin/FaqParam";
 import SystemStatusView from "./components/Dashboard/View/Admin/SystemStatusView";
+import MessagesView from "./components/Dashboard/View/Admin/MessagesView";
 
 // ✅ VUES REQUERANT
 import DashboardReqView from "./components/Dashboard/View/Requerant/DashboardReqView";
 import CreerDemandeView from "./components/Dashboard/View/Requerant/CreerDemandeView";
-import DecisionsAllocationsView from "./components/Dashboard/View/Requerant/DecisionsAllocationsView";
+
+// ✅ VUE ETABLISSEMENT
+import DashboardEtabView from "./components/Dashboard/View/Etab/DashboardEtabView";
+import MesInformationsHabilitation from "./components/Dashboard/View/Etab/Habilitation/MesInformationsHabilitation";
+import CreerDemandeHabilitation from "./components/Dashboard/View/Etab/Habilitation/CreerDemandeHabilitation";
+import RenouvellementHabilitation from "./components/Dashboard/View/Etab/Habilitation/RenouvellementHabilitation";
+import AutoEvaluationAccreditation from "./components/Dashboard/View/Etab/Accreditation/AutoEvaluationAccreditation";
+import CreerDemandeAccreditation from "./components/Dashboard/View/Etab/Accreditation/CreerDemandeAccreditation";
 
 // ✅ COMPOSANT PROFILE (ACCESSIBLE À TOUS LES RÔLES)
 import Profile from "./components/Dashboard/Profile/Profile";
 
 // ✅ Configuration Google OAuth
-const GOOGLE_CLIENT_ID = "41731731970-7v3q4hvlnbqebo409jegijafv36cl5vd.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID =
+  "41731731970-7v3q4hvlnbqebo409jegijafv36cl5vd.apps.googleusercontent.com";
 
 // ✅ Configuration Google reCAPTCHA v3
 const RECAPTCHA_SITE_KEY = "6Lf3PEcsAAAAAA2Mg4pl7Nj9Bt_ETHTFGDK8nuBe";
@@ -100,13 +109,17 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
     // Au lieu de bloquer, on redirige vers leur dashboard
     const dashboardPaths = {
-      Admin: "/dashboard/admin", admin: "/dashboard/admin",
-      Requerant: "/dashboard/requerant", Etablissement: "/dashboard/institut",
-      SAE: "/dashboard/sae", SICP: "/dashboard/sicp",
-      CNH: "/dashboard/cnh", Expert: "/dashboard/expert",
+      Admin: "/dashboard/admin",
+      admin: "/dashboard/admin",
+      Requerant: "/dashboard/requerant",
+      Etablissement: "/dashboard/etablissement",
+      SAE: "/dashboard/sae",
+      SICP: "/dashboard/sicp",
+      CNH: "/dashboard/cnh",
+      Expert: "/dashboard/expert",
       Universite: "/dashboard/universite",
     };
-    
+
     const userDashboard = dashboardPaths[user?.role];
     if (userDashboard) {
       return <Navigate to={userDashboard} replace />;
@@ -123,10 +136,14 @@ const AuthRedirect = ({ children }) => {
 
   if (isAuthenticated && user?.role) {
     const dashboardPaths = {
-      Admin: "/dashboard/admin", admin: "/dashboard/admin",
-      Requerant: "/dashboard/requerant", Etablissement: "/dashboard/institut",
-      SAE: "/dashboard/sae", SICP: "/dashboard/sicp",
-      CNH: "/dashboard/cnh", Expert: "/dashboard/expert",
+      Admin: "/dashboard/admin",
+      admin: "/dashboard/admin",
+      Requerant: "/dashboard/requerant",
+      Etablissement: "/dashboard/etablissement",
+      SAE: "/dashboard/sae",
+      SICP: "/dashboard/sicp",
+      CNH: "/dashboard/cnh",
+      Expert: "/dashboard/expert",
       Universite: "/dashboard/universite",
     };
 
@@ -142,10 +159,14 @@ const DashboardRedirect = () => {
   const user = AuthService.getCurrentUser();
 
   const dashboardPaths = {
-    Admin: "/dashboard/admin", admin: "/dashboard/admin",
-    Requerant: "/dashboard/requerant", Etablissement: "/dashboard/institut",
-    SAE: "/dashboard/sae", SICP: "/dashboard/sicp",
-    CNH: "/dashboard/cnh", Expert: "/dashboard/expert",
+    Admin: "/dashboard/admin",
+    admin: "/dashboard/admin",
+    Requerant: "/dashboard/requerant",
+    Etablissement: "/dashboard/etablissement",
+    SAE: "/dashboard/sae",
+    SICP: "/dashboard/sicp",
+    CNH: "/dashboard/cnh",
+    Expert: "/dashboard/expert",
     Universite: "/dashboard/universite",
   };
 
@@ -158,9 +179,18 @@ const NotFound = () => (
   <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
     <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
       <div className="text-8xl font-bold text-blue-600 mb-4">404</div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-3">Page introuvable</h1>
-      <p className="text-gray-600 mb-6">La page que vous recherchez n'existe pas ou a été déplacée.</p>
-      <a href="/" className="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 font-medium transition-all shadow-lg">Retour à l'accueil</a>
+      <h1 className="text-2xl font-bold text-gray-900 mb-3">
+        Page introuvable
+      </h1>
+      <p className="text-gray-600 mb-6">
+        La page que vous recherchez n'existe pas ou a été déplacée.
+      </p>
+      <a
+        href="/"
+        className="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 font-medium transition-all shadow-lg"
+      >
+        Retour à l'accueil
+      </a>
     </div>
   </div>
 );
@@ -168,80 +198,208 @@ const NotFound = () => (
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY} language="fr" useRecaptchaNet={false} scriptProps={{ async: true, defer: true, appendTo: "head" }}>
+      <GoogleReCaptchaProvider
+        reCaptchaKey={RECAPTCHA_SITE_KEY}
+        language="fr"
+        useRecaptchaNet={false}
+        scriptProps={{ async: true, defer: true, appendTo: "head" }}
+      >
         <Router>
           <RecaptchaBadgeController />
           <Routes>
             {/* ========== ROUTES PUBLIQUES ========== */}
-            <Route path="/" element={<Navbar><Home /></Navbar>} />
-            <Route path="/actualites" element={<Navbar><AllActu /></Navbar>} />
-            <Route path="/apropos" element={<Navbar><APropos /></Navbar>} />
-            <Route path="/arrete-accreditation" element={<ArreteAccreditation />} />
-            <Route path="/decret-accreditation" element={<DecretAccreditation />} />
-            <Route path="/login" element={<AuthRedirect><Login /></AuthRedirect>} />
+            <Route
+              path="/"
+              element={
+                <Navbar>
+                  <Home />
+                </Navbar>
+              }
+            />
+
+            {/* ✅ ROUTES ACTUALITÉS - Liste et Article avec slug */}
+            <Route
+              path="/actualites"
+              element={
+                <Navbar>
+                  <AllActu />
+                </Navbar>
+              }
+            />
+            <Route
+              path="/actualites/:slug"
+              element={
+                <Navbar>
+                  <AllActu />
+                </Navbar>
+              }
+            />
+
+            <Route
+              path="/apropos"
+              element={
+                <Navbar>
+                  <APropos />
+                </Navbar>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <AuthRedirect>
+                  <Login />
+                </AuthRedirect>
+              }
+            />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* ========== DASHBOARD ADMIN ========== */}
-            <Route path="/dashboard/admin" element={<ProtectedRoute allowedRoles={["Admin", "admin"]}><DashboardAdmin /></ProtectedRoute>}>
+            <Route
+              path="/dashboard/admin"
+              element={
+                <ProtectedRoute allowedRoles={["Admin", "admin"]}>
+                  <DashboardAdmin />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<DashboardAdminView />} />
               <Route path="gerer-utilisateurs" element={<UserView />} />
               <Route path="gerer-parametres" element={<HomeParam />} />
               <Route path="parametre2" element={<ServicesParam />} />
               <Route path="parametre3" element={<ContactParam />} />
               <Route path="parametre-actualite" element={<ActualiteParam />} />
+              <Route path="parametre-faq" element={<FaqParam />} />
               <Route path="etat-systeme" element={<SystemStatusView />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="messages-contact" element={<MessagesView />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
 
             {/* ========== DASHBOARD REQUERANT ========== */}
-            <Route path="/dashboard/requerant" element={<ProtectedRoute allowedRoles={["Requerant"]}><DashboardReq /></ProtectedRoute>}>
+            <Route
+              path="/dashboard/requerant"
+              element={
+                <ProtectedRoute allowedRoles={["Requerant"]}>
+                  <DashboardReq />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<DashboardReqView />} />
               <Route path="creer-demande" element={<CreerDemandeView />} />
-              <Route path="decisions-allocations" element={<DecisionsAllocationsView />} />
+
               <Route path="profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
 
             {/* ========== DASHBOARD ETABLISSEMENT ========== */}
-            <Route path="/dashboard/institut" element={<ProtectedRoute allowedRoles={["Etablissement"]}><DashboardEtab /></ProtectedRoute>}>
+            <Route
+              path="/dashboard/etablissement"
+              element={
+                <ProtectedRoute allowedRoles={["Etablissement"]}>
+                  <DashboardEtab />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<DashboardEtabView />} />
+              <Route
+                path="habilitation/mes-informations"
+                element={<MesInformationsHabilitation />}
+              />
+              <Route
+                path="habilitation/creer-demande"
+                element={<CreerDemandeHabilitation />}
+              />
+              <Route
+                path="habilitation/renouvellement"
+                element={<RenouvellementHabilitation />}
+              />
+              <Route
+                path="accreditation/auto-evaluation"
+                element={<AutoEvaluationAccreditation />}
+              />
+              <Route
+                path="accreditation/creer-demande"
+                element={<CreerDemandeAccreditation />}
+              />
               <Route path="profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
 
             {/* ========== DASHBOARD SAE ========== */}
-            <Route path="/dashboard/sae" element={<ProtectedRoute allowedRoles={["SAE"]}><DashboardSae /></ProtectedRoute>}>
+            <Route
+              path="/dashboard/sae"
+              element={
+                <ProtectedRoute allowedRoles={["SAE"]}>
+                  <DashboardSae />
+                </ProtectedRoute>
+              }
+            >
               <Route path="profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
 
             {/* ========== DASHBOARD SICP ========== */}
-            <Route path="/dashboard/sicp" element={<ProtectedRoute allowedRoles={["SICP"]}><DashboardSicp /></ProtectedRoute>}>
+            <Route
+              path="/dashboard/sicp"
+              element={
+                <ProtectedRoute allowedRoles={["SICP"]}>
+                  <DashboardSicp />
+                </ProtectedRoute>
+              }
+            >
               <Route path="profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
 
             {/* ========== DASHBOARD CNH ========== */}
-            <Route path="/dashboard/cnh" element={<ProtectedRoute allowedRoles={["CNH"]}><DashboardCnh /></ProtectedRoute>}>
+            <Route
+              path="/dashboard/cnh"
+              element={
+                <ProtectedRoute allowedRoles={["CNH"]}>
+                  <DashboardCnh />
+                </ProtectedRoute>
+              }
+            >
               <Route path="profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
 
             {/* ========== DASHBOARD EXPERT ========== */}
-            <Route path="/dashboard/expert" element={<ProtectedRoute allowedRoles={["Expert"]}><DashboardExpert /></ProtectedRoute>}>
+            <Route
+              path="/dashboard/expert"
+              element={
+                <ProtectedRoute allowedRoles={["Expert"]}>
+                  <DashboardExpert />
+                </ProtectedRoute>
+              }
+            >
               <Route path="profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
 
             {/* ========== DASHBOARD UNIVERSITE ========== */}
-            <Route path="/dashboard/universite" element={<ProtectedRoute allowedRoles={["Universite"]}><DashboardUni /></ProtectedRoute>}>
+            <Route
+              path="/dashboard/universite"
+              element={
+                <ProtectedRoute allowedRoles={["Universite"]}>
+                  <DashboardUni />
+                </ProtectedRoute>
+              }
+            >
               <Route path="profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
 
             {/* ========== REDIRECTION DASHBOARD PAR DÉFAUT ========== */}
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardRedirect /></ProtectedRoute>} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardRedirect />
+                </ProtectedRoute>
+              }
+            />
 
             {/* ========== PAGE 404 ========== */}
             <Route path="*" element={<NotFound />} />

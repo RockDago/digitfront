@@ -17,6 +17,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import UserService from "../../../services/user.service";
+import { API_URL } from "../../../config/axios";
 
 // --- LISTE COMPLÈTE DE TOUS LES PAYS DU MONDE (248 pays) ---
 const COUNTRIES = [
@@ -285,16 +286,29 @@ export default function Profile() {
     setTimeout(() => setShowToast(false), 4000);
   };
 
+  // ✅ CORRECTION ICI : Vérification du token avant chargement
   useEffect(() => {
     const loadProfile = async () => {
+      // ✅ CORRECTION CRITIQUE : Vérifier le token avant l'appel API
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.warn("⚠️ Token manquant. L'utilisateur doit se connecter.");
+        // Optionnel : afficher un message ou rediriger vers /login
+        // triggerToast("Session expirée. Veuillez vous reconnecter.", "error");
+        return;
+      }
+
       try {
         setLoading(true);
         const data = await UserService.getMyProfile();
-        console.log("✅ Données reçues du backend:", data);
         setProfileData(data);
       } catch (err) {
         console.error("❌ Erreur chargement profil:", err);
-        triggerToast("Erreur de chargement du profil", "error");
+        // Ne pas afficher de toast si c'est juste le token manquant (déjà géré)
+        if (err.message !== "Token d'authentification manquant") {
+          triggerToast("Erreur de chargement du profil", "error");
+        }
       } finally {
         setLoading(false);
       }
@@ -328,7 +342,7 @@ export default function Profile() {
       console.error("❌ Erreur mise à jour:", err);
       triggerToast(
         err.response?.data?.detail || "Erreur lors de la mise à jour",
-        "error"
+        "error",
       );
     } finally {
       setLoading(false);
@@ -392,8 +406,8 @@ export default function Profile() {
             toastType === "success"
               ? "border-emerald-500"
               : toastType === "error"
-              ? "border-red-500"
-              : "border-blue-500"
+                ? "border-red-500"
+                : "border-blue-500"
           }`}
         >
           <div className="flex-1 ml-2">
@@ -401,8 +415,8 @@ export default function Profile() {
               {toastType === "success"
                 ? "Succès"
                 : toastType === "error"
-                ? "Erreur"
-                : "Info"}
+                  ? "Erreur"
+                  : "Info"}
             </p>
             <p className="text-xs text-gray-600 leading-tight">
               {toastMessage}
@@ -464,7 +478,7 @@ export default function Profile() {
 
 function PersonalInfoForm({ onSubmit, profileData }) {
   const [selectedCountry, setSelectedCountry] = useState(
-    COUNTRIES.find((c) => c.code === "MG")
+    COUNTRIES.find((c) => c.code === "MG"),
   );
   const [formData, setFormData] = useState({
     nom: "",
@@ -479,44 +493,42 @@ function PersonalInfoForm({ onSubmit, profileData }) {
   const fileInputRef = useRef(null);
   const [errors, setErrors] = useState({});
 
-  // ✅ EXACTEMENT COMME NAVBAR.JSX - Charger l'image de profil correctement
+  // ✅ CORRECTION ICI : Vérification du token avant chargement de l'image
   useEffect(() => {
     const loadProfileImage = () => {
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const token = localStorage.getItem("token"); // ✅ AJOUT
 
       // 1. D'abord vérifier localStorage (image déjà chargée)
       if (storedUser.profileImage) {
         setPreviewImage(storedUser.profileImage);
       }
-      // 2. Sinon, charger depuis l'API
-      else if (storedUser.id) {
+      // 2. Sinon, charger depuis l'API SEULEMENT si le token existe
+      else if (storedUser.id && token) {
+        // ✅ AJOUT && token
         const fetchProfileImage = async () => {
           try {
             console.log("🔄 Chargement de l'image de profil depuis l'API...");
-
-            // CORRECTION CRITIQUE : Utiliser le service UserService
             const profileData = await UserService.getMyProfile();
 
             if (profileData.logo) {
-              // IMPORTANT : Construire l'URL complète pour l'image
-              const baseURL = "http://127.0.0.1:8000";
+              const baseURL = API_URL;
               const imageURL = profileData.logo.startsWith("/")
                 ? `${baseURL}${profileData.logo}`
                 : profileData.logo;
 
               setPreviewImage(imageURL);
-
-              // Mettre à jour localStorage
               localStorage.setItem(
                 "user",
-                JSON.stringify({ ...storedUser, profileImage: imageURL })
+                JSON.stringify({ ...storedUser, profileImage: imageURL }),
               );
-
               console.log("✅ Image de profil chargée avec succès:", imageURL);
             }
           } catch (error) {
-            console.error("❌ Erreur chargement image profil:", error);
-            // Fallback : utiliser les initiales
+            // Ignorer l'erreur si c'est le token manquant
+            if (error.message !== "Token d'authentification manquant") {
+              console.error("❌ Erreur chargement image profil:", error);
+            }
             setPreviewImage(null);
           }
         };
@@ -527,7 +539,6 @@ function PersonalInfoForm({ onSubmit, profileData }) {
 
     loadProfileImage();
 
-    // Écouter les mises à jour de l'image de profil
     const handleProfileUpdate = (e) => {
       if (e.detail?.profileImage) {
         setPreviewImage(e.detail.profileImage);
@@ -537,7 +548,7 @@ function PersonalInfoForm({ onSubmit, profileData }) {
     window.addEventListener("profileImageUpdated", handleProfileUpdate);
     return () =>
       window.removeEventListener("profileImageUpdated", handleProfileUpdate);
-  }, []); // CORRECTION : Optimiser le chargement initial
+  }, []);
 
   useEffect(() => {
     if (profileData) {
@@ -617,7 +628,6 @@ function PersonalInfoForm({ onSubmit, profileData }) {
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     console.error("❌ Erreur chargement image:", e);
-                    // Afficher les initiales en cas d'erreur
                     e.target.style.display = "none";
                     e.target.parentElement.innerHTML = `<span class="font-bold text-xs md:text-sm">${
                       profileData?.prenom?.[0]?.toUpperCase() || "U"
@@ -726,7 +736,6 @@ function PersonalInfoForm({ onSubmit, profileData }) {
           error={errors.email}
           required
         />
-
         <PhoneInput
           label="Numéro de téléphone"
           selectedCountry={selectedCountry}
@@ -786,7 +795,7 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
   const [errors, setErrors] = useState({});
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(
-    profileData?.two_factor_enabled || false
+    profileData?.two_factor_enabled || false,
   );
   const [showQRCode, setShowQRCode] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
@@ -873,7 +882,7 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
 
       // Simulation pour la démo
       setQrCodeUrl(
-        "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/YourApp:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=YourApp"
+        "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/YourApp:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=YourApp",
       );
       setShowQRCode(true);
       triggerToast("QR Code généré avec succès", "success");
@@ -914,7 +923,7 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
   const handleDisable2FA = async () => {
     if (
       window.confirm(
-        "Êtes-vous sûr de vouloir désactiver l'authentification deux facteurs ?"
+        "Êtes-vous sûr de vouloir désactiver l'authentification deux facteurs ?",
       )
     ) {
       try {
@@ -1006,7 +1015,6 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
                       />
                     )}
                   </div>
-
                   <div className="w-full">
                     <label className="block text-xs font-semibold text-gray-700 mb-2">
                       Code de vérification
@@ -1016,7 +1024,7 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
                       value={verificationCode}
                       onChange={(e) =>
                         setVerificationCode(
-                          e.target.value.replace(/\D/g, "").slice(0, 6)
+                          e.target.value.replace(/\D/g, "").slice(0, 6),
                         )
                       }
                       placeholder="000 000"
@@ -1025,7 +1033,6 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
                     />
                   </div>
                 </div>
-
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -1072,7 +1079,7 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
           </h4>
           <p className="text-blue-600 text-sm">
             Utilisez un mot de passe fort contenant au moins 8 caractères, une
-            majuscule, une minuscule, un chiffre et un symbole (!@#$...).
+            majuscule, une minuscule, un chiffre et un symbole (!@#$%...).
           </p>
         </div>
 
@@ -1172,20 +1179,17 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
               id="passwordConfirm"
               value={passwords.passwordConfirm}
               onChange={(e) =>
-                setPasswords({
-                  ...passwords,
-                  passwordConfirm: e.target.value,
-                })
+                setPasswords({ ...passwords, passwordConfirm: e.target.value })
               }
               disabled={!isPasswordValid || profileData?.google_auth}
               className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 peer placeholder:text-transparent ${
                 !isPasswordValid
                   ? "bg-gray-100 cursor-not-allowed border-gray-200"
                   : passwordsDontMatch
-                  ? "border-red-400 focus:ring-red-300"
-                  : passwordsMatch
-                  ? "border-emerald-400 focus:ring-emerald-300"
-                  : "border-gray-300 focus:ring-blue-500"
+                    ? "border-red-400 focus:ring-red-300"
+                    : passwordsMatch
+                      ? "border-emerald-400 focus:ring-emerald-300"
+                      : "border-gray-300 focus:ring-blue-500"
               } ${
                 profileData?.google_auth ? "bg-gray-100 cursor-not-allowed" : ""
               }`}
@@ -1220,7 +1224,7 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
                   passwordsMatch ? "text-emerald-600" : "text-red-500"
                 }`}
               >
-                {passwordsMatch ? "✓ OK" : "Différent"}
+                {passwordsMatch ? "✓ OK" : "✗ Différent"}
               </p>
             )}
           </div>
@@ -1240,7 +1244,7 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
                   className={`w-1.5 h-1.5 rounded-full mr-2 ${
                     passwordValidation[key] ? "bg-emerald-500" : "bg-gray-300"
                   }`}
-                ></span>
+                />
                 <span
                   className={
                     passwordValidation[key]
@@ -1322,9 +1326,7 @@ function SidebarItem({ icon, label, isActive, onClick }) {
       }`}
     >
       <span
-        className={`flex-shrink-0 ${
-          isActive ? "text-blue-600" : "text-gray-400"
-        }`}
+        className={`flex-shrink-0 ${isActive ? "text-blue-600" : "text-gray-400"}`}
       >
         {icon}
       </span>
@@ -1347,8 +1349,7 @@ function SimpleInput({
   return (
     <div className="w-full">
       <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label}
-        {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
         type={type}
@@ -1385,7 +1386,7 @@ function CountrySelect({ selectedCountry, onCountryChange }) {
   const filteredCountries = COUNTRIES.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.dial_code.includes(search)
+      c.dial_code.includes(search),
   );
 
   return (
@@ -1427,6 +1428,7 @@ function CountrySelect({ selectedCountry, onCountryChange }) {
               />
             </div>
           </div>
+
           <div className="max-h-60 overflow-y-auto">
             {filteredCountries.length > 0 ? (
               filteredCountries.map((country) => (
@@ -1491,7 +1493,7 @@ function PhoneInput({
   const filteredCountries = COUNTRIES.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.dial_code.includes(search)
+      c.dial_code.includes(search),
   );
 
   const handlePhoneChange = (e) => {
@@ -1551,6 +1553,7 @@ function PhoneInput({
               />
             </div>
           </div>
+
           <div className="max-h-60 overflow-y-auto">
             {filteredCountries.length > 0 ? (
               filteredCountries.map((country) => (
@@ -1574,7 +1577,7 @@ function PhoneInput({
                     className="w-5 h-auto rounded-sm shadow-sm flex-shrink-0"
                   />
                   <span className="flex-1 truncate">{country.name}</span>
-                  <span className="text-gray-400 text-xs font-mono">
+                  <span className="text-xs text-gray-500">
                     {country.dial_code}
                   </span>
                   {selectedCountry.code === country.code && (
@@ -1594,25 +1597,25 @@ function PhoneInput({
   );
 }
 
-function ToggleItem({ title, description, defaultChecked }) {
-  const [enabled, setEnabled] = useState(defaultChecked);
+function ToggleItem({ title, description, defaultChecked = false }) {
+  const [checked, setChecked] = useState(defaultChecked);
 
   return (
-    <div className="flex items-center justify-between py-3 gap-4">
-      <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
-        <p className="text-xs md:text-sm text-gray-500">{description}</p>
+    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-all">
+      <div className="flex-1">
+        <h4 className="font-semibold text-sm text-gray-800">{title}</h4>
+        <p className="text-xs text-gray-500 mt-1">{description}</p>
       </div>
       <button
         type="button"
-        onClick={() => setEnabled(!enabled)}
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-          enabled ? "bg-blue-600" : "bg-gray-300"
+        onClick={() => setChecked(!checked)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          checked ? "bg-blue-600" : "bg-gray-300"
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-            enabled ? "translate-x-6" : "translate-x-1"
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            checked ? "translate-x-6" : "translate-x-1"
           }`}
         />
       </button>

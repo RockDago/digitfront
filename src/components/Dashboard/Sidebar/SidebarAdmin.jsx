@@ -7,7 +7,8 @@ import {
   FaCog,
   FaChevronRight,
   FaTimes,
-  FaServer, // Nouvelle icône pour l'état du système
+  FaServer,
+  FaEnvelope, // ✅ AJOUT de l'icône pour les messages
 } from "react-icons/fa";
 
 export default function SidebarAdmin({
@@ -16,19 +17,23 @@ export default function SidebarAdmin({
   isMobileOpen,
   setIsMobileOpen,
 }) {
-  // États accordéons (Il ne reste que les paramètres)
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- MENU CONFIG ---
   const adminNavItems = [
     { to: "/dashboard/admin", label: "Tableau de bord", icon: FaHome },
     {
       to: "/dashboard/admin/gerer-utilisateurs",
       label: "Gérer Utilisateurs",
       icon: FaUsers,
+    },
+    // ✅ AJOUT : Messages de contact
+    {
+      to: "/dashboard/admin/messages-contact",
+      label: "Messages Contact",
+      icon: FaEnvelope,
     },
   ];
 
@@ -37,6 +42,7 @@ export default function SidebarAdmin({
     { label: "Service", path: "/dashboard/admin/parametre2" },
     { label: "Contact", path: "/dashboard/admin/parametre3" },
     { label: "Actualités", path: "/dashboard/admin/parametre-actualite" },
+    { label: "FAQ", path: "/dashboard/admin/parametre-faq" },
   ];
 
   const goTo = (path) => {
@@ -45,7 +51,6 @@ export default function SidebarAdmin({
   };
   const isLinkActive = (path) => location.pathname === path;
 
-  // --- STYLES (Fazztrack/Dribbble Clean Look) ---
   const baseItemClass =
     "group flex items-center justify-between px-4 py-3 mx-3 mb-1 rounded-xl transition-all duration-200 cursor-pointer text-sm font-medium";
   const activeClass = "bg-blue-50 text-blue-600";
@@ -54,11 +59,10 @@ export default function SidebarAdmin({
   const subItemClass =
     "flex items-center px-4 py-2 my-1 mx-3 rounded-lg text-sm text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors cursor-pointer pl-11";
 
-  // --- HELPER ACCORDION ---
   const renderAccordion = (title, icon, isOpen, setIsOpen, items) => {
     const Icon = icon;
     const isChildActive = items.some((item) =>
-      location.pathname.includes(item.path)
+      location.pathname.includes(item.path),
     );
     const effectiveIsOpen = isOpen || (isChildActive && !collapsed);
 
@@ -93,7 +97,6 @@ export default function SidebarAdmin({
           )}
         </div>
 
-        {/* Sous-menu avec animation Height */}
         <div
           className={`overflow-hidden transition-all duration-300 ${
             effectiveIsOpen && !collapsed
@@ -128,7 +131,6 @@ export default function SidebarAdmin({
 
   return (
     <>
-      {/* Overlay Mobile */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 lg:hidden"
@@ -148,21 +150,18 @@ export default function SidebarAdmin({
           }
         `}
       >
-        {/* HEADER SIDEBAR: Logo + Toggle */}
         <div className="h-20 flex items-center justify-center px-6 border-b border-gray-50 mb-4 relative">
-          {/* LOGO DAAQ (Affiché seulement si !collapsed) */}
           {!collapsed && (
             <Link
               to="/"
               className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-sans">
+              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
                 DAAQ
               </span>
             </Link>
           )}
 
-          {/* TOGGLE BUTTON (Desktop only) */}
           <button
             onClick={() => setCollapsed(!collapsed)}
             className={`p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-gray-100 transition-colors hidden lg:block ${
@@ -172,7 +171,6 @@ export default function SidebarAdmin({
             <FaBars />
           </button>
 
-          {/* CLOSE BUTTON (Mobile only) */}
           <button
             onClick={() => setIsMobileOpen(false)}
             className="lg:hidden p-2 text-gray-400 hover:text-red-500 absolute right-4"
@@ -181,9 +179,7 @@ export default function SidebarAdmin({
           </button>
         </div>
 
-        {/* NAVIGATION LIST */}
         <nav className="flex-1 overflow-y-auto custom-scrollbar pb-6">
-          {/* Section: MAIN */}
           <div className="mb-6">
             {!collapsed && (
               <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -213,7 +209,6 @@ export default function SidebarAdmin({
             ))}
           </div>
 
-          {/* Section: GESTION */}
           <div className="mb-6">
             {!collapsed && (
               <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -221,16 +216,14 @@ export default function SidebarAdmin({
               </div>
             )}
 
-            {/* Accordéon Paramètres */}
             {renderAccordion(
               "Paramètres",
               FaCog,
               settingsOpen,
               setSettingsOpen,
-              settingsItems
+              settingsItems,
             )}
 
-            {/* --- NOUVEAU MENU : ÉTAT DU SYSTÈME --- */}
             <div
               onClick={() => goTo("/dashboard/admin/etat-systeme")}
               className={`${baseItemClass} ${

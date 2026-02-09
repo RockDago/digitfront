@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { AuthService } from "../../services"; // Vérifiez vos chemins d'import
+import { AuthService } from "../../services";
 
 import NavbarAdmin from "./Navbar/Navbar";
 import SidebarAdmin from "../../components/Dashboard/Sidebar/SidebarAdmin";
@@ -19,8 +19,6 @@ export default function DashboardAdmin() {
     }
   }, [navigate]);
 
-  // ✅ Cette fonction effectue l'action finale.
-  // Elle sera appelée par la Navbar APRES confirmation.
   const performLogout = () => {
     AuthService.logout();
     navigate("/");
@@ -28,7 +26,7 @@ export default function DashboardAdmin() {
 
   const handleMarkAsRead = (id) =>
     setNotifications((p) =>
-      p.map((n) => (n.id === id ? { ...n, read: true } : n))
+      p.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
   const handleDeleteNotif = (id) =>
     setNotifications((p) => p.filter((n) => n.id !== id));
@@ -38,7 +36,8 @@ export default function DashboardAdmin() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    // ✅ MODIFICATION ICI : bg-white au lieu de bg-gray-50
+    <div className="min-h-screen bg-white">
       {/* 1. SIDEBAR */}
       <SidebarAdmin
         collapsed={collapsed}
@@ -64,18 +63,17 @@ export default function DashboardAdmin() {
             onMarkAllAsRead={handleMarkAllAsRead}
             onMarkAsRead={handleMarkAsRead}
             onDeleteNotif={handleDeleteNotif}
-            onLogoutClick={performLogout} // On passe juste l'action finale
+            onLogoutClick={performLogout}
             onMobileMenuClick={() => setIsMobileOpen(true)}
           />
         </div>
 
         {/* CONTENT */}
-        <main className="flex-1 px-8 pt-6 pb-8 bg-gray-50 overflow-x-hidden">
+        {/* ✅ MODIFICATION ICI : bg-white au lieu de bg-gray-50 */}
+        <main className="flex-1 px-8 pt-6 pb-8 bg-white overflow-x-hidden">
           <Outlet />
         </main>
       </div>
-
-    
     </div>
   );
 }

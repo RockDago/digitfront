@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
@@ -28,10 +27,10 @@ export default function SidebarCnh({
 
   // --- MENU CONFIG ---
   const mainNavItems = [
-    { 
-      to: "/dashboard/cnh/tableau-de-bord", 
-      label: "Tableau de bord", 
-      icon: FaHome 
+    {
+      to: "/dashboard/cnh/tableau-de-bord",
+      label: "Tableau de bord",
+      icon: FaHome,
     },
   ];
 
@@ -72,7 +71,7 @@ export default function SidebarCnh({
   const renderAccordion = (title, icon, isOpen, setIsOpen, items) => {
     const Icon = icon;
     const isChildActive = items.some((item) =>
-      location.pathname.includes(item.path)
+      location.pathname.includes(item.path),
     );
     const effectiveIsOpen = isOpen || (isChildActive && !collapsed);
 
@@ -170,7 +169,7 @@ export default function SidebarCnh({
               to="/"
               className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-sans">
+              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
                 DAAQ
               </span>
             </Link>
@@ -240,14 +239,16 @@ export default function SidebarCnh({
               FaFileAlt,
               demandesOpen,
               setDemandesOpen,
-              demandesItems
+              demandesItems,
             )}
 
             {/* Traitement en temps réel */}
             <div
               onClick={() => goTo("/dashboard/cnh/traitement-temps-reel")}
               className={`${baseItemClass} ${
-                isLinkActive("/dashboard/cnh/traitement-temps-reel") ? activeClass : inactiveClass
+                isLinkActive("/dashboard/cnh/traitement-temps-reel")
+                  ? activeClass
+                  : inactiveClass
               }`}
               title={collapsed ? "Traitement temps réel" : ""}
             >
@@ -277,7 +278,7 @@ export default function SidebarCnh({
               FaCheckCircle,
               suiviOpen,
               setSuiviOpen,
-              suiviItems
+              suiviItems,
             )}
           </div>
 
@@ -294,7 +295,7 @@ export default function SidebarCnh({
               FaChartLine,
               rapportsOpen,
               setRapportsOpen,
-              rapportsItems
+              rapportsItems,
             )}
           </div>
         </nav>

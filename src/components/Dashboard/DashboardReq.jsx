@@ -9,7 +9,7 @@ import SidebarReq from "./Sidebar/SidebarReq";
 export default function DashboardReq() {
   const [notifications, setNotifications] = useState([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false); // ← AJOUTÉ
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const navigate = useNavigate();
   const user = useMemo(() => AuthService.getCurrentUser() || {}, []);
@@ -23,7 +23,6 @@ export default function DashboardReq() {
 
   // --- 2. FONCTION DE DÉCONNEXION ---
   const performLogout = () => {
-    // ← Nom changé pour cohérence
     AuthService.logout();
     navigate("/");
   };
@@ -79,16 +78,15 @@ export default function DashboardReq() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {" "}
-      {/* ← Changé de bg-slate-50 à bg-gray-50 */}
+    <div className="min-h-screen bg-white"> {/* Changé en fond blanc */}
       {/* 1. SIDEBAR */}
       <SidebarReq
         isSidebarCollapsed={isSidebarCollapsed}
         toggleSidebar={toggleSidebar}
-        isMobileOpen={isMobileOpen} // ← AJOUTÉ
-        setIsMobileOpen={setIsMobileOpen} // ← AJOUTÉ
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
       />
+      
       {/* 2. WRAPPER PRINCIPAL */}
       <div
         className={`
@@ -106,13 +104,13 @@ export default function DashboardReq() {
             onMarkAllAsRead={handleMarkAllAsRead}
             onMarkAsRead={handleMarkAsRead}
             onDeleteNotif={handleDeleteNotif}
-            onLogoutClick={performLogout} // ← Nom changé
-            onMobileMenuClick={() => setIsMobileOpen(true)} // ← CORRIGÉ
+            onLogoutClick={performLogout}
+            onMobileMenuClick={() => setIsMobileOpen(true)}
           />
         </div>
 
         {/* CONTENT */}
-        <main className="flex-1 px-8 pt-6 pb-8 bg-gray-50 overflow-x-hidden">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-4 pb-8 bg-white overflow-x-hidden"> {/* Fond blanc ici aussi */}
           <Outlet />
         </main>
       </div>

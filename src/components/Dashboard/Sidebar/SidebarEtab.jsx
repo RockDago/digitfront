@@ -1,14 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   FaBars,
   FaClipboardList,
   FaRegFileAlt,
-  FaTasks,
   FaTimes,
-  FaUniversity,
-  FaCertificate,
-  FaUserCheck,
   FaFileContract,
   FaSync,
   FaChartBar,
@@ -38,7 +34,7 @@ export default function SidebarEtab({
       section: "Accueil",
       items: [
         {
-          to: "/dashboard/institut",
+          to: "/dashboard/etablissement",
           icon: FaClipboardList,
           label: "Tableau de bord",
         },
@@ -53,19 +49,19 @@ export default function SidebarEtab({
         //   label: "Demandes d'habilitation",
         // },
         {
-          to: "/dashboard/institut/habilitation/creer-demande",
+          to: "/dashboard/etablissement/habilitation/creer-demande",
           icon: FaFileContract,
           label: "Créer demande",
         },
         {
-          to: "/dashboard/institut/habilitation/renouvellement",
+          to: "/dashboard/etablissement/habilitation/renouvellement",
           icon: FaSync,
           label: "Renouvellement",
         },
         {
-          to: "/dashboard/institut/habilitation/decisions",
-          icon: FaCertificate,
-          label: "Décisions confirmées",
+          to: "/dashboard/etablissement/habilitation/mes-informations",
+          icon: FaClipboardList,
+          label: "Mes informations",
         },
       ],
     },
@@ -78,20 +74,14 @@ export default function SidebarEtab({
         //   label: "Demandes d'accréditation",
         // },
         {
-          to: "/dashboard/institut/accreditation/auto-evaluation",
+          to: "/dashboard/etablissement/accreditation/auto-evaluation",
           icon: FaChartBar,
           label: "Auto-évaluation",
         },
         {
-          to: "/dashboard/institut/accreditation/creer-demande",
+          to: "/dashboard/etablissement/accreditation/creer-demande",
           icon: FaRegFileAlt,
           label: "Créer demande",
-        },
-
-        {
-          to: "/dashboard/institut/accreditation/decisions",
-          icon: FaTasks,
-          label: "Décisions confirmées",
         },
       ],
     },
@@ -100,8 +90,10 @@ export default function SidebarEtab({
   const isLinkActive = (path) => {
     // Correction du bug : vérifier l'égalité exacte ou si le path actuel commence par le path du lien
     const currentPath = location.pathname;
-    if (path === "/dashboard/institut") {
-      return currentPath === path || currentPath === "/dashboard/institut/";
+    if (path === "/dashboard/etablissement") {
+      return (
+        currentPath === path || currentPath === "/dashboard/etablissement/"
+      );
     }
     return currentPath === path || currentPath.startsWith(path + "/");
   };
@@ -132,9 +124,9 @@ export default function SidebarEtab({
           {!isSidebarCollapsed && (
             <div
               className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
-              onClick={() => goTo("/dashboard/institut")}
+              onClick={() => goTo("/dashboard/etablissement")}
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-sans">
+              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
                 DAAQ
               </span>
             </div>

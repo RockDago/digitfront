@@ -558,10 +558,10 @@ const AddUserModal = ({ onClose, onCreate }) => {
                 !isPasswordValid
                   ? "bg-gray-100 cursor-not-allowed border-gray-200"
                   : passwordsDontMatch
-                  ? "border-red-400 focus:ring-red-300"
-                  : passwordsMatch
-                  ? "border-emerald-400 focus:ring-emerald-300"
-                  : "border-gray-300 focus:ring-blue-500"
+                    ? "border-red-400 focus:ring-red-300"
+                    : passwordsMatch
+                      ? "border-emerald-400 focus:ring-emerald-300"
+                      : "border-gray-300 focus:ring-blue-500"
               }`}
               placeholder=" "
               required
@@ -1020,10 +1020,10 @@ const ResetPasswordModal = ({ user, onClose, onConfirm }) => {
               !isPasswordValid
                 ? "bg-gray-100 cursor-not-allowed border-gray-200"
                 : passwordsDontMatch
-                ? "border-red-400 focus:ring-red-300"
-                : passwordsMatch
-                ? "border-emerald-400 focus:ring-emerald-300"
-                : "border-gray-300 focus:ring-blue-500"
+                  ? "border-red-400 focus:ring-red-300"
+                  : passwordsMatch
+                    ? "border-emerald-400 focus:ring-emerald-300"
+                    : "border-gray-300 focus:ring-blue-500"
             }`}
             placeholder=" "
           />
@@ -1137,7 +1137,7 @@ export default function UserView() {
       actifs: users.filter((u) => u.isactive).length,
       inactifs: users.filter((u) => !u.isactive).length,
     }),
-    [users]
+    [users],
   );
 
   useEffect(() => {
@@ -1169,7 +1169,7 @@ export default function UserView() {
           safeStr(u.nom).toLowerCase().includes(lower) ||
           safeStr(u.prenom).toLowerCase().includes(lower) ||
           safeStr(u.email).toLowerCase().includes(lower) ||
-          safeStr(u.username).toLowerCase().includes(lower)
+          safeStr(u.username).toLowerCase().includes(lower),
       );
     }
     list.sort((a, b) => {
@@ -1227,7 +1227,7 @@ export default function UserView() {
       console.error(e);
       triggerToast(
         e.response?.data?.detail || "Erreur lors de la modification",
-        "error"
+        "error",
       );
     }
   };
@@ -1241,7 +1241,7 @@ export default function UserView() {
       console.error(e);
       triggerToast(
         e.response?.data?.detail || "Erreur lors de la réinitialisation",
-        "error"
+        "error",
       );
     }
   };
@@ -1256,7 +1256,7 @@ export default function UserView() {
       console.error(e);
       triggerToast(
         e.response?.data?.detail || "Erreur lors de la suppression",
-        "error"
+        "error",
       );
     }
   };
@@ -1274,7 +1274,7 @@ export default function UserView() {
       console.error(e);
       triggerToast(
         e.response?.data?.detail || "Erreur lors du changement de statut",
-        "error"
+        "error",
       );
     }
   };
@@ -1295,8 +1295,8 @@ export default function UserView() {
             toastType === "success"
               ? "border-emerald-500"
               : toastType === "error"
-              ? "border-red-500"
-              : "border-blue-500"
+                ? "border-red-500"
+                : "border-blue-500"
           }`}
         >
           <div className="flex-1 ml-2">
@@ -1304,8 +1304,8 @@ export default function UserView() {
               {toastType === "success"
                 ? "Succès"
                 : toastType === "error"
-                ? "Erreur"
-                : "Info"}
+                  ? "Erreur"
+                  : "Info"}
             </p>
             <p className="text-xs text-gray-600 leading-tight">
               {toastMessage}

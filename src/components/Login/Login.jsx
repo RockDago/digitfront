@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, X } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
@@ -13,7 +13,7 @@ function roleToPath(role) {
   switch (normalizedRole) {
     case "etablissement":
     case "établissement":
-      return "/dashboard/institut";
+      return "/dashboard/etablissement";
     case "requerant":
     case "requérant":
       return "/dashboard/requerant";
@@ -86,24 +86,27 @@ const Login = ({ isModal = false, onClose = null }) => {
     "zoho.com",
   ];
 
-  const roleOptions = [
-    {
-      value: "Requerant",
-      label: "Requérant",
-      icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-      description: "Particulier ou demandeur",
-    },
-    {
-      value: "Etablissement",
-      label: "Établissement",
-      icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-      description: "Organisation ou entreprise",
-    },
-  ];
+  const roleOptions = useMemo(
+    () => [
+      {
+        value: "Requerant",
+        label: "Requérant",
+        icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
+        description: "Particulier ou demandeur",
+      },
+      {
+        value: "Etablissement",
+        label: "Établissement",
+        icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+        description: "Universites",
+      },
+    ],
+    [],
+  );
 
   useEffect(() => {
     setActiveRoles(roleOptions);
-  }, []);
+  }, [roleOptions]);
 
   const triggerToast = (message, type = "info") => {
     setToastMessage(message);
@@ -134,7 +137,7 @@ const Login = ({ isModal = false, onClose = null }) => {
         return null;
       }
     },
-    [executeRecaptcha]
+    [executeRecaptcha],
   );
 
   // ✅ Authentification Google OAuth avec reCAPTCHA
@@ -198,7 +201,7 @@ const Login = ({ isModal = false, onClose = null }) => {
 
     performGoogleAuth(
       credentialResponse.credential,
-      isLogin ? null : form.role
+      isLogin ? null : form.role,
     );
   };
 
@@ -207,22 +210,18 @@ const Login = ({ isModal = false, onClose = null }) => {
     triggerToast("Erreur lors de la connexion Google", "error");
   };
 
-  // ✅ CORRECTION : Fonction confirmGoogleRole simplifiée
   const confirmGoogleRole = (role) => {
     setShowGoogleRoleModal(false);
 
     if (pendingGoogleCredential) {
-      // Cas 1: Un credential Google est déjà reçu
       performGoogleAuth(pendingGoogleCredential, role);
       setPendingGoogleCredential(null);
     } else {
-      // Cas 2: Pas encore de credential, sauvegarder le rôle et déclencher Google
       setForm((prev) => ({ ...prev, role: role }));
 
-      // ✅ Délai pour laisser le state se mettre à jour
       setTimeout(() => {
         const googleButton = document.querySelector(
-          '[role="button"][aria-labelledby]'
+          '[role="button"][aria-labelledby]',
         );
         if (googleButton) {
           googleButton.click();
@@ -231,15 +230,14 @@ const Login = ({ isModal = false, onClose = null }) => {
     }
   };
 
-  // ✅ CORRECTION : Fonction handleGoogleButtonClick optimisée
   const handleGoogleButtonClick = () => {
     if (!isLogin && !form.role) {
       setShowGoogleRoleModal(true);
-      return; // ✅ Arrêter ici, ne pas déclencher le bouton Google
+      return;
     }
 
     const googleButton = document.querySelector(
-      '[role="button"][aria-labelledby]'
+      '[role="button"][aria-labelledby]',
     );
     if (googleButton) {
       googleButton.click();
@@ -252,7 +250,7 @@ const Login = ({ isModal = false, onClose = null }) => {
     lowercase: { regex: /[a-z]/, label: "Minuscule" },
     digit: { regex: /\d/, label: "Chiffre" },
     validSymbols: {
-      regex: /[~!?@#$%^&*_\-+()\[\]{}<>\/\\|"'.,:;]/,
+      regex: /[~!?@#$%^&*_\-+()[\]{}<>/\\|"'.,:;]/,
       label: "Symbole",
       required: true,
     },
@@ -678,8 +676,8 @@ const Login = ({ isModal = false, onClose = null }) => {
             toastType === "success"
               ? "border-emerald-500"
               : toastType === "error"
-              ? "border-red-500"
-              : "border-blue-500"
+                ? "border-red-500"
+                : "border-blue-500"
           }`}
         >
           <div className="flex-1 ml-2">
@@ -687,8 +685,8 @@ const Login = ({ isModal = false, onClose = null }) => {
               {toastType === "success"
                 ? "✓ Succès"
                 : toastType === "error"
-                ? "✗ Erreur"
-                : "ℹ Info"}
+                  ? "✗ Erreur"
+                  : "ℹ Info"}
             </p>
             <p className="text-xs text-gray-600 leading-tight">
               {toastMessage}
@@ -1012,10 +1010,10 @@ const Login = ({ isModal = false, onClose = null }) => {
                       !isPasswordValid
                         ? "bg-gray-100 cursor-not-allowed border-gray-200"
                         : passwordsDontMatch
-                        ? "border-red-400 focus:ring-red-300"
-                        : passwordsMatch
-                        ? "border-emerald-400 focus:ring-emerald-300"
-                        : "border-gray-300 focus:ring-blue-500"
+                          ? "border-red-400 focus:ring-red-300"
+                          : passwordsMatch
+                            ? "border-emerald-400 focus:ring-emerald-300"
+                            : "border-gray-300 focus:ring-blue-500"
                     }`}
                     placeholder=" "
                     required
@@ -1269,7 +1267,7 @@ const Login = ({ isModal = false, onClose = null }) => {
                               </svg>
                             )}
                           </button>
-                        )
+                        ),
                       )}
                     </div>
                   </>

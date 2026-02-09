@@ -1,18 +1,24 @@
 {
   "files": {
-    "main.css": "/static/css/main.801b3a41.css",
-    "main.js": "/static/js/main.1916c008.js",
+    "main.css": "/static/css/main.ff3ea6f5.css",
+    "main.js": "/static/js/main.f5dc76da.js",
     "static/js/453.d7446e4a.chunk.js": "/static/js/453.d7446e4a.chunk.js",
+    "static/media/Organigramme combine.pdf": "/static/media/Organigramme combine.b053f2b58025ce0dc9e8.pdf",
+    "static/media/daaq.png": "/static/media/daaq.d78c357c46a8fefca357.png",
     "static/media/mesupres.png": "/static/media/mesupres.5d1ed32f50b6a822ed92.png",
+    "static/media/organigrame.png": "/static/media/organigrame.e4a864cebf1b0967db7f.png",
+    "static/media/Décret d'accréditation.pdf": "/static/media/Décret d'accréditation.297dbd637fc7af188db2.pdf",
     "static/media/mesupres-logo.png": "/static/media/mesupres-logo.a40be1ba808f67aa528a.png",
-    "static/media/rep-logo.png": "/static/media/rep-logo.2efe67e0a759a20209f0.png",
+    "static/media/Habilitation.pdf": "/static/media/Habilitation.376b5914ce96df0f6a0d.pdf",
+    "static/media/Arrêté d'accréditation.pdf": "/static/media/Arrêté d'accréditation.ced764b7f7e1a9d6c0f2.pdf",
+    "static/media/daaqorg.jpg": "/static/media/daaqorg.3a19212d643b14c6269c.jpg",
     "index.html": "/index.html",
-    "main.801b3a41.css.map": "/static/css/main.801b3a41.css.map",
-    "main.1916c008.js.map": "/static/js/main.1916c008.js.map",
+    "main.ff3ea6f5.css.map": "/static/css/main.ff3ea6f5.css.map",
+    "main.f5dc76da.js.map": "/static/js/main.f5dc76da.js.map",
     "453.d7446e4a.chunk.js.map": "/static/js/453.d7446e4a.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.801b3a41.css",
-    "static/js/main.1916c008.js"
+    "static/css/main.ff3ea6f5.css",
+    "static/js/main.f5dc76da.js"
   ]
 }
