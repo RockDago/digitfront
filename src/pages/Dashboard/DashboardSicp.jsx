@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AuthService } from "../../services";
 
-import Navbar from "../../components/Dashboard/Navbar/Navbar";
-import SidebarCnh from "../../components/Dashboard/Sidebar/SidebarCnh";
+import Navbar from "../../pages/Dashboard/Navbar/Navbar";
+import SidebarSicp from "../../pages/Dashboard/Sidebar/SidebarSicp";
 
-export default function DashboardCnh() {
+export default function DashboardSicp() {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -27,13 +27,15 @@ export default function DashboardCnh() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SidebarCnh
+      {/* 1. SIDEBAR SICP */}
+      <SidebarSicp
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
 
+      {/* 2. WRAPPER PRINCIPAL */}
       <div
         className={`
           flex flex-col min-h-screen transition-all duration-300 ease-in-out
@@ -41,6 +43,7 @@ export default function DashboardCnh() {
           ml-0
         `}
       >
+        {/* NAVBAR */}
         <div className="h-20">
           <Navbar
             collapsed={collapsed}
@@ -50,6 +53,7 @@ export default function DashboardCnh() {
           />
         </div>
 
+        {/* CONTENT */}
         <main className="flex-1 px-8 pt-6 pb-8 bg-gray-50 overflow-x-hidden">
           <Outlet />
         </main>

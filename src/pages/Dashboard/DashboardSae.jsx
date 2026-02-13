@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { AuthService } from "../../services";
 
-import Navbar from "../../components/Dashboard/Navbar/Navbar";
-import SidebarSae from "../../components/Dashboard/Sidebar/SidebarSae";
+import Navbar from "../../pages/Dashboard/Navbar/Navbar";
+import SidebarSae from "../../pages/Dashboard/Sidebar/SidebarSae";
 
 export default function DashboardSae() {
   const [collapsed, setCollapsed] = useState(false);

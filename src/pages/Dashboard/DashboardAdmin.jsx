@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { AuthService } from "../../services";
 
 import NavbarAdmin from "./Navbar/Navbar";
-import SidebarAdmin from "../../components/Dashboard/Sidebar/SidebarAdmin";
+import SidebarAdmin from "../../pages/Dashboard/Sidebar/SidebarAdmin";
 
 export default function DashboardAdmin() {
   const [collapsed, setCollapsed] = useState(false);

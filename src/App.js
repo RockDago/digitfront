@@ -10,66 +10,65 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 import { AuthService } from "./services";
 
-// Components Home
-import Navbar from "./components/Home/Navbar";
-import Home from "./components/Home/Home";
-import AllActu from "./components/Home/AllActu";
+// Components Home (maintenant dans pages/)
+import Navbar from "./pages/Home/Navbar";
+import Home from "./pages/Home/Home";
+import AllActu from "./pages/Home/AllActu";
+import APropos from "./pages/Home/APropos";
 
-import APropos from "./components/Home/APropos";
+// Components Auth (maintenant dans pages/)
+import Login from "./pages/Login/Login";
+import VerifyEmail from "./pages/Login/VerifyEmail";
+import ForgotPassword from "./pages/Login/ForgotPassword";
 
-// Components Auth
-import Login from "./components/Login/Login";
-import VerifyEmail from "./components/Login/VerifyEmail";
-import ForgotPassword from "./components/Login/ForgotPassword";
+// ✅ Dashboards (Layouts principaux) - maintenant dans pages/
+import DashboardAdmin from "./pages/Dashboard/DashboardAdmin";
+import DashboardSicp from "./pages/Dashboard/DashboardSicp";
+import DashboardSae from "./pages/Dashboard/DashboardSae";
+import DashboardEtab from "./pages/Dashboard/DashboardEtab";
+import DashboardReq from "./pages/Dashboard/DashboardReq";
+import DashboardCnh from "./pages/Dashboard/DashboardCnh";
+import DashboardExpert from "./pages/Dashboard/DashboardExpert";
+import DashboardUni from "./pages/Dashboard/DashboardUni";
 
-// ✅ Dashboards (Layouts principaux)
-import DashboardAdmin from "./components/Dashboard/DashboardAdmin";
-import DashboardSicp from "./components/Dashboard/DashboardSicp";
-import DashboardSae from "./components/Dashboard/DashboardSae";
-import DashboardEtab from "./components/Dashboard/DashboardEtab";
-import DashboardReq from "./components/Dashboard/DashboardReq";
-import DashboardCnh from "./components/Dashboard/DashboardCnh";
-import DashboardExpert from "./components/Dashboard/DashboardExpert";
-import DashboardUni from "./components/Dashboard/DashboardUni";
+// ✅ VUES ADMIN - maintenant dans pages/
+import DashboardAdminView from "./pages/Dashboard/View/Admin/DashboardAdminView";
+import UserView from "./pages/Dashboard/View/Admin/UserView";
+import HomeParam from "./pages/Dashboard/View/Admin/HomeParam";
+import ServicesParam from "./pages/Dashboard/View/Admin/ServicesParam";
+import ContactParam from "./pages/Dashboard/View/Admin/ContactParam";
+import ActualiteParam from "./pages/Dashboard/View/Admin/ActualiteParam";
+import FaqParam from "./pages/Dashboard/View/Admin/FaqParam";
+import SystemStatusView from "./pages/Dashboard/View/Admin/SystemStatusView";
+import MessagesView from "./pages/Dashboard/View/Admin/MessagesView";
 
-// ✅ VUES ADMIN
-import DashboardAdminView from "./components/Dashboard/View/Admin/DashboardAdminView";
-import UserView from "./components/Dashboard/View/Admin/UserView";
-import HomeParam from "./components/Dashboard/View/Admin/HomeParam";
-import ServicesParam from "./components/Dashboard/View/Admin/ServicesParam";
-import ContactParam from "./components/Dashboard/View/Admin/ContactParam";
-import ActualiteParam from "./components/Dashboard/View/Admin/ActualiteParam";
-import FaqParam from "./components/Dashboard/View/Admin/FaqParam";
-import SystemStatusView from "./components/Dashboard/View/Admin/SystemStatusView";
-import MessagesView from "./components/Dashboard/View/Admin/MessagesView";
+// ✅ VUES REQUERANT - maintenant dans pages/
+import DashboardReqView from "./pages/Dashboard/View/Requerant/DashboardReqView";
+import CreerDemandeView from "./pages/Dashboard/View/Requerant/CreerDemandeView";
 
-// ✅ VUES REQUERANT
-import DashboardReqView from "./components/Dashboard/View/Requerant/DashboardReqView";
-import CreerDemandeView from "./components/Dashboard/View/Requerant/CreerDemandeView";
+// ✅ VUE SAE - maintenant dans pages/
+import DashboardSaeView from "./pages/Dashboard/View/Sae/DashboardSaeView";
+import AccreditationView from "./pages/Dashboard/View/Sae/AccreditationView";
+import ArchiveAccreditationView from "./pages/Dashboard/View/Sae/ArchiveAccreditationView";
+import EquivalenceView from "./pages/Dashboard/View/Sae/EquivalenceView";
+import ArchiveEquivalenceView from "./pages/Dashboard/View/Sae/ArchiveEquivalenceView";
 
-// ✅ VUE SAE
-import DashboardSaeView from "./components/Dashboard/View/Sae/DashboardSaeView";
-import AccreditationView from "./components/Dashboard/View/Sae/AccreditationView";
-import ArchiveAccreditationView from "./components/Dashboard/View/Sae/ArchiveAccreditationView";
-import EquivalenceView from "./components/Dashboard/View/Sae/EquivalenceView";
-import ArchiveEquivalenceView from "./components/Dashboard/View/Sae/ArchiveEquivalenceView";
+// ✅ VUE ETABLISSEMENT - maintenant dans pages/
+import DashboardEtabView from "./pages/Dashboard/View/Etab/DashboardEtabView";
+import MesInformationsHabilitation from "./pages/Dashboard/View/Etab/Habilitation/MesInformationsHabilitation";
+import CreerDemandeHabilitation from "./pages/Dashboard/View/Etab/Habilitation/CreerDemandeHabilitation";
+import RenouvellementCanevas from "./pages/Dashboard/View/Etab/Habilitation/RenouvellementCanevas";
+import RenouvellementForm from "./pages/Dashboard/View/Etab/Habilitation/RenouvellementForm";
+import AutoEvaluationAccreditation from "./pages/Dashboard/View/Etab/Accreditation/AutoEvaluationAccreditation";
+import CreerDemandeAccreditation from "./pages/Dashboard/View/Etab/Accreditation/CreerDemandeAccreditation";
 
-// ✅ VUE ETABLISSEMENT
-import DashboardEtabView from "./components/Dashboard/View/Etab/DashboardEtabView";
-import MesInformationsHabilitation from "./components/Dashboard/View/Etab/Habilitation/MesInformationsHabilitation";
-import CreerDemandeHabilitation from "./components/Dashboard/View/Etab/Habilitation/CreerDemandeHabilitation";
-import RenouvellementCanevas from "./components/Dashboard/View/Etab/Habilitation/RenouvellementCanevas";
-import RenouvellementForm from "./components/Dashboard/View/Etab/Habilitation/RenouvellementForm";
-import AutoEvaluationAccreditation from "./components/Dashboard/View/Etab/Accreditation/AutoEvaluationAccreditation";
-import CreerDemandeAccreditation from "./components/Dashboard/View/Etab/Accreditation/CreerDemandeAccreditation";
+// ✅ NOUVEAUX FORMULAIRES HABILITATION - maintenant dans pages/
+import FormLicence from "./pages/Dashboard/View/Etab/Habilitation/FormLicence";
+import FormMaster from "./pages/Dashboard/View/Etab/Habilitation/FormMaster";
+import FormDoctorat from "./pages/Dashboard/View/Etab/Habilitation/FormDoctorat";
 
-// ✅ NOUVEAUX FORMULAIRES HABILITATION
-import FormLicence from "./components/Dashboard/View/Etab/Habilitation/FormLicence";
-import FormMaster from "./components/Dashboard/View/Etab/Habilitation/FormMaster";
-import FormDoctorat from "./components/Dashboard/View/Etab/Habilitation/FormDoctorat";
-
-// ✅ COMPOSANT PROFILE (ACCESSIBLE À TOUS LES RÔLES)
-import Profile from "./components/Dashboard/Profile/Profile";
+// ✅ COMPOSANT PROFILE (ACCESSIBLE À TOUS LES RÔLES) - maintenant dans pages/
+import Profile from "./pages/Dashboard/Profile/Profile";
 
 // ✅ Configuration Google OAuth
 const GOOGLE_CLIENT_ID =

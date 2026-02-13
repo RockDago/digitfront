@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AuthService } from "../../services";
 
-import Navbar from "../../components/Dashboard/Navbar/Navbar";
-import SidebarUni from "../../components/Dashboard/Sidebar/SidebarUni";
+import Navbar from "../../pages/Dashboard/Navbar/Navbar";
+import SidebarCnh from "../../pages/Dashboard/Sidebar/SidebarCnh";
 
-export default function DashboardUni() {
+export default function DashboardCnh() {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ export default function DashboardUni() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SidebarUni
+      <SidebarCnh
         collapsed={collapsed}
         setCollapsed={setCollapsed}
         isMobileOpen={isMobileOpen}
