@@ -95,6 +95,17 @@ export default function SidebarEtab({
         currentPath === path || currentPath === "/dashboard/etablissement/"
       );
     }
+    // Make 'Créer demande' stay active when user is on any specific habilitation form
+    if (path === "/dashboard/etablissement/habilitation/creer-demande") {
+      return (
+        currentPath === path ||
+        currentPath.startsWith(path + "/") ||
+        currentPath.startsWith(
+          "/dashboard/etablissement/habilitation/formulaire/",
+        )
+      );
+    }
+
     return currentPath === path || currentPath.startsWith(path + "/");
   };
 

@@ -1,37 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  FaBell,
-  FaUser,
-  FaSignOutAlt,
-  FaTrash,
-  FaBars,
-  FaChevronDown,
-} from "react-icons/fa";
+import { FaUser, FaSignOutAlt, FaBars, FaChevronDown } from "react-icons/fa";
 import UserService from "../../../services/user.service";
 
 export default function Navbar({
   collapsed,
   user,
-  notifications,
-  onMarkAllAsRead,
-  onMarkAsRead,
-  onDeleteNotif,
   onLogoutClick,
   onMobileMenuClick,
 }) {
-  const [showNotificationsDropdown, setShowNotificationsDropdown] =
-    useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
 
-  const notifRef = useRef(null);
   const profileRef = useRef(null);
-
-  const unreadCount = notifications
-    ? notifications.filter((n) => !n.read).length
-    : 0;
 
   // ✅ Génération dynamique du lien profil selon le rôle
   const getProfileLink = () => {
@@ -97,8 +79,6 @@ export default function Navbar({
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target))
-        setShowNotificationsDropdown(false);
       if (profileRef.current && !profileRef.current.contains(e.target))
         setShowProfileMenu(false);
     };
@@ -138,92 +118,8 @@ export default function Navbar({
           </button>
         </div>
 
-        {/* Droite : Notifs & Profil */}
+        {/* Droite : Profil */}
         <div className="flex items-center space-x-3 md:space-x-6">
-          {/* Notifications */}
-          <div className="relative" ref={notifRef}>
-            <button
-              onClick={() =>
-                setShowNotificationsDropdown(!showNotificationsDropdown)
-              }
-              className="relative p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-50 transition-colors"
-            >
-              <FaBell className="text-lg md:text-xl" />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-
-            {/* Dropdown Notifications */}
-            {showNotificationsDropdown && (
-              <div className="absolute right-0 top-12 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                  <h3 className="font-bold text-gray-800">Notifications</h3>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={onMarkAllAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      Tout marquer comme lu
-                    </button>
-                  )}
-                </div>
-
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications && notifications.length > 0 ? (
-                    notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
-                          !notif.read ? "bg-blue-50/50" : ""
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-800">
-                              {notif.title}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {notif.message}
-                            </p>
-                            <p className="text-[10px] text-gray-400 mt-2">
-                              {notif.time}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {!notif.read && (
-                              <button
-                                onClick={() => onMarkAsRead(notif.id)}
-                                className="text-blue-500 hover:text-blue-700"
-                                title="Marquer comme lu"
-                              >
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                              </button>
-                            )}
-                            <button
-                              onClick={() => onDeleteNotif(notif.id)}
-                              className="text-red-400 hover:text-red-600"
-                              title="Supprimer"
-                            >
-                              <FaTrash className="text-xs" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-8 text-center text-sm text-gray-400">
-                      <FaBell className="mx-auto text-3xl mb-2 opacity-30" />
-                      <p>Aucune notification</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Profil */}
           <div className="relative" ref={profileRef}>
             <button

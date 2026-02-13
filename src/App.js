@@ -47,13 +47,26 @@ import MessagesView from "./components/Dashboard/View/Admin/MessagesView";
 import DashboardReqView from "./components/Dashboard/View/Requerant/DashboardReqView";
 import CreerDemandeView from "./components/Dashboard/View/Requerant/CreerDemandeView";
 
+// ✅ VUE SAE
+import DashboardSaeView from "./components/Dashboard/View/Sae/DashboardSaeView";
+import AccreditationView from "./components/Dashboard/View/Sae/AccreditationView";
+import ArchiveAccreditationView from "./components/Dashboard/View/Sae/ArchiveAccreditationView";
+import EquivalenceView from "./components/Dashboard/View/Sae/EquivalenceView";
+import ArchiveEquivalenceView from "./components/Dashboard/View/Sae/ArchiveEquivalenceView";
+
 // ✅ VUE ETABLISSEMENT
 import DashboardEtabView from "./components/Dashboard/View/Etab/DashboardEtabView";
 import MesInformationsHabilitation from "./components/Dashboard/View/Etab/Habilitation/MesInformationsHabilitation";
 import CreerDemandeHabilitation from "./components/Dashboard/View/Etab/Habilitation/CreerDemandeHabilitation";
-import RenouvellementHabilitation from "./components/Dashboard/View/Etab/Habilitation/RenouvellementHabilitation";
+import RenouvellementCanevas from "./components/Dashboard/View/Etab/Habilitation/RenouvellementCanevas";
+import RenouvellementForm from "./components/Dashboard/View/Etab/Habilitation/RenouvellementForm";
 import AutoEvaluationAccreditation from "./components/Dashboard/View/Etab/Accreditation/AutoEvaluationAccreditation";
 import CreerDemandeAccreditation from "./components/Dashboard/View/Etab/Accreditation/CreerDemandeAccreditation";
+
+// ✅ NOUVEAUX FORMULAIRES HABILITATION
+import FormLicence from "./components/Dashboard/View/Etab/Habilitation/FormLicence";
+import FormMaster from "./components/Dashboard/View/Etab/Habilitation/FormMaster";
+import FormDoctorat from "./components/Dashboard/View/Etab/Habilitation/FormDoctorat";
 
 // ✅ COMPOSANT PROFILE (ACCESSIBLE À TOUS LES RÔLES)
 import Profile from "./components/Dashboard/Profile/Profile";
@@ -243,6 +256,16 @@ function App() {
                 </Navbar>
               }
             />
+            {/* Compatibilité : redirection courte vers le formulaire de renouvellement */}
+            <Route
+              path="/renouvellement-form"
+              element={
+                <Navigate
+                  to="/dashboard/etablissement/habilitation/renouvellement/form"
+                  replace
+                />
+              }
+            />
             <Route
               path="/login"
               element={
@@ -287,7 +310,6 @@ function App() {
             >
               <Route index element={<DashboardReqView />} />
               <Route path="creer-demande" element={<CreerDemandeView />} />
-
               <Route path="profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Route>
@@ -310,9 +332,28 @@ function App() {
                 path="habilitation/creer-demande"
                 element={<CreerDemandeHabilitation />}
               />
+
+              {/* ✅ NOUVELLES ROUTES POUR LES FORMULAIRES SPÉCIFIQUES */}
+              <Route
+                path="habilitation/formulaire/licence"
+                element={<FormLicence />}
+              />
+              <Route
+                path="habilitation/formulaire/master"
+                element={<FormMaster />}
+              />
+              <Route
+                path="habilitation/formulaire/doctorat"
+                element={<FormDoctorat />}
+              />
+
               <Route
                 path="habilitation/renouvellement"
-                element={<RenouvellementHabilitation />}
+                element={<RenouvellementCanevas />}
+              />
+              <Route
+                path="habilitation/renouvellement/form"
+                element={<RenouvellementForm />}
               />
               <Route
                 path="accreditation/auto-evaluation"
@@ -335,8 +376,22 @@ function App() {
                 </ProtectedRoute>
               }
             >
+              <Route path="tableau-de-bord" element={<DashboardSaeView />} />
+              <Route path="accreditation" element={<AccreditationView />} />
+              <Route
+                path="archive-accreditation"
+                element={<ArchiveAccreditationView />}
+              />
+              <Route path="equivalence" element={<EquivalenceView />} />
+              <Route
+                path="archive-equivalence"
+                element={<ArchiveEquivalenceView />}
+              />
               <Route path="profile" element={<Profile />} />
-              <Route path="*" element={<Navigate to="" replace />} />
+              <Route
+                path="*"
+                element={<Navigate to="tableau-de-bord" replace />}
+              />
             </Route>
 
             {/* ========== DASHBOARD SICP ========== */}

@@ -4,6 +4,8 @@ import { ArrowRight, X } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { AuthService } from "../../services";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const MAX_BCRYPT_LENGTH = 72;
 
@@ -48,9 +50,6 @@ const Login = ({ isModal = false, onClose = null }) => {
 
   const [showGoogleRoleModal, setShowGoogleRoleModal] = useState(false);
   const [pendingGoogleCredential, setPendingGoogleCredential] = useState(null);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState("info");
 
   const [showEmailSuggestionsLogin, setShowEmailSuggestionsLogin] =
     useState(false);
@@ -109,10 +108,38 @@ const Login = ({ isModal = false, onClose = null }) => {
   }, [roleOptions]);
 
   const triggerToast = (message, type = "info") => {
-    setToastMessage(message);
-    setToastType(type);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 5000);
+    switch (type) {
+      case "success":
+        toast.success(message, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        break;
+      case "error":
+        toast.error(message, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        break;
+      default:
+        toast.info(message, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        break;
+    }
   };
 
   const triggerForgotPasswordToast = () => {
@@ -157,11 +184,18 @@ const Login = ({ isModal = false, onClose = null }) => {
         recaptchaToken: recaptchaToken,
       });
 
+      console.log("📊 Réponse Google Auth complète:", result);
+
       const user = result.user || result;
 
       if (!user || !user.email) {
+        console.error("❌ Données utilisateur manquantes:", user);
         throw new Error("Données utilisateur manquantes");
       }
+
+      // ✅ IMPORTANT : S'assurer que l'utilisateur est bien sauvegardé dans localStorage
+      localStorage.setItem("user", JSON.stringify(user));
+      console.log("✅ Utilisateur sauvegardé dans localStorage:", user);
 
       const message = role
         ? `Compte Google créé en tant que ${role} !`
@@ -169,12 +203,15 @@ const Login = ({ isModal = false, onClose = null }) => {
       triggerToast(message, "success");
 
       const targetPath = roleToPath(user.role);
+
+      // ✅ Délai pour laisser les données se synchroniser
       setTimeout(() => {
+        console.log("🚀 Navigation vers:", targetPath);
         if (isModal && onClose) onClose();
         navigate(targetPath, { replace: true });
       }, 1000);
     } catch (err) {
-      console.error("Erreur Google Auth:", err);
+      console.error("❌ Erreur Google Auth:", err);
       let errorMsg = "Erreur lors de la connexion Google";
 
       if (err.response?.data) {
@@ -665,35 +702,19 @@ const Login = ({ isModal = false, onClose = null }) => {
         </div>
       )}
 
-      {/* Toast Notification */}
-      <div
-        className={`fixed top-4 right-4 z-[100] transition-all duration-300 ${
-          showToast ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
-        }`}
-      >
-        <div
-          className={`bg-white rounded-lg shadow-xl p-3 w-72 flex items-start border-l-4 ${
-            toastType === "success"
-              ? "border-emerald-500"
-              : toastType === "error"
-                ? "border-red-500"
-                : "border-blue-500"
-          }`}
-        >
-          <div className="flex-1 ml-2">
-            <p className="text-xs font-bold text-gray-800">
-              {toastType === "success"
-                ? "✓ Succès"
-                : toastType === "error"
-                  ? "✗ Erreur"
-                  : "ℹ Info"}
-            </p>
-            <p className="text-xs text-gray-600 leading-tight">
-              {toastMessage}
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Toast Notification Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
 
       {/* CONTENEUR PRINCIPAL */}
       <div

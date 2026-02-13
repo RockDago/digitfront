@@ -19,7 +19,6 @@ export default function SidebarSae({
   // États accordéons
   const [accreditationOpen, setAccreditationOpen] = useState(false);
   const [equivalenceOpen, setEquivalenceOpen] = useState(false);
-  const [habilitationOpen, setHabilitationOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,21 +35,17 @@ export default function SidebarSae({
   const accreditationItems = [
     { label: "Liste accréditation", path: "/dashboard/sae/accreditation" },
     {
-      label: "Archivage accréditation",
-      path: "/dashboard/sae/archivage-accreditation",
+      label: "Liste des archives",
+      path: "/dashboard/sae/archive-accreditation",
     },
   ];
 
   const equivalenceItems = [
     { label: "Liste équivalence", path: "/dashboard/sae/equivalence" },
     {
-      label: "Archivage équivalence",
-      path: "/dashboard/sae/archivage-equivalence",
+      label: "Liste des archives",
+      path: "/dashboard/sae/archive-equivalence",
     },
-  ];
-
-  const habilitationItems = [
-    { label: "Liste habilitation", path: "/dashboard/sae/habilitation" },
   ];
 
   const goTo = (path) => {
@@ -252,15 +247,6 @@ export default function SidebarSae({
               equivalenceOpen,
               setEquivalenceOpen,
               equivalenceItems,
-            )}
-
-            {/* Accordéon Habilitation */}
-            {renderAccordion(
-              "Habilitation",
-              FaBook,
-              habilitationOpen,
-              setHabilitationOpen,
-              habilitationItems,
             )}
           </div>
         </nav>

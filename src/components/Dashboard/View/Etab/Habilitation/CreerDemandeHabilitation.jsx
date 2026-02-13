@@ -1,256 +1,280 @@
-import React, { useState } from "react";
-import { FaFileContract, FaArrowRight } from "react-icons/fa";
+// src/pages/CreerDemandeHabilitation.jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-export default function CreerDemandeHabilitation() {
-  const [formData, setFormData] = useState({
-    etablissementName: "",
-    niveauHabilitation: "",
-    domaines: [],
-    motif: "",
-    documents: {},
-  });
+const typesDemandes = [
+  {
+    id: "licence",
+    title: "Habilitation Licence",
+    color: "blue",
+    fullTitle:
+      "Demande d'habilitation des formations conduisant au grade de Licence",
+    path: "/dashboard/etablissement/habilitation/formulaire/licence",
+  },
+  {
+    id: "master",
+    title: "Habilitation Master",
+    color: "indigo",
+    fullTitle:
+      "Demande d'habilitation des formations conduisant au grade de Master",
+    path: "/dashboard/etablissement/habilitation/formulaire/master",
+  },
+  {
+    id: "doctorat",
+    title: "Habilitation Doctorat",
+    color: "blue",
+    fullTitle:
+      "Demande d'habilitation des formations conduisant au grade de Docteur",
+    path: "/dashboard/etablissement/habilitation/formulaire/doctorat",
+  },
+];
 
-  const [step, setStep] = useState(1);
+const canevasParType = {
+  licence: [
+    "I. Présentation de l'institution",
+    "II. Pertinence et justification de la demande d'habilitation",
+    "III. Organisation des études",
+    "IV. Dispositif pédagogique et maquette",
+    "V. Moyens disponibles",
+    "VI. Gestion des performances académiques et politique d'insertion professionnelle",
+    "VII. Gouvernance et assurance qualité",
+    "VIII. Annexes",
+    "IX. Récapitulatif",
+  ],
+  master: [
+    "I. Présentation de l'institution",
+    "II. Politique et environnement de recherche (obligatoire – spécifique Master)",
+    "III. Pertinence et justification de la demande d'habilitation",
+    "IV. Organisation des études",
+    "V. Dispositif pédagogique et maquette",
+    "VI. Moyens disponibles",
+    "VII. Gestion des performances académiques et politique d'insertion professionnelle",
+    "VIII. Gouvernance et assurance qualité",
+    "IX. ANNEXES",
+    "X. Récapitulatif",
+  ],
+  doctorat: [
+    "I. Informations institutionnelles",
+    "II. Structure et organisation de l'école doctorale",
+    "III. Ressources humaines et encadrement",
+    "IV. Formation transversale et suivi des doctorants",
+    "V. Environnement scientifique et infrastructures",
+    "VI. Production scientifique et intégrité académique",
+    "VII. Suivi des doctorants, débouchés et insertion professionnelle",
+    "VIII. Gouvernance, éthique et assurance qualité",
+    "IX. Annexes",
+    "X. Récapitulatif",
+  ],
+};
 
-  const niveauxHabilitation = [
-    { id: "licence", label: "Licence (BAC+3)" },
-    { id: "master", label: "Master (BAC+5)" },
-    { id: "doctorat", label: "Doctorat (BAC+8)" },
-  ];
+const CreerDemandeHabilitation = () => {
+  const [selectedType, setSelectedType] = useState(null);
+  const [hasReadCanevas, setHasReadCanevas] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const navigate = useNavigate();
 
-  const domainesDisponibles = [
-    "Informatique",
-    "Génie Civil",
-    "Électronique",
-    "Gestion",
-    "Droit",
-    "Santé",
-    "Agriculture",
-    "Tourisme",
-  ];
+  const currentType = typesDemandes.find((t) => t.id === selectedType);
+  const pageTitle = currentType
+    ? currentType.fullTitle
+    : "Créer une demande d'habilitation";
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDomainToggle = (domain) => {
-    setFormData((prev) => ({
-      ...prev,
-      domaines: prev.domaines.includes(domain)
-        ? prev.domaines.filter((d) => d !== domain)
-        : [...prev.domaines, domain],
-    }));
+  const handleSelectType = (typeId) => {
+    setSelectedType(typeId);
+    setHasReadCanevas(false);
+    scrollToTop();
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Demande d'habilitation:", formData);
+  const handleStartForm = () => {
+    if (hasReadCanevas && selectedType) {
+      const type = typesDemandes.find((t) => t.id === selectedType);
+      navigate(type.path);
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-white p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            Nouvelle Demande d'Habilitation
-          </h1>
-          <p className="text-slate-600">
-            Complétez ce formulaire pour demander une habilitation pour votre
-            établissement
-          </p>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div
-              className={`flex items-center ${step >= 1 ? "bg-blue-600" : "bg-slate-300"} text-white rounded-full w-10 h-10 justify-center font-semibold`}
-            >
-              1
-            </div>
-            <div
-              className={`flex-1 h-1 mx-2 ${step >= 2 ? "bg-blue-600" : "bg-slate-300"}`}
-            ></div>
-            <div
-              className={`flex items-center ${step >= 2 ? "bg-blue-600" : "bg-slate-300"} text-white rounded-full w-10 h-10 justify-center font-semibold`}
-            >
-              2
-            </div>
-            <div
-              className={`flex-1 h-1 mx-2 ${step >= 3 ? "bg-blue-600" : "bg-slate-300"}`}
-            ></div>
-            <div
-              className={`flex items-center ${step >= 3 ? "bg-blue-600" : "bg-slate-300"} text-white rounded-full w-10 h-10 justify-center font-semibold`}
-            >
-              3
-            </div>
-          </div>
-          <div className="flex justify-between text-sm text-slate-600">
-            <span>Informations</span>
-            <span>Domaines</span>
-            <span>Validation</span>
-          </div>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1 */}
-          {step === 1 && (
-            <div className="space-y-6 bg-slate-50 rounded-xl p-8 border border-slate-200">
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">
-                  Nom de l'Établissement
-                </label>
-                <input
-                  type="text"
-                  name="etablissementName"
-                  value={formData.etablissementName}
-                  onChange={handleInputChange}
-                  placeholder="Entrez le nom complet de l'établissement"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">
-                  Niveau d'Habilitation Demandé
-                </label>
-                <select
-                  name="niveauHabilitation"
-                  value={formData.niveauHabilitation}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                  required
-                >
-                  <option value="">-- Sélectionnez un niveau --</option>
-                  {niveauxHabilitation.map((niveau) => (
-                    <option key={niveau.id} value={niveau.id}>
-                      {niveau.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">
-                  Motif de la Demande
-                </label>
-                <textarea
-                  name="motif"
-                  value={formData.motif}
-                  onChange={handleInputChange}
-                  placeholder="Décrivez le motif de votre demande d'habilitation..."
-                  rows="5"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
-                  required
-                ></textarea>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2 */}
-          {step === 2 && (
-            <div className="space-y-6 bg-slate-50 rounded-xl p-8 border border-slate-200">
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-4">
-                  Domaines d'Habilitation
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {domainesDisponibles.map((domain) => (
-                    <label
-                      key={domain}
-                      className="flex items-center gap-3 p-3 bg-white border border-slate-300 rounded-xl hover:bg-blue-50 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.domaines.includes(domain)}
-                        onChange={() => handleDomainToggle(domain)}
-                        className="w-5 h-5 text-blue-600 rounded cursor-pointer"
-                      />
-                      <span className="text-slate-900 font-medium">
-                        {domain}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {formData.domaines.length === 0 && (
-                  <p className="text-sm text-orange-600 mt-3">
-                    ⚠️ Veuillez sélectionner au moins un domaine
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Step 3 */}
-          {step === 3 && (
-            <div className="space-y-6 bg-slate-50 rounded-xl p-8 border border-slate-200">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h3 className="font-semibold text-blue-900 mb-3">
-                  Résumé de votre demande
-                </h3>
-                <div className="space-y-2 text-sm text-blue-900">
-                  <p>
-                    <strong>Établissement:</strong>{" "}
-                    {formData.etablissementName || "Non renseigné"}
-                  </p>
-                  <p>
-                    <strong>Niveau:</strong>{" "}
-                    {formData.niveauHabilitation || "Non sélectionné"}
-                  </p>
-                  <p>
-                    <strong>Domaines:</strong>{" "}
-                    {formData.domaines.join(", ") || "Aucun"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                <p className="text-sm text-orange-800">
-                  <strong>📝 Important:</strong> Votre demande sera examinée par
-                  nos services. Vous recevrez une confirmation par email.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Buttons */}
-          <div className="flex justify-between gap-4 pt-6">
-            {step > 1 && (
-              <button
-                type="button"
-                onClick={() => setStep(step - 1)}
-                className="px-6 py-3 border border-slate-300 text-slate-900 rounded-xl font-semibold hover:bg-slate-50 transition-colors"
-              >
-                Précédent
-              </button>
-            )}
-            {step < 3 ? (
-              <button
-                type="button"
-                onClick={() => setStep(step + 1)}
-                className="ml-auto px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                Suivant
-                <FaArrowRight size={16} />
-              </button>
-            ) : (
-              <button
-                type="submit"
-                className="ml-auto px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors"
-              >
-                Soumettre la Demande
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
+  const renderPageHeader = () => (
+    <div className="text-center mb-8 md:mb-12 bg-white pb-6 border-b border-gray-200 sticky top-0 z-10">
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 px-4">
+        {pageTitle}
+      </h1>
     </div>
   );
-}
+
+  return (
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-5xl mx-auto">
+        {renderPageHeader()}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {typesDemandes.map((type) => (
+            <button
+              key={type.id}
+              onClick={() => handleSelectType(type.id)}
+              className={`
+                relative group bg-white rounded-xl shadow border p-6 text-left transition-all duration-200
+                hover:shadow-lg hover:border-${type.color}-500
+                ${
+                  selectedType === type.id
+                    ? `border-${type.color}-600 bg-${type.color}-50/60 shadow-md`
+                    : "border-gray-200"
+                }
+              `}
+            >
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                {type.title}
+              </h3>
+              <p className="text-gray-600 text-sm">
+                {type.id === "licence"
+                  ? "Formation de Licence (LMD)"
+                  : type.id === "master"
+                    ? "Formation de Master (recherche / professionnel)"
+                    : "Doctorat / École Doctorale"}
+              </p>
+
+              {selectedType === type.id && (
+                <span
+                  className={`absolute top-4 right-4 bg-${type.color}-100 text-${type.color}-800 text-xs font-medium px-2.5 py-1 rounded-full`}
+                >
+                  Sélectionné
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {selectedType && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="p-6 md:p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Canevas</h2>
+
+              <p className="text-gray-700 mb-4 font-medium">
+                Éléments et informations à préparer pour cette demande :
+              </p>
+
+              <ul className="list-disc pl-6 space-y-2.5 text-gray-700">
+                {canevasParType[selectedType].map((item, index) => (
+                  <li key={index} className="text-base">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-gray-50 border-t border-gray-200 px-6 md:px-8 py-8">
+              <div className="space-y-6 max-w-lg mx-auto">
+                <div className="flex items-start">
+                  <input
+                    id="accept-canevas"
+                    type="checkbox"
+                    checked={hasReadCanevas}
+                    onChange={(e) => setHasReadCanevas(e.target.checked)}
+                    className="mt-1.5 h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="accept-canevas"
+                    className="ml-3 text-sm md:text-base text-gray-700 leading-6"
+                  >
+                    J'ai pris connaissance du canevas et je m'engage à fournir
+                    des informations complètes, exactes et conformes aux
+                    exigences.
+                    <span className="text-red-600 font-medium">
+                      {" "}
+                      (obligatoire)
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex justify-center">
+                  <button
+                    onClick={handleStartForm}
+                    disabled={!hasReadCanevas}
+                    className={`
+                      px-10 py-4 rounded-lg font-medium transition flex items-center gap-3 shadow-md text-base
+                      ${
+                        hasReadCanevas
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      }
+                    `}
+                  >
+                    Passer au formulaire
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!selectedType && (
+          <div className="text-center text-gray-500 mt-12 text-lg">
+            Sélectionnez un type de demande ci-dessus pour voir le canevas
+            correspondant
+          </div>
+        )}
+      </div>
+
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 z-50 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+          aria-label="Retour en haut"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </button>
+      )}
+
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover={false}
+        theme="light"
+      />
+    </div>
+  );
+};
+
+export default CreerDemandeHabilitation;

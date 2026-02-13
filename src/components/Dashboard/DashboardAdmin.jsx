@@ -11,7 +11,6 @@ export default function DashboardAdmin() {
   const navigate = useNavigate();
 
   const [user] = useState(AuthService.getCurrentUser());
-  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     if (!AuthService.isAuthenticated()) {
@@ -23,15 +22,6 @@ export default function DashboardAdmin() {
     AuthService.logout();
     navigate("/");
   };
-
-  const handleMarkAsRead = (id) =>
-    setNotifications((p) =>
-      p.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-  const handleDeleteNotif = (id) =>
-    setNotifications((p) => p.filter((n) => n.id !== id));
-  const handleMarkAllAsRead = () =>
-    setNotifications((p) => p.map((n) => ({ ...n, read: true })));
 
   if (!user) return null;
 
@@ -59,10 +49,6 @@ export default function DashboardAdmin() {
           <NavbarAdmin
             collapsed={collapsed}
             user={user}
-            notifications={notifications}
-            onMarkAllAsRead={handleMarkAllAsRead}
-            onMarkAsRead={handleMarkAsRead}
-            onDeleteNotif={handleDeleteNotif}
             onLogoutClick={performLogout}
             onMobileMenuClick={() => setIsMobileOpen(true)}
           />

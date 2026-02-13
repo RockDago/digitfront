@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AuthService } from "../../services";
@@ -21,11 +20,6 @@ export default function DashboardSicp() {
     AuthService.logout();
     navigate("/");
   };
-
-  // Fonctions de notifications vides
-  const handleMarkAsRead = () => {};
-  const handleDeleteNotif = () => {};
-  const handleMarkAllAsRead = () => {};
 
   const user = AuthService.getCurrentUser();
 
@@ -54,10 +48,6 @@ export default function DashboardSicp() {
           <Navbar
             collapsed={collapsed}
             user={user}
-            notifications={[]}
-            onMarkAllAsRead={handleMarkAllAsRead}
-            onMarkAsRead={handleMarkAsRead}
-            onDeleteNotif={handleDeleteNotif}
             onLogoutClick={performLogout}
             onMobileMenuClick={() => setIsMobileOpen(true)}
           />

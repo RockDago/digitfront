@@ -286,22 +286,29 @@ export default function Profile() {
     setTimeout(() => setShowToast(false), 4000);
   };
 
-  // ✅ CORRECTION ICI : Vérification du token avant chargement
+  // ✅ CORRECTION ICI : Vérification de l'utilisateur avant chargement
   useEffect(() => {
     const loadProfile = async () => {
-      // ✅ CORRECTION CRITIQUE : Vérifier le token avant l'appel API
-      const token = localStorage.getItem("token");
+      // ✅ CORRECTION CRITIQUE : Vérifier l'utilisateur avant l'appel API
+      const userStr = localStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : null;
 
-      if (!token) {
-        console.warn("⚠️ Token manquant. L'utilisateur doit se connecter.");
+      console.log("📊 Profile.jsx - Utilisateur stocké:", user);
+
+      if (!user || !user.id) {
+        console.warn(
+          "⚠️ Utilisateur non authentifié. Veuillez vous connecter.",
+        );
         // Optionnel : afficher un message ou rediriger vers /login
         // triggerToast("Session expirée. Veuillez vous reconnecter.", "error");
         return;
       }
 
       try {
+        console.log("🔄 Chargement du profil pour l'utilisateur:", user.id);
         setLoading(true);
         const data = await UserService.getMyProfile();
+        console.log("✅ Profil chargé:", data);
         setProfileData(data);
       } catch (err) {
         console.error("❌ Erreur chargement profil:", err);
