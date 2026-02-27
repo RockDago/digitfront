@@ -12,6 +12,14 @@
   font-style: normal;
 }
 
+/* custom logo font now replaced by Henno */
+@font-face {
+  font-family: "Henno";
+  src: url("./assets/fonts/Henno.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

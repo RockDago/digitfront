@@ -26,9 +26,15 @@ export default function DashboardAdmin() {
   if (!user) return null;
 
   return (
-    // ✅ MODIFICATION ICI : bg-white au lieu de bg-gray-50
-    <div className="min-h-screen bg-white">
-      {/* 1. SIDEBAR */}
+    <div
+      className={`
+        min-h-screen
+        bg-white dark:bg-gray-900
+        text-gray-900 dark:text-gray-100
+        transition-colors duration-300
+      `}
+    >
+      {/* SIDEBAR */}
       <SidebarAdmin
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -36,10 +42,11 @@ export default function DashboardAdmin() {
         setIsMobileOpen={setIsMobileOpen}
       />
 
-      {/* 2. WRAPPER PRINCIPAL */}
+      {/* CONTENU PRINCIPAL (décalé par la sidebar) */}
       <div
         className={`
-          flex flex-col min-h-screen transition-all duration-300 ease-in-out
+          flex flex-col min-h-screen
+          transition-all duration-300 ease-in-out
           ${collapsed ? "lg:ml-20" : "lg:ml-72"}
           ml-0
         `}
@@ -54,10 +61,20 @@ export default function DashboardAdmin() {
           />
         </div>
 
-        {/* CONTENT */}
-        {/* ✅ MODIFICATION ICI : bg-white au lieu de bg-gray-50 */}
-        <main className="flex-1 px-8 pt-6 pb-8 bg-white overflow-x-hidden">
-          <Outlet />
+        {/* ZONE DE CONTENU */}
+        <main
+          className={`
+            flex-1
+            px-6 sm:px-8
+            pt-6 pb-10 md:pb-12
+            bg-white dark:bg-gray-900
+            text-gray-900 dark:text-gray-100
+            transition-colors duration-300
+          `}
+        >
+          <div className="mx-auto w-full max-w-7xl">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

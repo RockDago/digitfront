@@ -149,22 +149,22 @@ const missionsSicp = [
     title: "Contrôle de Qualité",
     description:
       "Programmation et réalisation des descentes de contrôle après habilitation.",
-    icon: <Search size={24} className="text-amber-600" />,
+    icon: <Search size={24} className="text-slate-700" />,
   },
   {
     title: "Vérification Institutionnelle",
     description: "Audit du fonctionnement, organisation et infrastructures.",
-    icon: <School size={24} className="text-amber-600" />,
+    icon: <School size={24} className="text-slate-700" />,
   },
   {
     title: "Conseil & Études",
     description: "Accompagnement des responsables et études systémiques.",
-    icon: <FileSearch size={24} className="text-amber-600" />,
+    icon: <FileSearch size={24} className="text-slate-700" />,
   },
   {
     title: "Collecte de Données",
     description: "Centralisation des listes d'étudiants et d'enseignants.",
-    icon: <ClipboardList size={24} className="text-amber-600" />,
+    icon: <ClipboardList size={24} className="text-slate-700" />,
   },
 ];
 
@@ -172,15 +172,17 @@ const missionsSicp = [
 const EquivalenceContent = () => (
   <div className="animate-fade-in pb-8">
     <header className="mb-5 text-center">
-      <h1 className="text-lg sm:text-xl text-[#0b4b8a] tracking-wide uppercase font-bold border-b-2 border-[rgba(11,75,138,0.1)] pb-3">
+      <h1 className="text-lg sm:text-xl text-slate-900 tracking-wide uppercase font-bold pb-3">
         Dossiers à fournir pour une demande d'équivalence
       </h1>
     </header>
-    <section className="bg-blue-50/50 border-l-4 border-[#0b4b8a] p-4 sm:p-6 rounded-r-lg mb-8">
+
+    {/* Section sans fond gris ni bordure verticale */}
+    <section className="mb-8">
       <ol className="list-decimal pl-5 space-y-4 text-slate-700 text-sm">
         {dossiersEquivalence.map((item, idx) => (
           <li key={idx} className="pl-2">
-            <p className="font-semibold text-[#0b4b8a] mb-1">{item.title}</p>
+            <p className="font-semibold text-slate-900 mb-1">{item.title}</p>
             {item.details && (
               <ul className="list-disc pl-5 mt-2 space-y-1 text-slate-600">
                 {item.details.map((d, i) => (
@@ -194,14 +196,14 @@ const EquivalenceContent = () => (
     </section>
 
     <header className="mb-8 text-center">
-      <h1 className="text-lg sm:text-xl text-[#0b4b8a] tracking-wide uppercase font-bold border-b-2 border-[rgba(11,75,138,0.1)] pb-3">
+      <h1 className="text-lg sm:text-xl text-slate-900 tracking-wide uppercase font-bold pb-3">
         Circuit de la demande d'équivalence
       </h1>
     </header>
 
     <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <div className="bg-white p-5 rounded-lg border-l-4 border-[#0b4b8a] shadow-sm ring-1 ring-slate-100">
-        <h3 className="text-[#063a66] font-bold text-sm mb-2">Remarque :</h3>
+      <div className="bg-white p-5 rounded-lg shadow-sm ring-1 ring-slate-100">
+        <h3 className="text-slate-900 font-bold text-sm mb-2">Remarque :</h3>
         <p className="text-slate-600 text-sm">
           Prise de décision par les membres de la CNE : La décision peut être{" "}
           <strong className="text-slate-900">positive</strong> ou{" "}
@@ -209,8 +211,8 @@ const EquivalenceContent = () => (
           décision défavorable, le motif du rejet sera communiqué.
         </p>
       </div>
-      <div className="bg-white p-5 rounded-lg border-l-4 border-[#0b4b8a] shadow-sm ring-1 ring-slate-100">
-        <h3 className="text-[#063a66] font-bold text-sm mb-2">
+      <div className="bg-white p-5 rounded-lg shadow-sm ring-1 ring-slate-100">
+        <h3 className="text-slate-900 font-bold text-sm mb-2">
           Types de demande :
         </h3>
         <ul className="list-disc pl-4 text-slate-600 text-sm space-y-1">
@@ -226,79 +228,49 @@ const EquivalenceContent = () => (
       </div>
     </section>
 
-    {/* WORKFLOW */}
+    {/* WORKFLOW (sans lignes de liaison) */}
     <div className="flex flex-col gap-10 md:gap-16 pb-2">
-      <div className="relative grid grid-cols-1 md:grid-cols-3 md:gap-8 gap-8">
-        {stepsEquivalence.slice(0, 3).map((step, index) => (
-          <div key={step.id} className="relative group h-full">
-            <div className="bg-white border border-blue-100 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-blue-300 transition-colors z-20 relative">
-              <div className="bg-[#0b4b8a] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-3 md:gap-8 gap-8">
+        {stepsEquivalence.slice(0, 3).map((step) => (
+          <div key={step.id} className="group h-full">
+            <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-slate-400 transition-colors">
+              <div className="bg-slate-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
                 {step.id}
               </div>
               <span className="text-slate-700 text-sm leading-relaxed">
                 {step.title}
               </span>
             </div>
-            {index < 2 && (
-              <div className="hidden md:block absolute top-1/2 -right-10 w-12 h-0.5 bg-blue-200 transform -translate-y-1/2 z-0 after:content-[''] after:absolute after:-right-1 after:-top-1 after:border-t-4 after:border-t-transparent after:border-b-4 after:border-b-transparent after:border-l-4 after:border-l-blue-200" />
-            )}
-            <div className="md:hidden absolute -bottom-8 left-1/2 w-0.5 h-8 bg-blue-200 transform -translate-x-1/2 z-0 after:content-[''] after:absolute after:-left-1 after:bottom-0 after:border-l-4 after:border-l-transparent after:border-r-4 after:border-r-transparent after:border-t-4 after:border-t-blue-200" />
-            {index === 2 && (
-              <div className="hidden md:block absolute top-full right-1/2 w-[calc(200%+4rem)] h-12 pointer-events-none z-0">
-                <div className="absolute top-0 right-0 h-full w-0.5 bg-blue-200 rounded-t-sm"></div>
-                <div className="absolute bottom-0 right-0 w-full h-0.5 bg-blue-200 rounded-bl-xl rounded-br-xl"></div>
-                <div className="absolute top-full left-0 h-4 w-0.5 bg-blue-200"></div>
-                <div className="absolute -bottom-4 -left-1.5 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-[8px] border-t-blue-200"></div>
-              </div>
-            )}
           </div>
         ))}
       </div>
 
-      <div className="relative grid grid-cols-1 md:grid-cols-3 md:gap-8 gap-8 pt-4 md:pt-0">
-        {stepsEquivalence.slice(3, 6).map((step, index) => (
-          <div key={step.id} className="relative group h-full">
-            <div className="bg-white border border-blue-100 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-blue-300 transition-colors z-20 relative">
-              <div className="bg-[#0b4b8a] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-3 md:gap-8 gap-8 pt-4 md:pt-0">
+        {stepsEquivalence.slice(3, 6).map((step) => (
+          <div key={step.id} className="group h-full">
+            <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-slate-400 transition-colors">
+              <div className="bg-slate-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
                 {step.id}
               </div>
               <span className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
                 {step.title}
               </span>
             </div>
-            {index < 2 && (
-              <div className="hidden md:block absolute top-1/2 -right-10 w-12 h-0.5 bg-blue-200 transform -translate-y-1/2 z-0 after:content-[''] after:absolute after:-right-1 after:-top-1 after:border-t-4 after:border-t-transparent after:border-b-4 after:border-b-transparent after:border-l-4 after:border-l-blue-200" />
-            )}
-            <div className="md:hidden absolute -bottom-8 left-1/2 w-0.5 h-8 bg-blue-200 transform -translate-x-1/2 z-0 after:content-[''] after:absolute after:-left-1 after:bottom-0 after:border-l-4 after:border-l-transparent after:border-r-4 after:border-r-transparent after:border-t-4 after:border-t-blue-200" />
-            {index === 2 && (
-              <div className="hidden md:block absolute top-full right-1/2 w-[calc(200%+4rem)] h-12 pointer-events-none z-0">
-                <div className="absolute top-0 right-0 h-full w-0.5 bg-blue-200 rounded-t-sm"></div>
-                <div className="absolute bottom-0 right-0 w-full h-0.5 bg-blue-200 rounded-bl-xl rounded-br-xl"></div>
-                <div className="absolute top-full left-0 h-4 w-0.5 bg-blue-200"></div>
-                <div className="absolute -bottom-4 -left-1.5 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-[8px] border-t-blue-200"></div>
-              </div>
-            )}
           </div>
         ))}
       </div>
 
-      <div className="relative grid grid-cols-1 md:grid-cols-3 md:gap-8 gap-8 pt-4 md:pt-0">
-        {stepsEquivalence.slice(6, 9).map((step, index) => (
-          <div key={step.id} className="relative group h-full">
-            <div className="bg-white border border-blue-100 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-blue-300 transition-colors z-20 relative">
-              <div className="bg-[#0b4b8a] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+      <div className="grid grid-cols-1 md:grid-cols-3 md:gap-8 gap-8 pt-4 md:pt-0">
+        {stepsEquivalence.slice(6, 9).map((step) => (
+          <div key={step.id} className="group h-full">
+            <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-slate-400 transition-colors">
+              <div className="bg-slate-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
                 {step.id}
               </div>
               <span className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
                 {step.title}
               </span>
             </div>
-            {index < 2 && (
-              <div className="hidden md:block absolute top-1/2 -right-10 w-12 h-0.5 bg-blue-200 transform -translate-y-1/2 z-0 after:content-[''] after:absolute after:-right-1 after:-top-1 after:border-t-4 after:border-t-transparent after:border-b-4 after:border-b-transparent after:border-l-4 after:border-l-blue-200" />
-            )}
-            {index < 2 && (
-              <div className="md:hidden absolute -bottom-8 left-1/2 w-0.5 h-8 bg-blue-200 transform -translate-x-1/2 z-0 after:content-[''] after:absolute after:-left-1 after:bottom-0 after:border-l-4 after:border-l-transparent after:border-r-4 after:border-r-transparent after:border-t-4 after:border-t-blue-200" />
-            )}
           </div>
         ))}
       </div>
@@ -310,13 +282,13 @@ const EquivalenceContent = () => (
 const AccreditationContent = () => (
   <div className="animate-fade-in pb-8">
     <header className="mb-5 text-center">
-      <h1 className="text-lg sm:text-xl text-[#067a50] tracking-wide uppercase font-bold border-b-2 border-[rgba(6,122,80,0.1)] pb-3">
+      <h1 className="text-lg sm:text-xl text-slate-900 tracking-wide uppercase font-bold pb-3">
         Mécanisme d'accréditation et de labellisation
       </h1>
     </header>
 
-    <section className="bg-emerald-50/30 border border-emerald-100 rounded-lg p-6 mb-8">
-      <h3 className="text-[#067a50] text-base border-l-4 border-[#067a50] pl-3 font-bold mb-4">
+    <section className="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-8">
+      <h3 className="text-slate-900 text-base border-l-4 border-slate-400 pl-3 font-bold mb-4">
         Objectifs
       </h3>
       <ul className="list-disc pl-5 text-slate-700 text-sm space-y-2 mb-4">
@@ -325,14 +297,14 @@ const AccreditationContent = () => (
         ))}
       </ul>
       <p className="text-sm text-slate-600">
-        <strong className="text-[#067a50]">Portée :</strong> amélioration
+        <strong className="text-slate-900">Portée :</strong> amélioration
         continue de la qualité des établissements d'enseignement supérieur
         (IES).
       </p>
     </section>
 
     <header className="mb-8 text-center">
-      <h1 className="text-lg sm:text-xl text-[#067a50] tracking-wide uppercase font-bold border-b-2 border-[rgba(6,122,80,0.1)] pb-3">
+      <h1 className="text-lg sm:text-xl text-slate-900 tracking-wide uppercase font-bold pb-3">
         Procédure d'évaluation pour l'accréditation
       </h1>
     </header>
@@ -341,8 +313,8 @@ const AccreditationContent = () => (
       <div className="relative grid grid-cols-1 md:grid-cols-3 md:gap-8 gap-8">
         {processusAccreditation.slice(0, 3).map((step, index) => (
           <div key={step.id} className="relative group h-full">
-            <div className="bg-white border border-emerald-100 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-emerald-300 transition-colors z-20 relative">
-              <div className="bg-[#067a50] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+            <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-slate-400 transition-colors z-20 relative">
+              <div className="bg-slate-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
                 {step.id}
               </div>
               <div className="text-slate-700 text-sm leading-relaxed">
@@ -353,15 +325,15 @@ const AccreditationContent = () => (
               </div>
             </div>
             {index < 2 && (
-              <div className="hidden md:block absolute top-1/2 -right-10 w-12 h-0.5 bg-emerald-200 transform -translate-y-1/2 z-0 after:content-[''] after:absolute after:-right-1 after:-top-1 after:border-t-4 after:border-t-transparent after:border-b-4 after:border-b-transparent after:border-l-4 after:border-l-emerald-200" />
+              <div className="hidden md:block absolute top-1/2 -right-10 w-12 h-0.5 bg-slate-200 transform -translate-y-1/2 z-0 after:content-[''] after:absolute after:-right-1 after:-top-1 after:border-t-4 after:border-t-transparent after:border-b-4 after:border-b-transparent after:border-l-4 after:border-l-slate-200" />
             )}
-            <div className="md:hidden absolute -bottom-8 left-1/2 w-0.5 h-8 bg-emerald-200 transform -translate-x-1/2 z-0 after:content-[''] after:absolute after:-left-1 after:bottom-0 after:border-l-4 after:border-l-transparent after:border-r-4 after:border-r-transparent after:border-t-4 after:border-t-emerald-200" />
+            <div className="md:hidden absolute -bottom-8 left-1/2 w-0.5 h-8 bg-slate-200 transform -translate-x-1/2 z-0 after:content-[''] after:absolute after:-left-1 after:bottom-0 after:border-l-4 after:border-l-transparent after:border-r-4 after:border-r-transparent after:border-t-4 after:border-t-slate-200" />
             {index === 2 && (
               <div className="hidden md:block absolute top-full right-1/2 w-[calc(200%+4rem)] h-12 pointer-events-none z-0">
-                <div className="absolute top-0 right-0 h-full w-0.5 bg-emerald-200 rounded-t-sm"></div>
-                <div className="absolute bottom-0 right-0 w-full h-0.5 bg-emerald-200 rounded-bl-xl rounded-br-xl"></div>
-                <div className="absolute top-full left-0 h-4 w-0.5 bg-emerald-200"></div>
-                <div className="absolute -bottom-4 -left-1.5 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-[8px] border-t-emerald-200"></div>
+                <div className="absolute top-0 right-0 h-full w-0.5 bg-slate-200 rounded-t-sm"></div>
+                <div className="absolute bottom-0 right-0 w-full h-0.5 bg-slate-200 rounded-bl-xl rounded-br-xl"></div>
+                <div className="absolute top-full left-0 h-4 w-0.5 bg-slate-200"></div>
+                <div className="absolute -bottom-4 -left-1.5 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-[8px] border-t-slate-200"></div>
               </div>
             )}
           </div>
@@ -371,8 +343,8 @@ const AccreditationContent = () => (
       <div className="relative grid grid-cols-1 md:grid-cols-3 md:gap-8 gap-8 pt-4 md:pt-0">
         {processusAccreditation.slice(3, 6).map((step, index) => (
           <div key={step.id} className="relative group h-full">
-            <div className="bg-white border border-emerald-100 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-emerald-300 transition-colors z-20 relative">
-              <div className="bg-[#067a50] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+            <div className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm h-full flex gap-3 hover:border-slate-400 transition-colors z-20 relative">
+              <div className="bg-slate-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
                 {step.id}
               </div>
               <div className="text-slate-700 text-sm leading-relaxed">
@@ -383,10 +355,10 @@ const AccreditationContent = () => (
               </div>
             </div>
             {index < 2 && (
-              <div className="hidden md:block absolute top-1/2 -right-10 w-12 h-0.5 bg-emerald-200 transform -translate-y-1/2 z-0 after:content-[''] after:absolute after:-right-1 after:-top-1 after:border-t-4 after:border-t-transparent after:border-b-4 after:border-b-transparent after:border-l-4 after:border-l-emerald-200" />
+              <div className="hidden md:block absolute top-1/2 -right-10 w-12 h-0.5 bg-slate-200 transform -translate-y-1/2 z-0 after:content-[''] after:absolute after:-right-1 after:-top-1 after:border-t-4 after:border-t-transparent after:border-b-4 after:border-b-transparent after:border-l-4 after:border-l-slate-200" />
             )}
             {index < 2 && (
-              <div className="md:hidden absolute -bottom-8 left-1/2 w-0.5 h-8 bg-emerald-200 transform -translate-x-1/2 z-0 after:content-[''] after:absolute after:-left-1 after:bottom-0 after:border-l-4 after:border-l-transparent after:border-r-4 after:border-r-transparent after:border-t-4 after:border-t-emerald-200" />
+              <div className="md:hidden absolute -bottom-8 left-1/2 w-0.5 h-8 bg-slate-200 transform -translate-x-1/2 z-0 after:content-[''] after:absolute after:-left-1 after:bottom-0 after:border-l-4 after:border-l-transparent after:border-r-4 after:border-r-transparent after:border-t-4 after:border-t-slate-200" />
             )}
           </div>
         ))}
@@ -398,7 +370,6 @@ const AccreditationContent = () => (
 // --- COMPOSANT VUE SICP (Position Bouton Haut) ---
 const SicpView = ({ onBack }) => (
   <div className="w-full max-w-[1200px] mx-auto bg-white border border-slate-200 rounded-xl p-4 sm:p-8 shadow-xl shadow-slate-200/50 animate-fade-in font-sans">
-    {/* HEADER AVEC BOUTON RETOUR */}
     <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <button
         onClick={onBack}
@@ -410,12 +381,11 @@ const SicpView = ({ onBack }) => (
         />
         Retour aux services
       </button>
-      <div className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-full uppercase tracking-wider">
+      <div className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full uppercase tracking-wider">
         Service SICP
       </div>
     </div>
 
-    {/* CONTENU */}
     <div>
       <header className="mb-10 text-center max-w-4xl mx-auto">
         <h1 className="text-2xl sm:text-3xl text-slate-900 font-bold mb-6">
@@ -450,7 +420,6 @@ const SicpView = ({ onBack }) => (
         </div>
       </header>
 
-      {/* GRID ICONES VISUELS */}
       <div className="grid md:grid-cols-2 gap-8">
         {missionsSicp.map((mission, index) => (
           <div
@@ -458,7 +427,7 @@ const SicpView = ({ onBack }) => (
             className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-md transition-shadow"
           >
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-lg shadow-sm shrink-0">
+              <div className="p-3 bg-slate-100 text-slate-700 rounded-lg shadow-sm shrink-0">
                 {mission.icon}
               </div>
               <div>
@@ -483,7 +452,6 @@ const SaeView = ({ onBack }) => {
 
   return (
     <div className="w-full max-w-[1200px] mx-auto bg-white border border-slate-200 rounded-xl p-4 sm:p-8 shadow-xl shadow-slate-200/50 animate-fade-in font-sans">
-      {/* HEADER AVEC BOUTON RETOUR */}
       <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <button
           onClick={onBack}
@@ -495,18 +463,17 @@ const SaeView = ({ onBack }) => {
           />
           Retour aux services
         </button>
-        <div className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full uppercase tracking-wider">
+        <div className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full uppercase tracking-wider">
           Service SAE
         </div>
       </div>
 
-      {/* Navigation Interne Onglets */}
       <div className="flex flex-col sm:flex-row gap-4 mb-8 border-b border-slate-200 pb-1">
         <button
           onClick={() => setActiveTab("accreditation")}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-t-lg transition-all border-b-2 ${
             activeTab === "accreditation"
-              ? "border-emerald-600 text-emerald-700 bg-emerald-50/50 font-bold"
+              ? "border-slate-800 text-slate-900 bg-slate-100 font-bold"
               : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-medium"
           }`}
         >
@@ -517,7 +484,7 @@ const SaeView = ({ onBack }) => {
           onClick={() => setActiveTab("equivalence")}
           className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-t-lg transition-all border-b-2 ${
             activeTab === "equivalence"
-              ? "border-blue-600 text-blue-700 bg-blue-50/50 font-bold"
+              ? "border-slate-800 text-slate-900 bg-slate-100 font-bold"
               : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-medium"
           }`}
         >
@@ -526,7 +493,6 @@ const SaeView = ({ onBack }) => {
         </button>
       </div>
 
-      {/* Contenu Dynamique */}
       <div>
         {activeTab === "accreditation" && <AccreditationContent />}
         {activeTab === "equivalence" && <EquivalenceContent />}
@@ -544,8 +510,8 @@ const servicesList = [
     shortDesc:
       "Gestion centralisée de l'accréditation des établissements, des offres de formation et des demandes d'équivalence de diplômes.",
     icon: <School size={32} />,
-    color: "bg-blue-600",
-    lightColor: "bg-blue-50 text-blue-600",
+    color: "bg-slate-800",
+    lightColor: "bg-slate-100 text-slate-800",
     features: [
       "Accréditation Institutionnelle",
       "Équivalences Nationales/Étrangères",
@@ -559,8 +525,8 @@ const servicesList = [
     shortDesc:
       "Suivi, contrôle et inspection administrative et pédagogique des Institutions d'Enseignement Supérieur.",
     icon: <Search size={32} />,
-    color: "bg-amber-600",
-    lightColor: "bg-amber-50 text-amber-600",
+    color: "bg-slate-800",
+    lightColor: "bg-slate-100 text-slate-800",
     features: [
       "Contrôle de qualité",
       "Suivi des infrastructures",
@@ -595,12 +561,11 @@ const Services = () => {
       ></div>
 
       <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
-        {/* VUE ACCUEIL */}
         {activeView === "home" && (
           <div className="animate-fade-in">
             <div className="max-w-3xl mx-auto text-center mb-16">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-4">
-                <ShieldCheck size={14} />{" "}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider mb-4">
+                <ShieldCheck size={14} />
                 <span>Nos Domaines d'Intervention</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
@@ -639,7 +604,7 @@ const Services = () => {
                       {service.subtitle}
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3 group-hover:text-indigo-700 transition-colors">
+                  <h3 className="text-2xl font-bold text-slate-900 mb-3 group-hover:text-slate-800 transition-colors">
                     {service.title}
                   </h3>
                   <p className="text-slate-600 mb-6 leading-relaxed flex-grow text-sm sm:text-base">
@@ -656,15 +621,15 @@ const Services = () => {
                           >
                             <CheckCircle2
                               size={16}
-                              className="text-green-500 shrink-0 mt-0.5"
-                            />{" "}
+                              className="text-slate-500 shrink-0 mt-0.5"
+                            />
                             <span>{feature}</span>
                           </li>
                         ))}
                       </ul>
                       <button
                         onClick={() => setActiveView(service.id)}
-                        className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-100 text-slate-700 font-semibold hover:border-indigo-600 hover:text-indigo-600 transition-all group-hover:bg-indigo-50"
+                        className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-100 text-slate-700 font-semibold hover:border-slate-800 hover:text-slate-900 transition-all group-hover:bg-slate-50"
                       >
                         Accéder au service <ArrowRight size={18} />
                       </button>
@@ -683,12 +648,10 @@ const Services = () => {
           </div>
         )}
 
-        {/* VUE SAE (Combinée) */}
         {activeView === "sae" && (
           <SaeView onBack={() => setActiveView("home")} />
         )}
 
-        {/* VUE SICP */}
         {activeView === "sicp" && (
           <SicpView onBack={() => setActiveView("home")} />
         )}

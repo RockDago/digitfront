@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Footer from "./Footer";
 import Login from "../Login/Login";
+import { ToastContainer } from "react-toastify"; // <-- IMPORTANT: Ajout de l'import
+import "react-toastify/dist/ReactToastify.css";
 
 const NAV_ITEMS = [
   { id: "accueil", label: "Accueil" },
@@ -32,23 +34,20 @@ const Navbar = ({ children }) => {
 
   // --- GESTION SCROLL & OBSERVERS ---
   useEffect(() => {
-    // Si on n'est pas sur la page d'accueil, on ne track pas le scroll
     if (location.pathname !== "/") {
       setIsHeroVisible(false);
       return;
     }
 
-    // 1. Observer pour le Hero (transparence navbar)
     const hero = document.getElementById("accueil");
     if (hero) {
       const heroObserver = new IntersectionObserver(
         ([entry]) => setIsHeroVisible(entry.isIntersecting),
-        { threshold: 0.1 }, // Dès que 10% du hero est visible/invisible
+        { threshold: 0.1 },
       );
       heroObserver.observe(hero);
     }
 
-    // 2. Observer pour les Sections (Active Link)
     const sectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -58,15 +57,11 @@ const Navbar = ({ children }) => {
         });
       },
       {
-        // ASTUCE PRO :
-        // On définit une zone de détection très fine au milieu de l'écran (-50% en haut, -50% en bas).
-        // L'élément qui croise cette ligne centrale est considéré comme "Actif".
         rootMargin: "-45% 0px -45% 0px",
         threshold: 0,
       },
     );
 
-    // On observe chaque section définie dans NAV_ITEMS
     NAV_ITEMS.forEach((item) => {
       const element = document.getElementById(item.id);
       if (element) sectionObserver.observe(element);
@@ -90,7 +85,6 @@ const Navbar = ({ children }) => {
     const scrollToElement = () => {
       const el = document.getElementById(id);
       if (el) {
-        // Offset pour compenser la hauteur de la navbar fixe (environ 80px)
         const headerOffset = 80;
         const elementPosition = el.getBoundingClientRect().top;
         const offsetPosition =
@@ -100,15 +94,13 @@ const Navbar = ({ children }) => {
           top: offsetPosition,
           behavior: "smooth",
         });
-        setActiveId(id); // Force l'actif immédiatement au clic
+        setActiveId(id);
       }
     };
 
-    // Petit délai pour assurer la fluidité
     setTimeout(scrollToElement, 100);
   };
 
-  // Gestion du scroll après navigation depuis une autre page
   useEffect(() => {
     if (location.state?.scrollTo && location.pathname === "/") {
       setTimeout(() => {
@@ -116,21 +108,26 @@ const Navbar = ({ children }) => {
         if (el) {
           el.scrollIntoView({ behavior: "smooth", block: "start" });
         }
-      }, 500); // Délai un peu plus long pour laisser le temps au rendu
+      }, 500);
     }
   }, [location]);
 
-  // Bloquer le scroll body quand le menu mobile est ouvert
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "unset";
   }, [isMobileMenuOpen]);
 
-  // Couleur du burger selon le fond
   const burgerColor =
     isHeroVisible && !isMobileMenuOpen ? "text-white" : "text-slate-900";
 
   return (
     <div className="flex flex-col min-h-screen font-sans antialiased text-slate-900 bg-slate-50">
+      {/* --- TOAST CONTAINER GLOBAL (Doit être en dehors de tout z-index restrictif) --- */}
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        className="toast-container-override"
+      />
+
       {/* --- HEADER --- */}
       <header
         className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
@@ -143,13 +140,13 @@ const Navbar = ({ children }) => {
           {/* LOGO */}
           <Link to="/" className="relative z-50 flex items-center gap-2 group">
             <span
-              className={`text-2xl font-black tracking-tight transition-colors duration-300 font-cassannet ${
+              className={`text-2xl font-black tracking-tight transition-colors duration-300 font-henno ${
                 isHeroVisible && !isMobileMenuOpen
                   ? "text-white"
                   : "text-blue-600"
               }`}
             >
-              DAAQ
+              HAE
             </span>
           </Link>
 
@@ -171,7 +168,6 @@ const Navbar = ({ children }) => {
                   }`}
                 >
                   {item.label}
-                  {/* Ligne soulignée animée */}
                   <span
                     className={`absolute -bottom-1 left-0 h-0.5 bg-current transition-all duration-300 ${
                       isActive ? "w-full" : "w-0 group-hover:w-full"
@@ -293,7 +289,8 @@ const Navbar = ({ children }) => {
         </div>
       )}
 
-      <style jsx>{`
+      {/* --- STYLES GLOBAUX --- */}
+      <style jsx global>{`
         @keyframes fade-in-up {
           from {
             opacity: 0;
@@ -315,8 +312,10 @@ const Navbar = ({ children }) => {
           clip-path: circle(150% at 100% 0);
           pointer-events: auto;
         }
-        :global(.Toastify__toast-container) {
-          z-index: 99999 !important;
+
+        /* C'est ICI la clé pour que le toast passe par-dessus le modal (z-index modal = 100) */
+        .toast-container-override {
+          z-index: 999999 !important;
         }
       `}</style>
     </div>

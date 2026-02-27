@@ -72,16 +72,12 @@ const Home = () => {
 
         <PageContainer className="relative z-10">
           <div className="max-w-4xl space-y-6 sm:space-y-8 lg:space-y-8 animate-fade-in-up text-left">
-            <div className="flex justify-start">
-              <div className="inline-block px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 font-medium text-[10px] sm:text-xs lg:text-sm tracking-wide uppercase backdrop-blur-sm">
-                Assurance Qualité & Excellence
-              </div>
-            </div>
+           
 
             <h1 className="text-2xl sm:text-4xl lg:text-7xl font-extrabold text-white leading-[1.2] lg:leading-[1.1] tracking-tight">
-              Direction de l'Accréditation <br className="hidden sm:block" />
+              Direction de l’Habilitation, de l’Accréditation <br className="hidden sm:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 block sm:inline mt-2 sm:mt-0">
-                et de l'Assurance Qualité
+                et de l’Équivalence (HAE)
               </span>
             </h1>
 

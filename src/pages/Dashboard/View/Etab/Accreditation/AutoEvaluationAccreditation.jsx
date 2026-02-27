@@ -2,11 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import mesupresLogo from "../../../../../assets/images/mesupres-logo.png"; // Ajustez le chemin selon votre structure
+import mesupresLogo from "../../../../../assets/images/mesupres-logo.png"; 
 
-/* =======================
-   SECTIONS D'ÉVALUATION
-   ======================= */
+
 const sectionsEvaluation = [
   {
     title: "LA POLITIQUE DE FORMATION",
@@ -2020,9 +2018,9 @@ export default function AutoEvaluationAccreditation() {
 
   // ========== PAGE 1 : CANEVAS ET ACCEPTATION ==========
   const renderCanevasView = () => (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-8 px-4 sm:px-6 lg:px-8 relative">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8 relative">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-8 md:mb-12 bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-gray-100">
+        <div className="text-center mb-8 md:mb-12 bg-white rounded-2xl p-8 border border-gray-100">
           <div className="flex justify-center mb-4">
             <img
               src={mesupresLogo}
@@ -2123,7 +2121,6 @@ export default function AutoEvaluationAccreditation() {
                             </div>
                           </div>
                         </div>
-                        {/* connectors removed */}
                       </div>
                     ))}
                   </div>
@@ -2166,7 +2163,6 @@ export default function AutoEvaluationAccreditation() {
                             </div>
                           </div>
                         </div>
-                        {/* connectors removed */}
                       </div>
                     ))}
                   </div>
@@ -2581,7 +2577,6 @@ export default function AutoEvaluationAccreditation() {
                                   </option>
                                 ))}
                               </select>
-                              {/* Synchronisation visuelle supprimée */}
                             </div>
                           </div>
                         </div>

@@ -19,7 +19,7 @@ export default function DashboardEtab() {
     }
   }, [navigate]);
 
-  // ✅ Fonction pour la déconnexion (comme DashboardAdmin)
+  // ✅ Fonction pour la déconnexion
   const performLogout = () => {
     AuthService.logout();
     navigate("/");
@@ -28,7 +28,7 @@ export default function DashboardEtab() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* 1. SIDEBAR */}
       <SidebarEtab
         isSidebarCollapsed={isSidebarCollapsed}
@@ -56,7 +56,7 @@ export default function DashboardEtab() {
         </div>
 
         {/* CONTENT */}
-        <main className="flex-1 px-8 pt-6 pb-8 bg-white overflow-x-hidden">
+        <main className="flex-1 px-8 pt-6 pb-8 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

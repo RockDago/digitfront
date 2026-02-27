@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AuthService } from "../../services";
-
 import Navbar from "../../pages/Dashboard/Navbar/Navbar";
 import SidebarUni from "../../pages/Dashboard/Sidebar/SidebarUni";
+import { ThemeContext } from "../../context/ThemeContext";
 
 export default function DashboardUni() {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const navigate = useNavigate();
+
+  const { theme } = useContext(ThemeContext);
 
   useEffect(() => {
     if (!AuthService.isAuthenticated()) {
@@ -22,11 +24,17 @@ export default function DashboardUni() {
   };
 
   const user = AuthService.getCurrentUser();
-
   if (!user) return null;
 
+  const isDark = theme === "dark";
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className={`
+        min-h-screen transition-colors duration-300
+        ${isDark ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"}
+      `}
+    >
       <SidebarUni
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -50,8 +58,15 @@ export default function DashboardUni() {
           />
         </div>
 
-        <main className="flex-1 px-8 pt-6 pb-8 bg-gray-50 overflow-x-hidden">
-          <Outlet />
+        <main
+          className={`
+            flex-1 px-6 sm:px-8 pt-6 pb-8 overflow-x-hidden transition-colors duration-300
+            ${isDark ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"}
+          `}
+        >
+          <div className="max-w-7xl mx-auto w-full">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

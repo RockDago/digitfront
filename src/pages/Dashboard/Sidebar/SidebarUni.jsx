@@ -1,16 +1,14 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import React, { useContext } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   FaBars,
   FaHome,
-  FaUniversity,
-  FaGraduationCap,
-  FaFileUpload,
-  FaChartBar,
-  FaHistory,
-  FaChevronRight,
+  FaTrophy,
   FaTimes,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
+import { ThemeContext } from "../../../context/ThemeContext";
 
 export default function SidebarUni({
   collapsed,
@@ -18,59 +16,35 @@ export default function SidebarUni({
   isMobileOpen,
   setIsMobileOpen,
 }) {
-  // États accordéons
-  const [programmesOpen, setProgrammesOpen] = useState(false);
-  const [demandesOpen, setDemandesOpen] = useState(false);
-  const [suiviOpen, setSuiviOpen] = useState(false);
-
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, toggleTheme } = useContext(ThemeContext);
 
-  // --- MENU CONFIG ---
-  const mainNavItems = [
+  // ── MENU CONFIG ────────────────────────────────────────
+  const navItems = [
     {
       to: "/dashboard/universite/tableau-de-bord",
       label: "Tableau de bord",
       icon: FaHome,
     },
-  ];
-
-  const programmesItems = [
-    { label: "Mes programmes", path: "/dashboard/universite/mes-programmes" },
     {
-      label: "Créer un programme",
-      path: "/dashboard/universite/creer-programme",
-    },
-    {
-      label: "Modifier programme",
-      path: "/dashboard/universite/modifier-programme",
+      to: "/dashboard/universite/classement",
+      label: "Classement & Performance",
+      icon: FaTrophy,
     },
   ];
 
-  const demandesItems = [
-    {
-      label: "Nouvelle demande",
-      path: "/dashboard/universite/nouvelle-demande",
-    },
-    {
-      label: "Demandes en cours",
-      path: "/dashboard/universite/demandes-cours",
-    },
-    {
-      label: "Historique demandes",
-      path: "/dashboard/universite/historique-demandes",
-    },
-  ];
+  // ── STYLES ─────────────────────────────────────────────
+  const baseItemClass =
+    "group flex items-center justify-between px-4 py-3 mx-3 mb-1 rounded-xl transition-all duration-200 cursor-pointer text-sm font-medium";
 
-  const suiviItems = [
-    {
-      label: "Suivi des évaluations",
-      path: "/dashboard/universite/suivi-evaluations",
-    },
-    { label: "Notifications", path: "/dashboard/universite/notifications" },
-    { label: "Calendrier", path: "/dashboard/universite/calendrier" },
-  ];
+  const activeClass =
+    "bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-300";
 
+  const inactiveClass =
+    "text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white";
+
+  // ── HELPERS ────────────────────────────────────────────
   const goTo = (path) => {
     navigate(path);
     setIsMobileOpen(false);
@@ -78,90 +52,10 @@ export default function SidebarUni({
 
   const isLinkActive = (path) => location.pathname === path;
 
-  // --- STYLES ---
-  const baseItemClass =
-    "group flex items-center justify-between px-4 py-3 mx-3 mb-1 rounded-xl transition-all duration-200 cursor-pointer text-sm font-medium";
-  const activeClass = "bg-blue-50 text-blue-600";
-  const inactiveClass = "text-gray-500 hover:bg-gray-50 hover:text-gray-900";
-
-  const subItemClass =
-    "flex items-center px-4 py-2 my-1 mx-3 rounded-lg text-sm text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors cursor-pointer pl-11";
-
-  // --- HELPER ACCORDION ---
-  const renderAccordion = (title, icon, isOpen, setIsOpen, items) => {
-    const Icon = icon;
-    const isChildActive = items.some((item) =>
-      location.pathname.includes(item.path),
-    );
-    const effectiveIsOpen = isOpen || (isChildActive && !collapsed);
-
-    return (
-      <div className="mb-1">
-        <div
-          onClick={() => {
-            if (collapsed) setCollapsed(false);
-            setIsOpen(!isOpen);
-          }}
-          className={`${baseItemClass} ${
-            isChildActive ? activeClass : inactiveClass
-          }`}
-          title={collapsed ? title : ""}
-        >
-          <div className="flex items-center gap-3">
-            <Icon
-              className={`text-lg flex-shrink-0 ${
-                isChildActive
-                  ? "text-blue-600"
-                  : "text-gray-400 group-hover:text-gray-600"
-              }`}
-            />
-            {!collapsed && <span>{title}</span>}
-          </div>
-          {!collapsed && (
-            <FaChevronRight
-              className={`text-xs text-gray-400 transition-transform duration-200 ${
-                effectiveIsOpen ? "rotate-90" : ""
-              }`}
-            />
-          )}
-        </div>
-
-        {/* Sous-menu avec animation Height */}
-        <div
-          className={`overflow-hidden transition-all duration-300 ${
-            effectiveIsOpen && !collapsed
-              ? "max-h-96 opacity-100"
-              : "max-h-0 opacity-0"
-          }`}
-        >
-          {items.map((subItem, idx) => (
-            <div
-              key={idx}
-              onClick={() => goTo(subItem.path)}
-              className={`${subItemClass} ${
-                location.pathname === subItem.path
-                  ? "text-blue-600 font-semibold bg-blue-50"
-                  : ""
-              }`}
-            >
-              <div
-                className={`w-1.5 h-1.5 rounded-full mr-3 ${
-                  location.pathname === subItem.path
-                    ? "bg-blue-600"
-                    : "bg-gray-300"
-                }`}
-              />
-              {subItem.label}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
+  // ── RENDER ─────────────────────────────────────────────
   return (
     <>
-      {/* Overlay Mobile */}
+      {/* Overlay mobile */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 lg:hidden"
@@ -171,176 +65,104 @@ export default function SidebarUni({
 
       <aside
         className={`
-          fixed top-0 left-0 h-full bg-white z-50 border-r border-gray-100 shadow-xl lg:shadow-none
+          fixed top-0 left-0 h-full bg-white dark:bg-gray-900 z-50 
+          border-r border-gray-100 dark:border-gray-800 
+          shadow-xl lg:shadow-none
           transition-all duration-300 ease-in-out flex flex-col
           ${collapsed ? "w-20" : "w-72"}
-          ${
-            isMobileOpen
-              ? "translate-x-0"
-              : "-translate-x-full lg:translate-x-0"
-          }
+          ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        {/* HEADER SIDEBAR: Logo + Toggle */}
-        <div className="h-20 flex items-center justify-center px-6 border-b border-gray-50 mb-4 relative">
-          {/* LOGO DAAQ */}
+        {/* HEADER ── Logo + boutons */}
+        <div className="h-20 flex items-center justify-center px-6 border-b border-gray-50 dark:border-gray-800 mb-4 relative">
           {!collapsed && (
-            <Link
-              to="/"
-              className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"
+            <div
+              className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
+              onClick={() => goTo("/dashboard/universite/tableau-de-bord")}
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
-                DAAQ
+              <span className="text-2xl font-black tracking-tight text-blue-600 dark:text-blue-400 font-henno">
+                HAE
               </span>
-            </Link>
+            </div>
           )}
 
-          {/* TOGGLE BUTTON (Desktop only) */}
+          {/* Toggle sidebar (desktop) */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-gray-100 transition-colors hidden lg:block ${
-              !collapsed ? "absolute right-4" : ""
-            }`}
+            className={`p-2 rounded-lg text-gray-400 dark:text-gray-300 
+                       hover:text-blue-600 hover:bg-gray-100 
+                       dark:hover:text-blue-400 dark:hover:bg-gray-800 
+                       transition-colors hidden lg:block
+                       ${!collapsed ? "absolute right-4" : "mx-auto"}`}
+            title={collapsed ? "Développer" : "Réduire"}
           >
             <FaBars />
           </button>
 
-          {/* CLOSE BUTTON (Mobile only) */}
+          {/* Close mobile */}
           <button
             onClick={() => setIsMobileOpen(false)}
             className="lg:hidden p-2 text-gray-400 hover:text-red-500 absolute right-4"
+            title="Fermer le menu"
           >
             <FaTimes />
           </button>
         </div>
 
-        {/* NAVIGATION LIST */}
+        {/* NAVIGATION */}
         <nav className="flex-1 overflow-y-auto custom-scrollbar pb-6">
-          {/* Section: MAIN */}
           <div className="mb-6">
             {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Navigation Principale
+              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                Navigation
               </div>
             )}
-            {mainNavItems.map((item) => (
-              <div
-                key={item.to}
-                onClick={() => goTo(item.to)}
-                className={`${baseItemClass} ${
-                  isLinkActive(item.to) ? activeClass : inactiveClass
-                }`}
-                title={collapsed ? item.label : ""}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon
-                    className={`text-lg flex-shrink-0 ${
-                      isLinkActive(item.to)
-                        ? "text-blue-600"
-                        : "text-gray-400 group-hover:text-gray-600"
-                    }`}
-                  />
-                  {!collapsed && <span>{item.label}</span>}
+
+            {navItems.map((item) => {
+              const active = isLinkActive(item.to);
+              return (
+                <div
+                  key={item.to}
+                  onClick={() => goTo(item.to)}
+                  className={`${baseItemClass} ${active ? activeClass : inactiveClass}`}
+                  title={collapsed ? item.label : ""}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon
+                      className={`text-lg flex-shrink-0 ${
+                        active
+                          ? "text-blue-600 dark:text-blue-300"
+                          : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
+                      }`}
+                    />
+                    {!collapsed && <span>{item.label}</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
-
-            {/* Informations Université */}
-            <div
-              onClick={() => goTo("/dashboard/universite/informations")}
-              className={`${baseItemClass} ${
-                isLinkActive("/dashboard/universite/informations")
-                  ? activeClass
-                  : inactiveClass
-              }`}
-              title={collapsed ? "Informations" : ""}
-            >
-              <div className="flex items-center gap-3">
-                <FaUniversity
-                  className={`text-lg flex-shrink-0 ${
-                    isLinkActive("/dashboard/universite/informations")
-                      ? "text-blue-600"
-                      : "text-gray-400 group-hover:text-gray-600"
-                  }`}
-                />
-                {!collapsed && <span>Informations Université</span>}
-              </div>
-            </div>
-          </div>
-
-          {/* Section: PROGRAMMES */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Programmes
-              </div>
-            )}
-
-            {renderAccordion(
-              "Gestion des programmes",
-              FaGraduationCap,
-              programmesOpen,
-              setProgrammesOpen,
-              programmesItems,
-            )}
-          </div>
-
-          {/* Section: DEMANDES */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Demandes
-              </div>
-            )}
-
-            {renderAccordion(
-              "Soumission de demandes",
-              FaFileUpload,
-              demandesOpen,
-              setDemandesOpen,
-              demandesItems,
-            )}
-          </div>
-
-          {/* Section: SUIVI */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Suivi
-              </div>
-            )}
-
-            {renderAccordion(
-              "Suivi & Historique",
-              FaHistory,
-              suiviOpen,
-              setSuiviOpen,
-              suiviItems,
-            )}
-
-            {/* Tableau de bord analytique */}
-            <div
-              onClick={() => goTo("/dashboard/universite/analytique")}
-              className={`${baseItemClass} ${
-                isLinkActive("/dashboard/universite/analytique")
-                  ? activeClass
-                  : inactiveClass
-              }`}
-              title={collapsed ? "Analytique" : ""}
-            >
-              <div className="flex items-center gap-3">
-                <FaChartBar
-                  className={`text-lg flex-shrink-0 ${
-                    isLinkActive("/dashboard/universite/analytique")
-                      ? "text-blue-600"
-                      : "text-gray-400 group-hover:text-gray-600"
-                  }`}
-                />
-                {!collapsed && <span>Tableau de bord analytique</span>}
-              </div>
-            </div>
+              );
+            })}
           </div>
         </nav>
+
+        {/* FOOTER ── Dark/Light mode */}
+        <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-3">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium
+                     bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200
+                     hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              {theme === "dark" ? (
+                <FaMoon className="text-lg text-yellow-400" />
+              ) : (
+                <FaSun className="text-lg text-yellow-400" />
+              )}
+              {!collapsed && (
+                <span>{theme === "dark" ? "Mode sombre" : "Mode clair"}</span>
+              )}
+            </div>
+          </button>
+        </div>
       </aside>
     </>
   );

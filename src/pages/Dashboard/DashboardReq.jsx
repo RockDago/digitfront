@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AuthService } from "../../services";
 
@@ -8,18 +8,17 @@ import SidebarReq from "./Sidebar/SidebarReq";
 export default function DashboardReq() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
   const navigate = useNavigate();
-  const user = useMemo(() => AuthService.getCurrentUser() || {}, []);
 
-  // --- 1. SÉCURITÉ : Redirection si non connecté ---
+  // Comme les autres dashboards
+  const [user] = useState(AuthService.getCurrentUser());
+
   useEffect(() => {
     if (!AuthService.isAuthenticated()) {
       navigate("/login");
     }
   }, [navigate]);
 
-  // --- 2. FONCTION DE DÉCONNEXION ---
   const performLogout = () => {
     AuthService.logout();
     navigate("/");
@@ -30,20 +29,27 @@ export default function DashboardReq() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-white">
-      {" "}
-      {/* Changé en fond blanc */}
-      {/* 1. SIDEBAR */}
+    <div
+      className={`
+        min-h-screen
+        bg-white dark:bg-gray-900
+        text-gray-900 dark:text-gray-100
+        transition-colors duration-300
+      `}
+    >
+      {/* SIDEBAR */}
       <SidebarReq
         isSidebarCollapsed={isSidebarCollapsed}
         toggleSidebar={toggleSidebar}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
       />
-      {/* 2. WRAPPER PRINCIPAL */}
+
+      {/* CONTENU PRINCIPAL */}
       <div
         className={`
-          flex flex-col min-h-screen transition-all duration-300 ease-in-out
+          flex flex-col min-h-screen
+          transition-all duration-300 ease-in-out
           ${isSidebarCollapsed ? "lg:ml-20" : "lg:ml-72"}
           ml-0
         `}
@@ -58,11 +64,20 @@ export default function DashboardReq() {
           />
         </div>
 
-        {/* CONTENT */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-4 pb-8 bg-white overflow-x-hidden">
-          {" "}
-          {/* Fond blanc ici aussi */}
-          <Outlet />
+        {/* ZONE DE CONTENU */}
+        <main
+          className={`
+            flex-1
+            px-6 sm:px-8
+            pt-6 pb-10 md:pb-12
+            bg-white dark:bg-gray-900
+            text-gray-900 dark:text-gray-100
+            transition-colors duration-300
+          `}
+        >
+          <div className="mx-auto w-full max-w-7xl">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

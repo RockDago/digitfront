@@ -4,3 +4,14 @@ body {
   padding: 0;
   height: 100%;
 }
+
+/* Fix lottie-player background */
+lottie-player {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Fix backdrop résiduel */
+.grecaptcha-badge {
+  z-index: 40 !important;
+}

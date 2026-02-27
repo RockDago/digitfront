@@ -19,7 +19,6 @@ const RenouvellementCanevas = () => {
   const [hasAcceptedCanevas, setHasAcceptedCanevas] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Gestion du bouton de retour en haut
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);

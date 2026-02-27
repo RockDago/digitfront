@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   getContactInfo,
   updateContactInfo,
@@ -18,6 +18,7 @@ import {
   Save,
 } from "lucide-react";
 import "react-toastify/dist/ReactToastify.css";
+import { ThemeContext } from "../../../../context/ThemeContext";
 
 export default function ContactParam() {
   const [formData, setFormData] = useState({
@@ -29,6 +30,8 @@ export default function ContactParam() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+
+  const { theme } = useContext(ThemeContext);
 
   useEffect(() => {
     fetchContactInfo();
@@ -62,10 +65,7 @@ export default function ContactParam() {
       }
     } catch (error) {
       console.error("Erreur lors de la récupération:", error);
-      toast.error("Erreur lors du chargement des informations", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.error("Erreur lors du chargement des informations");
     } finally {
       setLoading(false);
     }
@@ -114,42 +114,24 @@ export default function ContactParam() {
   };
 
   const handlePhoneChange = (index, value) => {
-    if (!value.startsWith("+261 ")) {
-      return;
-    }
+    if (!value.startsWith("+261 ")) return;
 
     const digits = value.replace(/\D/g, "").substring(3);
 
-    if (digits.length > 9) {
-      return;
-    }
+    if (digits.length > 9) return;
 
     let formatted = "+261 ";
-    if (digits.length > 0) {
-      formatted += digits.substring(0, 2);
-    }
-    if (digits.length > 2) {
-      formatted += " " + digits.substring(2, 4);
-    }
-    if (digits.length > 4) {
-      formatted += " " + digits.substring(4, 7);
-    }
-    if (digits.length > 7) {
-      formatted += " " + digits.substring(7, 9);
-    }
+    if (digits.length > 0) formatted += digits.substring(0, 2);
+    if (digits.length > 2) formatted += " " + digits.substring(2, 4);
+    if (digits.length > 4) formatted += " " + digits.substring(4, 7);
+    if (digits.length > 7) formatted += " " + digits.substring(7, 9);
 
     const newPhones = [...formData.phones];
     newPhones[index] = formatted;
-    setFormData((prev) => ({
-      ...prev,
-      phones: newPhones,
-    }));
+    setFormData((prev) => ({ ...prev, phones: newPhones }));
 
     if (validationErrors.phones) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        phones: "",
-      }));
+      setValidationErrors((prev) => ({ ...prev, phones: "" }));
     }
   };
 
@@ -159,34 +141,19 @@ export default function ContactParam() {
         ...prev,
         phones: [...prev.phones, "+261 "],
       }));
-      toast.info("Nouveau champ de telephone ajoute", {
-        position: "top-right",
-        autoClose: 2000,
-      });
+      toast.info("Nouveau champ téléphone ajouté");
     } else {
-      toast.warning("Maximum 3 numeros de telephone autorises", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.warning("Maximum 3 numéros de téléphone autorisés");
     }
   };
 
   const removePhoneField = (index) => {
     if (formData.phones.length > 1) {
       const newPhones = formData.phones.filter((_, i) => i !== index);
-      setFormData((prev) => ({
-        ...prev,
-        phones: newPhones,
-      }));
-      toast.info("Numero de telephone supprime", {
-        position: "top-right",
-        autoClose: 2000,
-      });
+      setFormData((prev) => ({ ...prev, phones: newPhones }));
+      toast.info("Numéro de téléphone supprimé");
     } else {
-      toast.warning("Au moins un numero de telephone est requis", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.warning("Au moins un numéro de téléphone est requis");
     }
   };
 
@@ -202,15 +169,9 @@ export default function ContactParam() {
 
     if (cleanedPhones.length === 0) {
       toast.error(
-        "Au moins un numero de telephone valide est requis (9 chiffres)",
-        {
-          position: "top-right",
-          autoClose: 4000,
-        },
+        "Au moins un numéro de téléphone valide est requis (9 chiffres)",
       );
-      setValidationErrors({
-        phones: "Au moins un numero de telephone valide est requis",
-      });
+      setValidationErrors({ phones: "Au moins un numéro valide requis" });
       return;
     }
 
@@ -225,10 +186,7 @@ export default function ContactParam() {
 
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
-      toast.error("Veuillez corriger les erreurs avant de continuer", {
-        position: "top-right",
-        autoClose: 4000,
-      });
+      toast.error("Veuillez corriger les erreurs avant de continuer");
       return;
     }
 
@@ -240,10 +198,7 @@ export default function ContactParam() {
       const result = await updateContactInfo(dataToSend);
 
       if (result.success) {
-        toast.success("Informations mises a jour avec succes", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        toast.success("Informations mises à jour avec succès");
         await fetchContactInfo();
       } else {
         throw result.error;
@@ -256,27 +211,15 @@ export default function ContactParam() {
         const errors = parseValidationErrors(errorData);
 
         if (errors.general) {
-          toast.error(errors.general, {
-            position: "top-right",
-            autoClose: 4000,
-          });
+          toast.error(errors.general);
         } else if (Object.keys(errors).length > 0) {
           setValidationErrors(errors);
-          toast.error("Erreurs de validation. Veuillez verifier les champs.", {
-            position: "top-right",
-            autoClose: 4000,
-          });
+          toast.error("Erreurs de validation. Vérifiez les champs.");
         } else {
-          toast.error("Erreur de validation des donnees", {
-            position: "top-right",
-            autoClose: 4000,
-          });
+          toast.error("Erreur de validation des données");
         }
       } else {
-        toast.error("Erreur lors de la mise a jour des informations", {
-          position: "top-right",
-          autoClose: 4000,
-        });
+        toast.error("Erreur lors de la mise à jour des informations");
       }
     } finally {
       setSaving(false);
@@ -288,7 +231,7 @@ export default function ContactParam() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="text-gray-600">Chargement...</p>
+          <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
         </div>
       </div>
     );
@@ -300,51 +243,43 @@ export default function ContactParam() {
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
-        newestOnTop={true}
+        newestOnTop
         closeOnClick
         rtl={false}
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="light"
+        theme={theme === "dark" ? "dark" : "light"}
       />
 
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-            Coordonnees de Contact
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            Coordonnées de Contact
           </h1>
-          <p className="text-sm sm:text-base text-gray-600">
-            Gerez les informations de contact affichees publiquement sur le site
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+            Gérez les informations de contact affichées publiquement sur le site
           </p>
         </div>
 
-        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
-          <div className="flex items-start gap-2 sm:gap-3">
-            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs sm:text-sm text-blue-900 font-medium">
-                Information importante
-              </p>
-              <p className="text-xs sm:text-sm text-blue-700 mt-1">
-                Ces coordonnees seront visibles par tous les visiteurs du site.
-                Assurez-vous qu'elles sont a jour.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-          <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5 flex items-center gap-2">
-              <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-              Coordonnees principales
+        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+          {/* Bloc Coordonnées principales */}
+          <div
+            className="
+            bg-white dark:bg-gray-800
+            border border-gray-200 dark:border-gray-700
+            rounded-2xl shadow-sm p-6 sm:p-7
+          "
+          >
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-5 flex items-center gap-3">
+              <Mail className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              Coordonnées principales
             </h2>
 
-            <div className="mb-4 sm:mb-6">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                Adresse email
-                <span className="text-red-500 ml-1">*</span>
+            {/* Email */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Adresse email <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -353,45 +288,49 @@ export default function ContactParam() {
                 onChange={handleChange}
                 placeholder="contact@exemple.com"
                 required
-                className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                  validationErrors.email
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300"
-                }`}
+                className={`
+                  w-full px-4 py-3 text-base
+                  border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition
+                  bg-white dark:bg-gray-800
+                  border-gray-300 dark:border-gray-600
+                  text-gray-900 dark:text-gray-100
+                  placeholder-gray-400 dark:placeholder-gray-500
+                  ${validationErrors.email ? "border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-950/30" : ""}
+                `}
               />
               {validationErrors.email && (
-                <p className="text-red-600 text-xs sm:text-sm mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                <p className="text-red-600 dark:text-red-400 text-sm mt-1.5 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4" />
                   {validationErrors.email}
                 </p>
               )}
             </div>
 
+            {/* Téléphones */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                Numeros de telephone
-                <span className="text-red-500 ml-1">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Numéros de téléphone <span className="text-red-500">*</span>
               </label>
-              <p className="text-xs sm:text-sm text-gray-500 mb-3">
-                Format: +261 XX XX XXX XX (9 chiffres). Maximum 3 numeros
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                Format : +261 XX XX XXX XX (9 chiffres). Maximum 3 numéros
               </p>
 
               {validationErrors.phones && (
-                <p className="text-red-600 text-xs sm:text-sm mb-3 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                <p className="text-red-600 dark:text-red-400 text-sm mb-4 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4" />
                   {validationErrors.phones}
                 </p>
               )}
 
-              <div className="space-y-2 sm:space-y-3">
+              <div className="space-y-3">
                 {formData.phones.map((phone, index) => {
                   const digits = phone.replace(/\D/g, "").substring(3);
                   const isComplete = digits.length === 9;
 
                   return (
-                    <div key={index} className="flex gap-2">
+                    <div key={index} className="flex gap-3">
                       <div className="relative flex-1">
-                        <Phone className="absolute left-3 top-2.5 sm:top-3 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
+                        <Phone className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500 pointer-events-none" />
                         <input
                           type="text"
                           value={phone}
@@ -399,17 +338,24 @@ export default function ContactParam() {
                             handlePhoneChange(index, e.target.value)
                           }
                           placeholder="+261 34 12 345 67"
-                          className={`w-full pl-9 sm:pl-10 pr-10 sm:pr-12 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 transition-colors font-mono ${
-                            isComplete
-                              ? "focus:ring-green-500 border-green-300 bg-green-50"
-                              : "focus:ring-blue-500 border-gray-300"
-                          }`}
+                          className={`
+                            w-full pl-12 pr-14 py-3 text-base font-mono
+                            border rounded-xl focus:outline-none focus:ring-2 transition
+                            bg-white dark:bg-gray-800
+                            border-gray-300 dark:border-gray-600
+                            text-gray-900 dark:text-gray-100
+                            ${
+                              isComplete
+                                ? "border-green-400 dark:border-green-600 focus:ring-green-500 bg-green-50 dark:bg-green-950/20"
+                                : "focus:ring-blue-500"
+                            }
+                          `}
                         />
                         {isComplete && (
-                          <div className="absolute right-3 top-2.5 sm:top-3">
-                            <div className="w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="absolute right-4 top-3.5">
+                            <div className="w-5 h-5 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center">
                               <svg
-                                className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white"
+                                className="w-3.5 h-3.5 text-white"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -417,7 +363,7 @@ export default function ContactParam() {
                                 <path
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  strokeWidth={2}
+                                  strokeWidth={2.5}
                                   d="M5 13l4 4L19 7"
                                 />
                               </svg>
@@ -425,14 +371,21 @@ export default function ContactParam() {
                           </div>
                         )}
                       </div>
+
                       {formData.phones.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removePhoneField(index)}
-                          className="p-2 sm:p-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-200 flex-shrink-0"
+                          className="
+                            p-3 rounded-xl
+                            text-red-600 dark:text-red-400
+                            hover:bg-red-50 dark:hover:bg-red-900/30
+                            border border-gray-200 dark:border-gray-700
+                            transition-colors flex-shrink-0
+                          "
                           title="Supprimer"
                         >
-                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       )}
                     </div>
@@ -443,26 +396,39 @@ export default function ContactParam() {
                   <button
                     type="button"
                     onClick={addPhoneField}
-                    className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium border border-blue-200 w-full sm:w-auto"
+                    className="
+                      flex items-center gap-2 px-4 py-3 text-sm
+                      text-blue-600 dark:text-blue-400
+                      hover:bg-blue-50 dark:hover:bg-blue-900/30
+                      border border-blue-200 dark:border-blue-800
+                      rounded-xl transition-colors font-medium w-full sm:w-auto
+                    "
                   >
-                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                    Ajouter un numero
+                    <Plus className="w-4 h-4" />
+                    Ajouter un numéro
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-5 flex items-center gap-2">
-              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+          {/* Bloc Localisation & Horaires */}
+          <div
+            className="
+            bg-white dark:bg-gray-800
+            border border-gray-200 dark:border-gray-700
+            rounded-2xl shadow-sm p-6 sm:p-7
+          "
+          >
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-5 flex items-center gap-3">
+              <MapPin className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               Localisation et horaires
             </h2>
 
-            <div className="mb-4 sm:mb-6">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                Adresse physique
-                <span className="text-red-500 ml-1">*</span>
+            {/* Adresse */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Adresse physique <span className="text-red-500">*</span>
               </label>
               <textarea
                 name="address"
@@ -471,59 +437,75 @@ export default function ContactParam() {
                 placeholder="Lot XX, Quartier XXX, Ville"
                 required
                 rows={3}
-                className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-none ${
-                  validationErrors.address
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300"
-                }`}
+                className={`
+                  w-full px-4 py-3 text-base resize-none
+                  border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition
+                  bg-white dark:bg-gray-800
+                  border-gray-300 dark:border-gray-600
+                  text-gray-900 dark:text-gray-100
+                  placeholder-gray-400 dark:placeholder-gray-500
+                  ${validationErrors.address ? "border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-950/30" : ""}
+                `}
               />
               {validationErrors.address && (
-                <p className="text-red-600 text-xs sm:text-sm mt-1.5 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                <p className="text-red-600 dark:text-red-400 text-sm mt-1.5 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4" />
                   {validationErrors.address}
                 </p>
               )}
             </div>
 
+            {/* Horaires */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Horaires d'ouverture
-                <span className="text-gray-400 text-xs ml-2 font-normal">
+                <span className="text-gray-400 dark:text-gray-500 text-xs ml-2 font-normal">
                   (optionnel)
                 </span>
               </label>
               <div className="relative">
-                <Clock className="absolute left-3 top-2.5 sm:top-3 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
+                <Clock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500 pointer-events-none" />
                 <textarea
                   name="horaires"
                   value={formData.horaires}
                   onChange={handleChange}
                   placeholder="Lundi - Vendredi : 8h00 - 17h00"
                   rows={3}
-                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-none"
+                  className="
+                    w-full pl-12 pr-4 py-3 text-base resize-none
+                    border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition
+                    bg-white dark:bg-gray-800
+                    border-gray-300 dark:border-gray-600
+                    text-gray-900 dark:text-gray-100
+                    placeholder-gray-400 dark:placeholder-gray-500
+                  "
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-end pt-2 sm:pt-4">
+          {/* Bouton Enregistrer */}
+          <div className="flex justify-end pt-4">
             <button
               type="submit"
               disabled={saving}
-              className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-sm text-sm sm:text-base"
+              className="
+                w-full sm:w-auto px-8 py-3.5 text-base
+                bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600
+                text-white rounded-xl shadow-sm hover:shadow-md
+                transition disabled:opacity-50 disabled:cursor-not-allowed
+                flex items-center justify-center gap-2.5 font-semibold
+              "
             >
               {saving ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                   <span>Enregistrement...</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
-                  <span className="hidden sm:inline">
-                    Enregistrer les modifications
-                  </span>
-                  <span className="sm:hidden">Enregistrer</span>
+                  <Save className="w-5 h-5" />
+                  <span>Enregistrer les modifications</span>
                 </>
               )}
             </button>

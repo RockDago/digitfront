@@ -11,6 +11,9 @@ export default function DashboardSae() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Initialisation de l'utilisateur dans un state comme les autres dashboards
+  const [user] = useState(AuthService.getCurrentUser());
+
   useEffect(() => {
     if (!AuthService.isAuthenticated()) {
       navigate("/login");
@@ -19,7 +22,10 @@ export default function DashboardSae() {
 
   // Redirection automatique vers tableau-de-bord
   useEffect(() => {
-    if (location.pathname === "/dashboard/sae" || location.pathname === "/dashboard/sae/") {
+    if (
+      location.pathname === "/dashboard/sae" ||
+      location.pathname === "/dashboard/sae/"
+    ) {
       navigate("/dashboard/sae/tableau-de-bord", { replace: true });
     }
   }, [location.pathname, navigate]);
@@ -29,8 +35,17 @@ export default function DashboardSae() {
     navigate("/");
   };
 
+  if (!user) return null;
+
   return (
-    <div className="min-h-screen bg-white">
+    <div
+      className={`
+        min-h-screen
+        bg-white dark:bg-gray-900
+        text-gray-900 dark:text-gray-100
+        transition-colors duration-300
+      `}
+    >
       {/* 1. SIDEBAR SAE */}
       <SidebarSae
         collapsed={collapsed}
@@ -42,7 +57,8 @@ export default function DashboardSae() {
       {/* 2. WRAPPER PRINCIPAL */}
       <div
         className={`
-          flex flex-col min-h-screen transition-all duration-300 ease-in-out
+          flex flex-col min-h-screen
+          transition-all duration-300 ease-in-out
           ${collapsed ? "lg:ml-20" : "lg:ml-72"}
           ml-0
         `}
@@ -51,15 +67,27 @@ export default function DashboardSae() {
         <div className="h-20">
           <Navbar
             collapsed={collapsed}
-            user={AuthService.getCurrentUser()}
+            user={user}
             onLogoutClick={performLogout}
             onMobileMenuClick={() => setIsMobileOpen(true)}
           />
         </div>
 
-        {/* CONTENT */}
-        <main className="flex-1 px-8 pt-6 pb-8 bg-white overflow-x-hidden">
-          <Outlet />
+        {/* ZONE DE CONTENU */}
+        <main
+          className={`
+            flex-1
+            px-6 sm:px-8
+            pt-6 pb-10 md:pb-12
+            bg-white dark:bg-gray-900
+            text-gray-900 dark:text-gray-100
+            transition-colors duration-300
+          `}
+        >
+          {/* Conteneur limité en largeur (max-w-7xl) */}
+          <div className="mx-auto w-full max-w-7xl">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

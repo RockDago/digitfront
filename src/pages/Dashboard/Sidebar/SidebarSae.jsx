@@ -1,14 +1,16 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import React, { useState, useContext } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaBars,
-  FaHome,
+  FaTimes,
+  FaTachometerAlt,
   FaClipboardList,
   FaExchangeAlt,
-  FaBook,
   FaChevronRight,
-  FaTimes,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
+import { ThemeContext } from "../../../context/ThemeContext";
 
 export default function SidebarSae({
   collapsed,
@@ -16,19 +18,20 @@ export default function SidebarSae({
   isMobileOpen,
   setIsMobileOpen,
 }) {
-  // États accordéons
+  // --- États accordéons conservés ---
   const [accreditationOpen, setAccreditationOpen] = useState(false);
   const [equivalenceOpen, setEquivalenceOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, toggleTheme } = useContext(ThemeContext);
 
   // --- MENU CONFIG ---
   const mainNavItems = [
     {
       to: "/dashboard/sae/tableau-de-bord",
       label: "Tableau de bord",
-      icon: FaHome,
+      icon: FaTachometerAlt, // Changé ici
     },
   ];
 
@@ -55,16 +58,18 @@ export default function SidebarSae({
 
   const isLinkActive = (path) => location.pathname === path;
 
-  // --- STYLES (Consistent avec SidebarAdmin) ---
+  // --- STYLES (Adaptés pour le mode sombre) ---
   const baseItemClass =
     "group flex items-center justify-between px-4 py-3 mx-3 mb-1 rounded-xl transition-all duration-200 cursor-pointer text-sm font-medium";
-  const activeClass = "bg-blue-50 text-blue-600";
-  const inactiveClass = "text-gray-500 hover:bg-gray-50 hover:text-gray-900";
+  const activeClass =
+    "bg-blue-50 text-blue-600 dark:bg-gray-800 dark:text-blue-300";
+  const inactiveClass =
+    "text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white";
 
   const subItemClass =
-    "flex items-center px-4 py-2 my-1 mx-3 rounded-lg text-sm text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 transition-colors cursor-pointer pl-11";
+    "flex items-center px-4 py-2 my-1 mx-3 rounded-lg text-sm text-gray-500 hover:text-blue-600 hover:bg-blue-50/50 dark:text-gray-400 dark:hover:text-blue-300 dark:hover:bg-gray-800/50 transition-colors cursor-pointer pl-11";
 
-  // --- HELPER ACCORDION ---
+  // --- HELPER ACCORDION (Mis à jour pour le dark mode) ---
   const renderAccordion = (title, icon, isOpen, setIsOpen, items) => {
     const Icon = icon;
     const isChildActive = items.some((item) =>
@@ -88,15 +93,15 @@ export default function SidebarSae({
             <Icon
               className={`text-lg flex-shrink-0 ${
                 isChildActive
-                  ? "text-blue-600"
-                  : "text-gray-400 group-hover:text-gray-600"
+                  ? "text-blue-600 dark:text-blue-300"
+                  : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
               }`}
             />
             {!collapsed && <span>{title}</span>}
           </div>
           {!collapsed && (
             <FaChevronRight
-              className={`text-xs text-gray-400 transition-transform duration-200 ${
+              className={`text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
                 effectiveIsOpen ? "rotate-90" : ""
               }`}
             />
@@ -117,15 +122,15 @@ export default function SidebarSae({
               onClick={() => goTo(subItem.path)}
               className={`${subItemClass} ${
                 location.pathname === subItem.path
-                  ? "text-blue-600 font-semibold bg-blue-50"
+                  ? "text-blue-600 dark:text-blue-300 font-semibold bg-blue-50 dark:bg-gray-800"
                   : ""
               }`}
             >
               <div
                 className={`w-1.5 h-1.5 rounded-full mr-3 ${
                   location.pathname === subItem.path
-                    ? "bg-blue-600"
-                    : "bg-gray-300"
+                    ? "bg-blue-600 dark:bg-blue-400"
+                    : "bg-gray-300 dark:bg-gray-600"
                 }`}
               />
               {subItem.label}
@@ -148,7 +153,7 @@ export default function SidebarSae({
 
       <aside
         className={`
-          fixed top-0 left-0 h-full bg-white z-50 border-r border-gray-100 shadow-xl lg:shadow-none
+          fixed top-0 left-0 h-full bg-white dark:bg-gray-900 z-50 border-r border-gray-100 dark:border-gray-800 shadow-xl lg:shadow-none
           transition-all duration-300 ease-in-out flex flex-col
           ${collapsed ? "w-20" : "w-72"}
           ${
@@ -159,25 +164,25 @@ export default function SidebarSae({
         `}
       >
         {/* HEADER SIDEBAR: Logo + Toggle */}
-        <div className="h-20 flex items-center justify-center px-6 border-b border-gray-50 mb-4 relative">
-          {/* LOGO DAAQ (comme dans SidebarAdmin) */}
+        <div className="h-20 flex items-center justify-center px-6 border-b border-gray-50 dark:border-gray-800 mb-4 relative">
           {!collapsed && (
-            <Link
-              to="/"
-              className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"
+            <div
+              className="flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
+              onClick={() => goTo("/dashboard/sae/tableau-de-bord")}
             >
-              <span className="text-2xl font-black tracking-tight text-blue-600 font-cassannet">
-                DAAQ
+              <span className="text-2xl font-black tracking-tight text-blue-600 dark:text-blue-400 font-henno">
+                HAE
               </span>
-            </Link>
+            </div>
           )}
 
           {/* TOGGLE BUTTON (Desktop only) */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-gray-100 transition-colors hidden lg:block ${
-              !collapsed ? "absolute right-4" : ""
+            className={`p-2 rounded-lg text-gray-400 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors hidden lg:block ${
+              !collapsed ? "absolute right-4" : "mx-auto"
             }`}
+            title={collapsed ? "Développer" : "Réduire"}
           >
             <FaBars />
           </button>
@@ -186,6 +191,7 @@ export default function SidebarSae({
           <button
             onClick={() => setIsMobileOpen(false)}
             className="lg:hidden p-2 text-gray-400 hover:text-red-500 absolute right-4"
+            title="Fermer le menu"
           >
             <FaTimes />
           </button>
@@ -193,13 +199,8 @@ export default function SidebarSae({
 
         {/* NAVIGATION LIST */}
         <nav className="flex-1 overflow-y-auto custom-scrollbar pb-6">
-          {/* Section: MAIN */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Navigation Principale
-              </div>
-            )}
+          <div className="mb-2">
+            {/* Tableau de bord */}
             {mainNavItems.map((item) => (
               <div
                 key={item.to}
@@ -213,23 +214,14 @@ export default function SidebarSae({
                   <item.icon
                     className={`text-lg flex-shrink-0 ${
                       isLinkActive(item.to)
-                        ? "text-blue-600"
-                        : "text-gray-400 group-hover:text-gray-600"
+                        ? "text-blue-600 dark:text-blue-300"
+                        : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
                     }`}
                   />
                   {!collapsed && <span>{item.label}</span>}
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Section: GESTION */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Gestion
-              </div>
-            )}
 
             {/* Accordéon Accréditation */}
             {renderAccordion(
@@ -250,6 +242,25 @@ export default function SidebarSae({
             )}
           </div>
         </nav>
+
+        {/* BOUTON MODE SOMBRE/CLAIR */}
+        <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-3 mt-auto">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center justify-center lg:justify-start gap-3 px-3 py-2 rounded-xl text-sm font-medium
+                       bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200
+                       hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            {theme === "dark" ? (
+              <FaMoon className="text-lg text-yellow-400 flex-shrink-0" />
+            ) : (
+              <FaSun className="text-lg text-yellow-400 flex-shrink-0" />
+            )}
+            {!collapsed && (
+              <span>{theme === "dark" ? "Mode sombre" : "Mode clair"}</span>
+            )}
+          </button>
+        </div>
       </aside>
     </>
   );

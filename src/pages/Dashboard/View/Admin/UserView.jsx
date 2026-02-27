@@ -1,79 +1,160 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  Search,
-  UserPlus,
-  Eye,
-  Trash2,
-  Power,
-  X,
-  Edit3,
-  RefreshCw,
-  ChevronDown,
-  ShieldAlert,
-  User as UserIcon,
-  Calendar,
-  Phone,
-  MapPin,
-  Users,
-  ChevronLeft,
-  ChevronRight,
-  AlertCircle,
-  EyeOff,
-} from "lucide-react";
-
+import React, { useEffect, useMemo, useState, useContext } from "react";
+import { Search, UserPlus, Eye, Trash2, Power, X, Edit3, RefreshCw, ChevronDown, ShieldAlert, User as UserIcon, Calendar, Phone, MapPin, ChevronLeft, ChevronRight, AlertCircle, EyeOff } from "lucide-react";
 import UserService from "../../../../services/user.service";
+import { ThemeContext } from "../../../../context/ThemeContext";
 
-// ---------------- Helpers ----------------
-const safeStr = (v) => (v === null || v === undefined ? "" : String(v));
-const initials = (nom, prenom) =>
-  `${safeStr(nom).trim().charAt(0)}${safeStr(prenom)
-    .trim()
-    .charAt(0)}`.toUpperCase();
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const safeStr = (v) => (v == null ? "" : String(v));
+const initials = (n, p) => `${safeStr(n).trim().charAt(0)}${safeStr(p).trim().charAt(0)}`.toUpperCase();
+const roleLabel = (r) => (r === "gestionnaire_habilitation" ? "Gestionnaire Habilitation" : r);
 
-const Pill = ({ children, tone = "gray" }) => {
-  const tones = {
-    gray: "bg-gray-100 text-gray-600",
-    blue: "bg-blue-50 text-blue-700",
-    green: "bg-green-50 text-green-700",
-    red: "bg-red-50 text-red-700",
-    orange: "bg-orange-50 text-orange-700",
+const ROLES = ["Admin","Requerant","Etablissement","SAE","SICP","Universite","Expert","CNH","gestionnaire_habilitation"];
+const EMAIL_DOMAINS = ["gmail.com","outlook.com","hotmail.com","yahoo.com","yahoo.fr","icloud.com","protonmail.com","mail.com","aol.com","zoho.com"];
+const PWD_CRITERIA = [
+  { key: "minLength",    regex: /.{8,}/,                                          label: "8 caractères" },
+  { key: "uppercase",   regex: /[A-Z]/,                                           label: "Majuscule"    },
+  { key: "lowercase",   regex: /[a-z]/,                                           label: "Minuscule"    },
+  { key: "digit",       regex: /\d/,                                              label: "Chiffre"      },
+  { key: "validSymbols",regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,       label: "Symbole"      },
+];
+
+const checkPwd  = (pwd) => Object.fromEntries(PWD_CRITERIA.map(({ key, regex }) => [key, regex.test(pwd)]));
+const isValidPwd = (pwd) => PWD_CRITERIA.every(({ regex }) => regex.test(pwd));
+
+// ── Pill ─────────────────────────────────────────────────────────────────────
+const TONES = {
+  gray:   "bg-gray-100   dark:bg-gray-700       text-gray-600   dark:text-gray-300",
+  blue:   "bg-blue-50    dark:bg-blue-950/30    text-blue-700   dark:text-blue-300",
+  green:  "bg-green-50   dark:bg-green-950/30   text-green-700  dark:text-green-300",
+  red:    "bg-red-50     dark:bg-red-950/30     text-red-700    dark:text-red-300",
+  orange: "bg-orange-50  dark:bg-orange-950/30  text-orange-700 dark:text-orange-300",
+};
+const Pill = ({ children, tone = "gray" }) => (
+  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${TONES[tone]}`}>
+    {children}
+  </span>
+);
+
+// ── Floating Label Input ──────────────────────────────────────────────────────
+const FloatInput = ({ id, label, value, onChange, type = "text", error, disabled, className = "", suffix }) => (
+  <div className="relative group">
+    <input id={id} type={type} value={value} onChange={onChange} disabled={disabled}
+      placeholder=" " required
+      className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 dark:text-gray-100 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer ${error ? "border-red-500" : "border-gray-300 dark:border-gray-600"} ${disabled ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed" : ""} ${className}`}
+    />
+    <label htmlFor={id} className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">
+      {label}
+    </label>
+    {suffix}
+    {error && <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">{error}</p>}
+  </div>
+);
+
+// ── Floating Label Select ─────────────────────────────────────────────────────
+const FloatSelect = ({ id, label, value, onChange, options }) => (
+  <div className="relative group">
+    <select id={id} value={value} onChange={onChange}
+      className="block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer">
+      {options.map((r) => <option key={r} value={r}>{roleLabel(r)}</option>)}
+    </select>
+    <label htmlFor={id} className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-blue-600 left-1">
+      {label}
+    </label>
+  </div>
+);
+
+// ── Email Input with Suggestions ─────────────────────────────────────────────
+const EmailInput = ({ id, value, onChange, error }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [show, setShow] = useState(false);
+
+  const handleChange = (e) => {
+    const v = e.target.value;
+    onChange(v);
+    if (v.includes("@")) {
+      const [user, dom = ""] = v.split("@");
+      if (user) {
+        const filtered = dom.length === 0
+          ? EMAIL_DOMAINS.map((d) => `${user}@${d}`)
+          : EMAIL_DOMAINS.filter((d) => d.toLowerCase().startsWith(dom.toLowerCase())).map((d) => `${user}@${d}`);
+        setSuggestions(filtered);
+        setShow(filtered.length > 0);
+      } else setShow(false);
+    } else setShow(false);
   };
+
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${tones[tone]}`}
-    >
-      {children}
-    </span>
+    <div className="relative group">
+      <FloatInput id={id} label="Adresse email *" value={value} type="text" error={error}
+        onChange={(e) => handleChange(e)}
+        onBlur={() => setTimeout(() => setShow(false), 200)}
+        onFocus={() => { if (value.includes("@") && suggestions.length > 0) setShow(true); }}
+      />
+      {show && (
+        <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {suggestions.map((s, i) => (
+            <button key={i} type="button" onClick={() => { onChange(s); setShow(false); }}
+              className="w-full px-4 py-2 text-left text-xs hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors text-gray-700 dark:text-gray-300">
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
-// ---------------- Modal Components ----------------
+// ── Password Criteria ─────────────────────────────────────────────────────────
+const PwdCriteria = ({ pwd }) => {
+  const v = checkPwd(pwd);
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50 dark:bg-gray-700/50 p-2.5 rounded-lg border border-gray-100 dark:border-gray-600">
+      {PWD_CRITERIA.map(({ key, label }) => (
+        <div key={key} className="flex items-center text-[10px]">
+          <span className={`w-1.5 h-1.5 rounded-full mr-2 ${v[key] ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-500"}`} />
+          <span className={v[key] ? "text-emerald-600 font-medium" : "text-gray-500 dark:text-gray-400"}>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ── Password Field with show/hide ─────────────────────────────────────────────
+const PwdField = ({ id, label, value, onChange, error, disabled, matchStatus }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <FloatInput id={id} label={label} value={value} type={show ? "text" : "password"}
+      onChange={onChange} error={error} disabled={disabled}
+      className={matchStatus === "ok" ? "border-emerald-400" : matchStatus === "err" ? "border-red-400" : ""}
+      suffix={
+        !disabled && (
+          <button type="button" tabIndex={-1} onClick={() => setShow((s) => !s)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 focus:outline-none">
+            {show ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        )
+      }
+    />
+  );
+};
+
+// ── ModalShell ────────────────────────────────────────────────────────────────
 const ModalShell = ({ title, icon: Icon, onClose, children, footer }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div
-      className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
-      onClick={onClose}
-    />
-    <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-100">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
+    <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          {Icon && (
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Icon size={16} />
-            </div>
-          )}
-          <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+          {Icon && <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center"><Icon size={16} /></div>}
+          <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">{title}</h3>
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-700 hover:bg-gray-50 p-2 rounded-lg transition"
-        >
+        <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition">
           <X size={18} />
         </button>
       </div>
-      <div className="p-5 max-h-[70vh] overflow-y-auto">{children}</div>
+      <div className="p-5 max-h-[70vh] overflow-y-auto text-gray-900 dark:text-gray-100">{children}</div>
       {footer && (
-        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70 flex justify-end gap-2">
           {footer}
         </div>
       )}
@@ -81,1581 +162,436 @@ const ModalShell = ({ title, icon: Icon, onClose, children, footer }) => (
   </div>
 );
 
-// --- Modal: Confirmation ---
-const ConfirmModal = ({
-  title,
-  message,
-  icon: Icon,
-  onConfirm,
-  onClose,
-  confirmText = "Confirmer",
-  confirmColor = "blue",
-}) => {
-  const colorClasses = {
-    blue: "bg-blue-600 hover:bg-blue-700",
-    red: "bg-red-600 hover:bg-red-700",
-    orange: "bg-orange-600 hover:bg-orange-700",
-    green: "bg-green-600 hover:bg-green-700",
-  };
+const BtnCancel = ({ onClick }) => (
+  <button type="button" onClick={onClick} className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-semibold">Annuler</button>
+);
+const BtnPrimary = ({ onClick, children, gradient = "from-blue-600 to-indigo-600" }) => (
+  <button type="button" onClick={onClick} className={`px-4 py-2 rounded-xl bg-gradient-to-r ${gradient} text-white text-xs font-semibold shadow-md hover:brightness-110`}>{children}</button>
+);
 
+// ── ConfirmModal ──────────────────────────────────────────────────────────────
+const CONFIRM_COLORS = { blue: "bg-blue-600 hover:bg-blue-700", red: "bg-red-600 hover:bg-red-700", orange: "bg-orange-600 hover:bg-orange-700", green: "bg-green-600 hover:bg-green-700" };
+const ConfirmModal = ({ title, message, icon: Icon, onConfirm, onClose, confirmText = "Confirmer", confirmColor = "blue" }) => (
+  <ModalShell title={title} icon={Icon || AlertCircle} onClose={onClose}
+    footer={<><BtnCancel onClick={onClose} /><button onClick={onConfirm} className={`px-4 py-2 rounded-xl text-white text-xs font-semibold ${CONFIRM_COLORS[confirmColor]}`}>{confirmText}</button></>}>
+    <p className="text-sm text-gray-600 dark:text-gray-400">{message}</p>
+  </ModalShell>
+);
+
+// ── UserDetailModal ───────────────────────────────────────────────────────────
+const DetailField = ({ icon: Icon, label, value }) => (
+  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600">
+    <div className="flex items-center gap-2 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1"><Icon size={12} /> {label}</div>
+    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{value || "-"}</div>
+  </div>
+);
+const UserDetailModal = ({ user, onClose }) => !user ? null : (
+  <ModalShell title="Détail Utilisateur" icon={Eye} onClose={onClose}>
+    <div className="flex items-center gap-4 mb-6">
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
+        {initials(user.nom, user.prenom)}
+      </div>
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{safeStr(user.nom)} {safeStr(user.prenom)}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{safeStr(user.email)}</p>
+        <div className="flex gap-2 mt-2">
+          <Pill tone="blue">{roleLabel(safeStr(user.role))}</Pill>
+          <Pill tone={user.isactive ? "green" : "red"}>{user.isactive ? "Actif" : "Inactif"}</Pill>
+        </div>
+      </div>
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <DetailField icon={UserIcon} label="Username"    value={user.username} />
+      <DetailField icon={Phone}    label="Téléphone"   value={user.telephone || user.contact} />
+      <DetailField icon={MapPin}   label="Code Postal" value={user.codepostal} />
+      <DetailField icon={Calendar} label="Créé le"     value={user.created_at ? new Date(user.created_at).toLocaleDateString() : null} />
+    </div>
+  </ModalShell>
+);
+
+// ── Shared Password Block ─────────────────────────────────────────────────────
+const PasswordBlock = ({ pwd, setPwd, confirm, setConfirm }) => {
+  const valid   = isValidPwd(pwd);
+  const match   = pwd === confirm && confirm !== "";
+  const noMatch = pwd !== confirm && confirm !== "";
   return (
-    <ModalShell
-      title={title}
-      icon={Icon || AlertCircle}
-      onClose={onClose}
-      footer={
-        <>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 text-xs font-semibold"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`px-4 py-2 rounded-xl text-white text-xs font-semibold ${colorClasses[confirmColor]}`}
-          >
-            {confirmText}
-          </button>
-        </>
-      }
-    >
-      <p className="text-sm text-gray-600">{message}</p>
-    </ModalShell>
+    <div className="space-y-4">
+      <PwdField id="f-pwd" label="Mot de passe *" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+      {pwd.length > 0 && !valid && <PwdCriteria pwd={pwd} />}
+      <div>
+        <PwdField id="f-confirm" label={`Confirmer${!valid ? " (Complétez le mot de passe d'abord)" : ""}`}
+          value={confirm} onChange={(e) => setConfirm(e.target.value)}
+          disabled={!valid} matchStatus={match ? "ok" : noMatch ? "err" : null}
+        />
+        {confirm && valid && (
+          <p className={`text-[10px] mt-1 font-medium ${match ? "text-emerald-600" : "text-red-500"}`}>
+            {match ? "✓ OK" : "✗ Différent"}
+          </p>
+        )}
+      </div>
+    </div>
   );
 };
 
-// --- Modal: Détail Utilisateur ---
-const UserDetailModal = ({ user, onClose }) => {
-  if (!user) return null;
-  return (
-    <ModalShell title="Détail Utilisateur" icon={Eye} onClose={onClose}>
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
-          {initials(user.nom, user.prenom)}
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">
-            {safeStr(user.nom)} {safeStr(user.prenom)}
-          </h2>
-          <p className="text-sm text-gray-500">{safeStr(user.email)}</p>
-          <div className="flex gap-2 mt-2">
-            <Pill tone="blue">{safeStr(user.role)}</Pill>
-            <Pill tone={user.isactive ? "green" : "red"}>
-              {user.isactive ? "Actif" : "Inactif"}
-            </Pill>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-gray-500 uppercase mb-1">
-            <UserIcon size={12} /> Username
-          </div>
-          <div className="text-sm font-medium text-gray-900">
-            {user.username || "-"}
-          </div>
-        </div>
-        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-gray-500 uppercase mb-1">
-            <Phone size={12} /> Téléphone
-          </div>
-          <div className="text-sm font-medium text-gray-900">
-            {user.telephone || user.contact || "-"}
-          </div>
-        </div>
-        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-gray-500 uppercase mb-1">
-            <MapPin size={12} /> Code Postal
-          </div>
-          <div className="text-sm font-medium text-gray-900">
-            {user.codepostal || "-"}
-          </div>
-        </div>
-        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-gray-500 uppercase mb-1">
-            <Calendar size={12} /> Créé le
-          </div>
-          <div className="text-sm font-medium text-gray-900">
-            {user.created_at
-              ? new Date(user.created_at).toLocaleDateString()
-              : "-"}
-          </div>
-        </div>
-      </div>
-    </ModalShell>
-  );
-};
-
-// ✅ Modal: Création (SUGGESTIONS AFFICHENT TOUT APRÈS @)
+// ── AddUserModal ──────────────────────────────────────────────────────────────
 const AddUserModal = ({ onClose, onCreate }) => {
-  const [form, setForm] = useState({
-    nom: "",
-    prenom: "",
-    username: "",
-    email: "",
-    password: "",
-    confirmation: "",
-    role: "Requerant",
-  });
+  const [form, setForm] = useState({ nom: "", prenom: "", username: "", email: "", password: "", confirmation: "", role: "Requerant" });
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
-  const [emailSuggestions, setEmailSuggestions] = useState([]);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: typeof e === "string" ? e : e.target.value }));
 
-  const roles = [
-    "Admin",
-    "Requerant",
-    "Etablissement",
-    "SAE",
-    "SICP",
-    "Universite",
-    "Expert",
-    "CNH",
-  ];
-
-  const emailDomains = [
-    "gmail.com",
-    "outlook.com",
-    "hotmail.com",
-    "yahoo.com",
-    "yahoo.fr",
-    "icloud.com",
-    "protonmail.com",
-    "mail.com",
-    "aol.com",
-    "zoho.com",
-  ];
-
-  const passwordCriteria = {
-    minLength: { regex: /.{8,}/, label: "8 caractères" },
-    uppercase: { regex: /[A-Z]/, label: "Majuscule" },
-    lowercase: { regex: /[a-z]/, label: "Minuscule" },
-    digit: { regex: /\d/, label: "Chiffre" },
-    validSymbols: {
-      regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-      label: "Symbole",
-      required: true,
-    },
+  const validate = () => {
+    const e = {};
+    if (!form.nom.trim())          e.nom          = "Requis";
+    if (!form.prenom.trim())       e.prenom       = "Requis";
+    if (!form.email.trim())        e.email        = "Requis";
+    if (!form.username.trim())     e.username     = "Requis";
+    if (!isValidPwd(form.password)) e.password    = "Mot de passe faible";
+    if (form.password !== form.confirmation) e.confirmation = "Différent";
+    setErrors(e);
+    return !Object.keys(e).length;
   };
 
-  const validatePasswordCriteria = (password) => ({
-    minLength: passwordCriteria.minLength.regex.test(password),
-    uppercase: passwordCriteria.uppercase.regex.test(password),
-    lowercase: passwordCriteria.lowercase.regex.test(password),
-    digit: passwordCriteria.digit.regex.test(password),
-    validSymbols: passwordCriteria.validSymbols.regex.test(password),
-  });
-
-  const allPasswordCriteriaMet = (password) => {
-    const criteria = validatePasswordCriteria(password);
-    return Object.values(criteria).every((val) => val === true);
-  };
-
-  const passwordValidation = validatePasswordCriteria(form.password);
-  const isPasswordValid = allPasswordCriteriaMet(form.password);
-  const passwordsMatch =
-    form.password === form.confirmation && form.confirmation !== "";
-  const passwordsDontMatch =
-    form.password !== form.confirmation && form.confirmation !== "";
-  const showPasswordCriteria = form.password.length > 0 && !isPasswordValid;
-
-  // ✅ CORRIGÉ : Affiche TOUTES les suggestions après @
-  const handleEmailChange = (e) => {
-    const value = e.target.value;
-    setForm((prev) => ({ ...prev, email: value }));
-    setErrors((prev) => ({ ...prev, email: "" }));
-
-    if (value.includes("@")) {
-      const parts = value.split("@");
-      const username = parts[0];
-      const domain = parts[1] || ""; // Vide si juste @ tapé
-
-      if (username) {
-        let filtered;
-
-        if (domain.length === 0) {
-          // ✅ Si juste @, afficher TOUS les domaines
-          filtered = emailDomains.map((d) => `${username}@${d}`);
-        } else {
-          // ✅ Si @xxx, filtrer par ce qui commence par xxx
-          filtered = emailDomains
-            .filter((d) => d.toLowerCase().startsWith(domain.toLowerCase()))
-            .map((d) => `${username}@${d}`);
-        }
-
-        setEmailSuggestions(filtered);
-        setShowEmailSuggestions(filtered.length > 0);
-      } else {
-        setShowEmailSuggestions(false);
-      }
-    } else {
-      setShowEmailSuggestions(false);
-    }
-  };
-
-  const selectEmailSuggestion = (suggestion) => {
-    setForm((prev) => ({ ...prev, email: suggestion }));
-    setShowEmailSuggestions(false);
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!form.nom.trim()) newErrors.nom = "Le nom est requis";
-    if (!form.prenom.trim()) newErrors.prenom = "Le prénom est requis";
-    if (!form.email.trim()) newErrors.email = "L'email est requis";
-    if (!form.username.trim()) newErrors.username = "Le username est requis";
-    if (!form.password.trim())
-      newErrors.password = "Le mot de passe est requis";
-    else if (!isPasswordValid) newErrors.password = "Mot de passe faible";
-    if (!form.confirmation.trim())
-      newErrors.confirmation = "La confirmation est requise";
-    else if (form.password !== form.confirmation)
-      newErrors.confirmation = "Les mots de passe ne correspondent pas";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      onCreate({
-        ...form,
-        isactive: true,
-      });
-    }
-  };
+  const handleSubmit = () => { if (validate()) onCreate({ ...form, isactive: true }); };
 
   return (
-    <ModalShell
-      title="Nouvel utilisateur"
-      icon={UserPlus}
-      onClose={onClose}
-      footer={
-        <>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 text-xs font-semibold"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 text-xs font-semibold shadow-md"
-          >
-            Créer le compte
-          </button>
-        </>
-      }
-    >
+    <ModalShell title="Nouvel utilisateur" icon={UserPlus} onClose={onClose}
+      footer={<><BtnCancel onClick={onClose} /><BtnPrimary onClick={handleSubmit}>Créer le compte</BtnPrimary></>}>
       {errors.general && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2">
-          <AlertCircle size={14} />
-          {errors.general}
+        <div className="mb-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2">
+          <AlertCircle size={14} />{errors.general}
         </div>
       )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Nom & Prénom */}
+      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="relative group">
-            <input
-              type="text"
-              id="nom"
-              value={form.nom}
-              onChange={(e) => setForm({ ...form, nom: e.target.value })}
-              className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-                errors.nom ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder=" "
-              required
-            />
-            <label
-              htmlFor="nom"
-              className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-            >
-              Nom *
-            </label>
-            {errors.nom && (
-              <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-                {errors.nom}
-              </p>
-            )}
-          </div>
-
-          <div className="relative group">
-            <input
-              type="text"
-              id="prenom"
-              value={form.prenom}
-              onChange={(e) => setForm({ ...form, prenom: e.target.value })}
-              className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-                errors.prenom ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder=" "
-              required
-            />
-            <label
-              htmlFor="prenom"
-              className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-            >
-              Prénom *
-            </label>
-            {errors.prenom && (
-              <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-                {errors.prenom}
-              </p>
-            )}
-          </div>
+          <FloatInput id="nom"    label="Nom *"    value={form.nom}    onChange={set("nom")}    error={errors.nom} />
+          <FloatInput id="prenom" label="Prénom *" value={form.prenom} onChange={set("prenom")} error={errors.prenom} />
         </div>
-
-        {/* ✅ Email avec suggestions (AFFICHE TOUT APRÈS @) */}
-        <div className="relative group">
-          <input
-            type="text"
-            id="email"
-            value={form.email}
-            onChange={handleEmailChange}
-            onBlur={() => {
-              setTimeout(() => setShowEmailSuggestions(false), 200);
-            }}
-            onFocus={() => {
-              if (form.email.includes("@") && emailSuggestions.length > 0) {
-                setShowEmailSuggestions(true);
-              }
-            }}
-            className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-              errors.email ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder=" "
-            required
-          />
-          <label
-            htmlFor="email"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-          >
-            Adresse email *
-          </label>
-          {errors.email && (
-            <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-              {errors.email}
-            </p>
-          )}
-
-          {/* ✅ Suggestions email */}
-          {showEmailSuggestions && emailSuggestions.length > 0 && (
-            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-              {emailSuggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => selectEmailSuggestion(suggestion)}
-                  className="w-full px-4 py-2 text-left text-xs hover:bg-blue-50 transition-colors block text-gray-700"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Username */}
-        <div className="relative group">
-          <input
-            type="text"
-            id="username"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-              errors.username ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder=" "
-            required
-          />
-          <label
-            htmlFor="username"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-          >
-            Nom d'utilisateur *
-          </label>
-          {errors.username && (
-            <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-              {errors.username}
-            </p>
-          )}
-        </div>
-
-        {/* Rôle */}
-        <div className="relative group">
-          <select
-            id="role"
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            className="block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer"
-          >
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-          <label
-            htmlFor="role"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 left-1"
-          >
-            Rôle
-          </label>
-        </div>
-
-        {/* Mot de passe & Confirmation */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="relative group">
-            <input
-              type={showPassword ? "text" : "password"}
-              id="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-                errors.password ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder=" "
-              required
-            />
-            <label
-              htmlFor="password"
-              className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-            >
-              Mot de passe *
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-            {errors.password && (
-              <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-                {errors.password}
-              </p>
-            )}
-          </div>
-
-          <div className="relative group">
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              id="confirmation"
-              value={form.confirmation}
-              onChange={(e) =>
-                setForm({ ...form, confirmation: e.target.value })
-              }
-              disabled={!isPasswordValid}
-              className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 peer placeholder ${
-                !isPasswordValid
-                  ? "bg-gray-100 cursor-not-allowed border-gray-200"
-                  : passwordsDontMatch
-                    ? "border-red-400 focus:ring-red-300"
-                    : passwordsMatch
-                      ? "border-emerald-400 focus:ring-emerald-300"
-                      : "border-gray-300 focus:ring-blue-500"
-              }`}
-              placeholder=" "
-              required
-            />
-            <label
-              htmlFor="confirmation"
-              className={`absolute text-sm duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1 ${
-                !isPasswordValid
-                  ? "text-gray-400"
-                  : "text-gray-500 peer-focus:text-blue-600"
-              }`}
-            >
-              Confirmer{" "}
-              {!isPasswordValid && "(Complétez le mot de passe d'abord)"}
-            </label>
-            {isPasswordValid && (
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            )}
-            {form.confirmation && isPasswordValid && (
-              <p
-                className={`text-[10px] mt-1 font-medium absolute -bottom-4 left-0 ${
-                  passwordsMatch ? "text-emerald-600" : "text-red-500"
-                }`}
-              >
-                {passwordsMatch ? "✓ OK" : "✗ Différent"}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Critères */}
-        {showPasswordCriteria && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-            {[
-              { key: "minLength", label: "8 caractères" },
-              { key: "uppercase", label: "Majuscule" },
-              { key: "lowercase", label: "Minuscule" },
-              { key: "digit", label: "Chiffre" },
-              { key: "validSymbols", label: "Symbole" },
-            ].map(({ key, label }) => (
-              <div key={key} className="flex items-center text-[10px]">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full mr-2 ${
-                    passwordValidation[key] ? "bg-emerald-500" : "bg-gray-300"
-                  }`}
-                ></span>
-                <span
-                  className={
-                    passwordValidation[key]
-                      ? "text-emerald-600 font-medium"
-                      : "text-gray-500"
-                  }
-                >
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <EmailInput id="email" value={form.email} onChange={set("email")} error={errors.email} />
+        <FloatInput id="username" label="Nom d'utilisateur *" value={form.username} onChange={set("username")} error={errors.username} />
+        <FloatSelect id="role" label="Rôle" value={form.role} onChange={set("role")} options={ROLES} />
+        <PasswordBlock pwd={form.password} setPwd={set("password")} confirm={form.confirmation} setConfirm={set("confirmation")} />
       </form>
     </ModalShell>
   );
 };
 
-// ✅ Modal: Modification (SANS checkbox "Compte actif")
+// ── EditUserModal ─────────────────────────────────────────────────────────────
 const EditUserModal = ({ user, onClose, onSave }) => {
-  const [form, setForm] = useState({
-    nom: user.nom,
-    prenom: user.prenom,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-    isactive: user.isactive,
-  });
+  const [form, setForm] = useState({ nom: user.nom, prenom: user.prenom, username: user.username, email: user.email, role: user.role, isactive: user.isactive });
   const [errors, setErrors] = useState({});
-  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
-  const [emailSuggestions, setEmailSuggestions] = useState([]);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: typeof e === "string" ? e : e.target.value }));
 
-  const roles = [
-    "Admin",
-    "Requerant",
-    "Etablissement",
-    "SAE",
-    "SICP",
-    "Universite",
-    "Expert",
-    "CNH",
-  ];
-
-  const emailDomains = [
-    "gmail.com",
-    "outlook.com",
-    "hotmail.com",
-    "yahoo.com",
-    "yahoo.fr",
-    "icloud.com",
-    "protonmail.com",
-    "mail.com",
-    "aol.com",
-    "zoho.com",
-  ];
-
-  // ✅ Suggestions email (AFFICHE TOUT après @)
-  const handleEmailChange = (e) => {
-    const value = e.target.value;
-    setForm((prev) => ({ ...prev, email: value }));
-    setErrors((prev) => ({ ...prev, email: "" }));
-
-    if (value.includes("@")) {
-      const parts = value.split("@");
-      const username = parts[0];
-      const domain = parts[1] || ""; // ✅ Vide si juste @ tapé
-
-      if (username) {
-        let filtered;
-
-        if (domain.length === 0) {
-          // ✅ Si juste @, afficher TOUS les domaines
-          filtered = emailDomains.map((d) => `${username}@${d}`);
-        } else {
-          // ✅ Si @xxx, filtrer par ce qui commence par xxx
-          filtered = emailDomains
-            .filter((d) => d.toLowerCase().startsWith(domain.toLowerCase()))
-            .map((d) => `${username}@${d}`);
-        }
-
-        setEmailSuggestions(filtered);
-        setShowEmailSuggestions(filtered.length > 0);
-      } else {
-        setShowEmailSuggestions(false);
-      }
-    } else {
-      setShowEmailSuggestions(false);
-    }
-  };
-
-  const selectEmailSuggestion = (suggestion) => {
-    setForm((prev) => ({ ...prev, email: suggestion }));
-    setShowEmailSuggestions(false);
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!form.nom.trim()) newErrors.nom = "Le nom est requis";
-    if (!form.prenom.trim()) newErrors.prenom = "Le prénom est requis";
-    if (!form.email.trim()) newErrors.email = "L'email est requis";
-    if (!form.username.trim()) newErrors.username = "Le username est requis";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = () => {
-    if (validateForm()) {
-      onSave(form);
-    }
+  const validate = () => {
+    const e = {};
+    if (!form.nom.trim())      e.nom      = "Requis";
+    if (!form.prenom.trim())   e.prenom   = "Requis";
+    if (!form.email.trim())    e.email    = "Requis";
+    if (!form.username.trim()) e.username = "Requis";
+    setErrors(e);
+    return !Object.keys(e).length;
   };
 
   return (
-    <ModalShell
-      title="Modifier utilisateur"
-      icon={Edit3}
-      onClose={onClose}
-      footer={
-        <>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 text-xs font-semibold"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 text-xs font-semibold shadow-md"
-          >
-            Enregistrer
-          </button>
-        </>
-      }
-    >
+    <ModalShell title="Modifier utilisateur" icon={Edit3} onClose={onClose}
+      footer={<><BtnCancel onClick={onClose} /><BtnPrimary onClick={() => { if (validate()) onSave(form); }}>Enregistrer</BtnPrimary></>}>
       <form className="space-y-4">
-        {/* Nom & Prénom */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="relative group">
-            <input
-              type="text"
-              id="edit-nom"
-              value={form.nom}
-              onChange={(e) => setForm({ ...form, nom: e.target.value })}
-              className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-                errors.nom ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder=" "
-              required
-            />
-            <label
-              htmlFor="edit-nom"
-              className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-            >
-              Nom *
-            </label>
-            {errors.nom && (
-              <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-                {errors.nom}
-              </p>
-            )}
-          </div>
-
-          <div className="relative group">
-            <input
-              type="text"
-              id="edit-prenom"
-              value={form.prenom}
-              onChange={(e) => setForm({ ...form, prenom: e.target.value })}
-              className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-                errors.prenom ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder=" "
-              required
-            />
-            <label
-              htmlFor="edit-prenom"
-              className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-            >
-              Prénom *
-            </label>
-            {errors.prenom && (
-              <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-                {errors.prenom}
-              </p>
-            )}
-          </div>
+          <FloatInput id="e-nom"    label="Nom *"    value={form.nom}    onChange={set("nom")}    error={errors.nom} />
+          <FloatInput id="e-prenom" label="Prénom *" value={form.prenom} onChange={set("prenom")} error={errors.prenom} />
         </div>
-
-        {/* Email SANS suggestions */}
-        <div className="relative group">
-          <input
-            type="email"
-            id="edit-email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-              errors.email ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder=" "
-            required
-          />
-          <label
-            htmlFor="edit-email"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-          >
-            Adresse email *
-          </label>
-          {errors.email && (
-            <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-              {errors.email}
-            </p>
-          )}
-        </div>
-
-        {/* Username */}
-        <div className="relative group">
-          <input
-            type="text"
-            id="edit-username"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-              errors.username ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder=" "
-            required
-          />
-          <label
-            htmlFor="edit-username"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-          >
-            Nom d'utilisateur *
-          </label>
-          {errors.username && (
-            <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-              {errors.username}
-            </p>
-          )}
-        </div>
-
-        {/* Rôle */}
-        <div className="relative group">
-          <select
-            id="edit-role"
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            className="block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer"
-          >
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-          <label
-            htmlFor="edit-role"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 left-1"
-          >
-            Rôle
-          </label>
-        </div>
-
-        {/* ✅ SUPPRIMÉ : Checkbox "Compte actif" */}
+        <EmailInput id="e-email" value={form.email} onChange={set("email")} error={errors.email} />
+        <FloatInput id="e-username" label="Nom d'utilisateur *" value={form.username} onChange={set("username")} error={errors.username} />
+        <FloatSelect id="e-role" label="Rôle" value={form.role} onChange={set("role")} options={ROLES} />
       </form>
     </ModalShell>
   );
 };
 
-// ✅ Modal: Reset Password (STYLE LOGIN CONFORME AVEC VALIDATION)
+// ── ResetPasswordModal ────────────────────────────────────────────────────────
 const ResetPasswordModal = ({ user, onClose, onConfirm }) => {
-  const [pass, setPass] = useState("");
-  const [confirmPass, setConfirmPass] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState({});
-
-  // ✅ Critères de mot de passe
-  const passwordCriteria = {
-    minLength: { regex: /.{8,}/, label: "8 caractères" },
-    uppercase: { regex: /[A-Z]/, label: "Majuscule" },
-    lowercase: { regex: /[a-z]/, label: "Minuscule" },
-    digit: { regex: /\d/, label: "Chiffre" },
-    validSymbols: {
-      regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-      label: "Symbole",
-      required: true,
-    },
-  };
-
-  const validatePasswordCriteria = (password) => ({
-    minLength: passwordCriteria.minLength.regex.test(password),
-    uppercase: passwordCriteria.uppercase.regex.test(password),
-    lowercase: passwordCriteria.lowercase.regex.test(password),
-    digit: passwordCriteria.digit.regex.test(password),
-    validSymbols: passwordCriteria.validSymbols.regex.test(password),
-  });
-
-  const allPasswordCriteriaMet = (password) => {
-    const criteria = validatePasswordCriteria(password);
-    return Object.values(criteria).every((val) => val === true);
-  };
-
-  const passwordValidation = validatePasswordCriteria(pass);
-  const isPasswordValid = allPasswordCriteriaMet(pass);
-  const passwordsMatch = pass === confirmPass && confirmPass !== "";
-  const passwordsDontMatch = pass !== confirmPass && confirmPass !== "";
-  const showPasswordCriteria = pass.length > 0 && !isPasswordValid;
+  const [pwd, setPwd]         = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [errors, setErrors]   = useState({});
 
   const handleConfirm = () => {
-    const newErrors = {};
-
-    if (!pass) {
-      newErrors.pass = "Le mot de passe est requis";
-    } else if (!isPasswordValid) {
-      newErrors.pass = "Mot de passe faible";
-    }
-
-    if (!confirmPass) {
-      newErrors.confirmPass = "Veuillez confirmer le mot de passe";
-    } else if (pass !== confirmPass) {
-      newErrors.confirmPass = "Les mots de passe ne correspondent pas";
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length === 0) {
-      onConfirm(pass);
-    }
+    const e = {};
+    if (!isValidPwd(pwd))      e.pwd     = "Mot de passe faible";
+    if (pwd !== confirm)       e.confirm = "Différent";
+    setErrors(e);
+    if (!Object.keys(e).length) onConfirm(pwd);
   };
 
   return (
-    <ModalShell
-      title="Réinitialiser le mot de passe"
-      icon={RefreshCw}
-      onClose={onClose}
-      footer={
-        <>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 text-xs font-semibold"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 text-white hover:from-orange-700 hover:to-red-700 text-xs font-semibold shadow-md"
-          >
-            Confirmer
-          </button>
-        </>
-      }
-    >
-      <div className="bg-orange-50 border border-orange-100 p-3 rounded-lg mb-4 flex gap-2">
-        <ShieldAlert size={16} className="text-orange-600 mt-0.5" />
-        <p className="text-xs text-orange-800">
-          Ceci écrasera le mot de passe actuel de <strong>{user.email}</strong>.
-        </p>
+    <ModalShell title="Réinitialiser le mot de passe" icon={RefreshCw} onClose={onClose}
+      footer={<><BtnCancel onClick={onClose} /><BtnPrimary onClick={handleConfirm} gradient="from-orange-600 to-red-600">Confirmer</BtnPrimary></>}>
+      <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/40 p-3 rounded-lg mb-4 flex gap-2">
+        <ShieldAlert size={16} className="text-orange-600 dark:text-orange-400 mt-0.5" />
+        <p className="text-xs text-orange-800 dark:text-orange-300">Ceci écrasera le mot de passe actuel de <strong>{user.email}</strong>.</p>
       </div>
-
-      <div className="space-y-4">
-        {/* Nouveau mot de passe */}
-        <div className="relative group">
-          <input
-            type={showPassword ? "text" : "password"}
-            id="reset-password"
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-            className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder ${
-              errors.pass ? "border-red-500" : "border-gray-300"
-            }`}
-            placeholder=" "
-          />
-          <label
-            htmlFor="reset-password"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-          >
-            Nouveau mot de passe *
-          </label>
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-            tabIndex={-1}
-          >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-          {errors.pass && (
-            <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-              {errors.pass}
-            </p>
-          )}
-        </div>
-
-        {/* Confirmation */}
-        <div className="relative group">
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            id="reset-confirm"
-            value={confirmPass}
-            onChange={(e) => setConfirmPass(e.target.value)}
-            disabled={!isPasswordValid}
-            className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 peer placeholder ${
-              !isPasswordValid
-                ? "bg-gray-100 cursor-not-allowed border-gray-200"
-                : passwordsDontMatch
-                  ? "border-red-400 focus:ring-red-300"
-                  : passwordsMatch
-                    ? "border-emerald-400 focus:ring-emerald-300"
-                    : "border-gray-300 focus:ring-blue-500"
-            }`}
-            placeholder=" "
-          />
-          <label
-            htmlFor="reset-confirm"
-            className={`absolute text-sm duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1 ${
-              !isPasswordValid
-                ? "text-gray-400"
-                : "text-gray-500 peer-focus:text-blue-600"
-            }`}
-          >
-            Confirmer{" "}
-            {!isPasswordValid && "(Complétez le mot de passe d'abord)"}
-          </label>
-          {isPasswordValid && (
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-              tabIndex={-1}
-            >
-              {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          )}
-          {confirmPass && isPasswordValid && (
-            <p
-              className={`text-[10px] mt-1 font-medium absolute -bottom-4 left-0 ${
-                passwordsMatch ? "text-emerald-600" : "text-red-500"
-              }`}
-            >
-              {passwordsMatch ? "✓ OK" : "✗ Différent"}
-            </p>
-          )}
-        </div>
-
-        {/* Critères */}
-        {showPasswordCriteria && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-            {[
-              { key: "minLength", label: "8 caractères" },
-              { key: "uppercase", label: "Majuscule" },
-              { key: "lowercase", label: "Minuscule" },
-              { key: "digit", label: "Chiffre" },
-              { key: "validSymbols", label: "Symbole" },
-            ].map(({ key, label }) => (
-              <div key={key} className="flex items-center text-[10px]">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full mr-2 ${
-                    passwordValidation[key] ? "bg-emerald-500" : "bg-gray-300"
-                  }`}
-                ></span>
-                <span
-                  className={
-                    passwordValidation[key]
-                      ? "text-emerald-600 font-medium"
-                      : "text-gray-500"
-                  }
-                >
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <PasswordBlock pwd={pwd} setPwd={setPwd} confirm={confirm} setConfirm={setConfirm} />
     </ModalShell>
   );
 };
 
-// ================== MAIN VIEW (reste inchangé) ==================
+// ── MAIN VIEW ─────────────────────────────────────────────────────────────────
 export default function UserView() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("Tous");
-  const [statusFilter, setStatusFilter] = useState("Tous");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState("info");
-  const [showCreate, setShowCreate] = useState(false);
-  const [detailUser, setDetailUser] = useState(null);
-  const [editUser, setEditUser] = useState(null);
-  const [resetUser, setResetUser] = useState(null);
-  const [deleteUser, setDeleteUser] = useState(null);
+  const { theme } = useContext(ThemeContext);
+  const [users,         setUsers]         = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [searchTerm,    setSearchTerm]    = useState("");
+  const [roleFilter,    setRoleFilter]    = useState("Tous");
+  const [statusFilter,  setStatusFilter]  = useState("Tous");
+  const [currentPage,   setCurrentPage]   = useState(1);
+  const [itemsPerPage,  setItemsPerPage]  = useState(10);
+  const [toast,         setToast]         = useState(null);
+  const [showCreate,    setShowCreate]    = useState(false);
+  const [detailUser,    setDetailUser]    = useState(null);
+  const [editUser,      setEditUser]      = useState(null);
+  const [resetUser,     setResetUser]     = useState(null);
+  const [deleteUser,    setDeleteUser]    = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null);
 
-  const roles = [
-    "Tous",
-    "Admin",
-    "Requerant",
-    "Etablissement",
-    "SAE",
-    "SICP",
-    "Universite",
-    "Expert",
-    "CNH",
-  ];
-
   const triggerToast = (message, type = "info") => {
-    setToastMessage(message);
-    setToastType(type);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 4000);
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
   };
 
-  const recap = useMemo(
-    () => ({
-      total: users.length,
-      actifs: users.filter((u) => u.isactive).length,
-      inactifs: users.filter((u) => !u.isactive).length,
-    }),
-    [users],
-  );
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  const recap = useMemo(() => ({
+    total:    users.length,
+    actifs:   users.filter((u) =>  u.isactive).length,
+    inactifs: users.filter((u) => !u.isactive).length,
+  }), [users]);
 
   const loadUsers = async () => {
     setLoading(true);
-    try {
-      const data = await UserService.getAll();
-      setUsers(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error(e);
-      triggerToast("Erreur lors du chargement des utilisateurs", "error");
-    } finally {
-      setLoading(false);
-    }
+    try   { setUsers(Array.isArray(await UserService.getAll()) ? await UserService.getAll() : []); }
+    catch (e) { console.error(e); triggerToast("Erreur chargement", "error"); }
+    finally   { setLoading(false); }
   };
+  useEffect(() => { loadUsers(); }, []);
 
   const filteredUsers = useMemo(() => {
     let list = [...users];
-    if (roleFilter !== "Tous") list = list.filter((u) => u.role === roleFilter);
-    if (statusFilter === "Actif") list = list.filter((u) => u.isactive);
+    if (roleFilter !== "Tous")    list = list.filter((u) => u.role === roleFilter);
+    if (statusFilter === "Actif") list = list.filter((u) =>  u.isactive);
     if (statusFilter === "Inactif") list = list.filter((u) => !u.isactive);
     if (searchTerm) {
-      const lower = searchTerm.toLowerCase();
-      list = list.filter(
-        (u) =>
-          safeStr(u.nom).toLowerCase().includes(lower) ||
-          safeStr(u.prenom).toLowerCase().includes(lower) ||
-          safeStr(u.email).toLowerCase().includes(lower) ||
-          safeStr(u.username).toLowerCase().includes(lower),
+      const q = searchTerm.toLowerCase();
+      list = list.filter((u) =>
+        [u.nom, u.prenom, u.email, u.username].some((v) => safeStr(v).toLowerCase().includes(q))
       );
     }
-    list.sort((a, b) => {
-      const nameA = `${safeStr(a.nom)} ${safeStr(a.prenom)}`.toLowerCase();
-      const nameB = `${safeStr(b.nom)} ${safeStr(b.prenom)}`.toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
-    return list;
+    return list.sort((a, b) =>
+      `${safeStr(a.nom)} ${safeStr(a.prenom)}`.toLowerCase()
+        .localeCompare(`${safeStr(b.nom)} ${safeStr(b.prenom)}`.toLowerCase())
+    );
   }, [users, roleFilter, statusFilter, searchTerm]);
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredUsers.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredUsers, currentPage, itemsPerPage]);
+  const totalPages     = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = useMemo(() => filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [filteredUsers, currentPage, itemsPerPage]);
+  useEffect(() => { setCurrentPage(1); }, [roleFilter, statusFilter, searchTerm, itemsPerPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [roleFilter, statusFilter, searchTerm, itemsPerPage]);
+  const startItem = filteredUsers.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem   = Math.min(currentPage * itemsPerPage, filteredUsers.length);
 
-  const startItem =
-    filteredUsers.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-  const endItem = Math.min(currentPage * itemsPerPage, filteredUsers.length);
-
-  const handleCreate = async (data) => {
-    try {
-      await UserService.create(data);
-      setShowCreate(false);
-      triggerToast("Utilisateur créé avec succès", "success");
-      loadUsers();
-    } catch (e) {
-      console.error(e);
-      let errorMsg = "Erreur lors de la création";
-      if (e.response?.data) {
-        const data = e.response.data;
-        if (typeof data.detail === "string") {
-          errorMsg = data.detail;
-        } else if (Array.isArray(data.detail)) {
-          errorMsg = data.detail
-            .map((err) => err.msg || err.message)
-            .join(", ");
-        }
-      }
-      triggerToast(errorMsg, "error");
-    }
+  const apiCall = async (fn, successMsg, closeCallback) => {
+    try   { await fn(); closeCallback(); triggerToast(successMsg, "success"); loadUsers(); }
+    catch (e) { triggerToast(e.response?.data?.detail || "Erreur", "error"); }
   };
 
-  const handleEdit = async (data) => {
-    try {
-      await UserService.update(editUser.id, data);
-      setEditUser(null);
-      triggerToast("Utilisateur modifié avec succès", "success");
-      loadUsers();
-    } catch (e) {
-      console.error(e);
-      triggerToast(
-        e.response?.data?.detail || "Erreur lors de la modification",
-        "error",
-      );
-    }
-  };
+  const handleCreate = (data) => apiCall(() => UserService.create(data),                            "Utilisateur créé",            () => setShowCreate(false));
+  const handleEdit   = (data) => apiCall(() => UserService.update(editUser.id, data),               "Utilisateur modifié",         () => setEditUser(null));
+  const handleReset  = (pwd)  => apiCall(() => UserService.resetPassword(resetUser.id, pwd),        "Mot de passe réinitialisé",   () => setResetUser(null));
+  const handleDelete = ()     => apiCall(() => UserService.delete(deleteUser.id),                   "Utilisateur supprimé",        () => setDeleteUser(null));
+  const toggleStatus = ()     => apiCall(() => UserService.update(confirmToggle.id, { isactive: !confirmToggle.isactive }),
+    `Compte ${confirmToggle.isactive ? "désactivé" : "activé"}`, () => setConfirmToggle(null));
 
-  const handleReset = async (newPassword) => {
-    try {
-      await UserService.resetPassword(resetUser.id, newPassword);
-      setResetUser(null);
-      triggerToast("Mot de passe réinitialisé avec succès", "success");
-    } catch (e) {
-      console.error(e);
-      triggerToast(
-        e.response?.data?.detail || "Erreur lors de la réinitialisation",
-        "error",
-      );
-    }
-  };
+  if (loading) return <div className="p-10 text-center text-gray-500 dark:text-gray-400">Chargement...</div>;
 
-  const handleDelete = async () => {
-    try {
-      await UserService.delete(deleteUser.id);
-      setDeleteUser(null);
-      triggerToast("Utilisateur supprimé avec succès", "success");
-      loadUsers();
-    } catch (e) {
-      console.error(e);
-      triggerToast(
-        e.response?.data?.detail || "Erreur lors de la suppression",
-        "error",
-      );
-    }
-  };
-
-  const toggleActiveStatus = async () => {
-    try {
-      await UserService.update(confirmToggle.id, {
-        isactive: !confirmToggle.isactive,
-      });
-      const action = confirmToggle.isactive ? "désactivé" : "activé";
-      triggerToast(`Compte ${action} avec succès`, "success");
-      setConfirmToggle(null);
-      loadUsers();
-    } catch (e) {
-      console.error(e);
-      triggerToast(
-        e.response?.data?.detail || "Erreur lors du changement de statut",
-        "error",
-      );
-    }
-  };
-
-  if (loading)
-    return <div className="p-10 text-center text-gray-500">Chargement...</div>;
+  const toastBorder = toast?.type === "success" ? "border-emerald-500" : toast?.type === "error" ? "border-red-500" : "border-blue-500";
+  const ALL_ROLES_TABS = ["Tous", ...ROLES];
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 p-4 sm:p-6 lg:p-8">
+
       {/* Toast */}
-      <div
-        className={`fixed top-4 right-4 z-[100] transition-all duration-300 ${
-          showToast ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
-        }`}
-      >
-        <div
-          className={`bg-white rounded-lg shadow-xl p-3 w-72 flex items-start border-l-4 ${
-            toastType === "success"
-              ? "border-emerald-500"
-              : toastType === "error"
-                ? "border-red-500"
-                : "border-blue-500"
-          }`}
-        >
+      <div className={`fixed top-4 right-4 z-[100] transition-all duration-300 ${toast ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl p-3 w-72 flex items-start border-l-4 ${toastBorder}`}>
           <div className="flex-1 ml-2">
-            <p className="text-xs font-bold text-gray-800">
-              {toastType === "success"
-                ? "Succès"
-                : toastType === "error"
-                  ? "Erreur"
-                  : "Info"}
+            <p className="text-xs font-bold text-gray-800 dark:text-gray-200">
+              {toast?.type === "success" ? "Succès" : toast?.type === "error" ? "Erreur" : "Info"}
             </p>
-            <p className="text-xs text-gray-600 leading-tight">
-              {toastMessage}
-            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-tight">{toast?.message}</p>
           </div>
         </div>
       </div>
 
-      {/* EN-TÊTE */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md">
-            <Users className="text-white" size={22} />
-          </div>
+      <div className="max-w-7xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              Gérer les utilisateurs
-            </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Créez, modifiez et gérez les comptes de la plateforme
-            </p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Gérer les utilisateurs</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Créez, modifiez et gérez les comptes de la plateforme</p>
           </div>
-        </div>
-
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition"
-        >
-          <UserPlus size={16} />
-          Ajouter
-        </button>
-      </div>
-
-      {/* CARTES RECAP */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Total
-          </span>
-          <span className="text-2xl font-bold text-gray-900 mt-1">
-            {recap.total}
-          </span>
-        </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-          <span className="text-xs font-bold text-green-600 uppercase tracking-wider">
-            Actifs
-          </span>
-          <span className="text-2xl font-bold text-green-700 mt-1">
-            {recap.actifs}
-          </span>
-        </div>
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-center">
-          <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">
-            Inactifs
-          </span>
-          <span className="text-2xl font-bold text-orange-600 mt-1">
-            {recap.inactifs}
-          </span>
-        </div>
-      </div>
-
-      {/* ONGLETS RÔLE */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-1.5 flex w-full overflow-x-auto">
-        {roles.map((role) => (
-          <button
-            key={role}
-            onClick={() => setRoleFilter(role)}
-            className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
-              roleFilter === role
-                ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md"
-                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-            }`}
-          >
-            {role}
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition">
+            <UserPlus size={16} /> Ajouter
           </button>
-        ))}
-      </div>
-
-      {/* BARRE RECHERCHE + FILTRES */}
-      <div className="flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Rechercher un utilisateur..."
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none transition"
-          />
         </div>
 
-        <div className="relative w-full sm:w-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="appearance-none w-full sm:w-auto pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-100 outline-none transition cursor-pointer"
-          >
-            <option value="Tous">Tous les statuts</option>
-            <option value="Actif">Actif</option>
-            <option value="Inactif">Inactif</option>
-          </select>
-          <ChevronDown
-            size={16}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-          />
+        {/* Recap Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { label: "Total",    value: recap.total,    color: "text-gray-900 dark:text-gray-100",   header: "text-gray-400 dark:text-gray-500" },
+            { label: "Actifs",   value: recap.actifs,   color: "text-green-700 dark:text-green-400",  header: "text-green-600 dark:text-green-400" },
+            { label: "Inactifs", value: recap.inactifs, color: "text-orange-600 dark:text-orange-400", header: "text-orange-500 dark:text-orange-400" },
+          ].map(({ label, value, color, header }) => (
+            <div key={label} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+              <span className={`text-xs font-bold uppercase tracking-wider ${header}`}>{label}</span>
+              <span className={`text-2xl font-bold mt-1 block ${color}`}>{value}</span>
+            </div>
+          ))}
         </div>
 
-        <div className="relative w-full sm:w-auto">
-          <select
-            value={itemsPerPage}
-            onChange={(e) => setItemsPerPage(Number(e.target.value))}
-            className="appearance-none w-full sm:w-auto pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-100 outline-none transition cursor-pointer"
-          >
-            <option value={10}>10 par page</option>
-            <option value={20}>20 par page</option>
-            <option value={30}>30 par page</option>
-            <option value={100}>100 par page</option>
-          </select>
-          <ChevronDown
-            size={16}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-          />
+        {/* Role Tabs */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-1.5 flex w-full overflow-x-auto gap-1">
+          {ALL_ROLES_TABS.map((r) => (
+            <button key={r} onClick={() => setRoleFilter(r)}
+              className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+                roleFilter === r
+                  ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
+              }`}>
+              {roleLabel(r)}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* LISTE UTILISATEURS */}
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="px-6 py-4">Utilisateur</th>
-                <th className="px-6 py-4 text-center">Rôle</th>
-                <th className="px-6 py-4 text-center">Statut</th>
-                <th className="px-6 py-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {paginatedUsers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="4"
-                    className="px-6 py-12 text-center text-gray-500 text-sm"
-                  >
-                    Aucun utilisateur trouvé.
-                  </td>
+        {/* Search & Filters */}
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher un utilisateur..."
+              className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none transition text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400" />
+          </div>
+          {[
+            { value: statusFilter, onChange: setStatusFilter, options: [["Tous","Tous les statuts"],["Actif","Actif"],["Inactif","Inactif"]] },
+            { value: itemsPerPage, onChange: (v) => setItemsPerPage(Number(v)), options: [[10,"10 par page"],[20,"20 par page"],[30,"30 par page"],[100,"100 par page"]] },
+          ].map((sel, i) => (
+            <div key={i} className="relative w-full sm:w-auto">
+              <select value={sel.value} onChange={(e) => sel.onChange(e.target.value)}
+                className="appearance-none w-full sm:w-auto pl-4 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-100 outline-none transition cursor-pointer">
+                {sel.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+          ))}
+        </div>
+
+        {/* Table */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50/50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  {["Utilisateur","Rôle","Statut","Actions"].map((h, i) => (
+                    <th key={h} className={`px-6 py-4 ${i > 0 ? "text-center" : ""}`}>{h}</th>
+                  ))}
                 </tr>
-              ) : (
-                paginatedUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50/80 transition">
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
+                {paginatedUsers.length === 0 ? (
+                  <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400 text-sm">Aucun utilisateur trouvé.</td></tr>
+                ) : paginatedUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 flex items-center justify-center font-bold text-xs">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-600 dark:to-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center font-bold text-xs">
                           {initials(user.nom, user.prenom)}
                         </div>
                         <div>
-                          <div className="text-sm font-semibold text-gray-900">
-                            {safeStr(user.nom)} {safeStr(user.prenom)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {safeStr(user.email)}
-                          </div>
+                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{safeStr(user.nom)} {safeStr(user.prenom)}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{safeStr(user.email)}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-3 text-center">
-                      <div className="flex justify-center">
-                        <Pill tone="blue">{safeStr(user.role)}</Pill>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-center">
-                      <div className="flex justify-center">
-                        <Pill tone={user.isactive ? "green" : "gray"}>
-                          {user.isactive ? "Actif" : "Inactif"}
-                        </Pill>
-                      </div>
-                    </td>
+                    <td className="px-6 py-3 text-center"><div className="flex justify-center"><Pill tone="blue">{roleLabel(safeStr(user.role))}</Pill></div></td>
+                    <td className="px-6 py-3 text-center"><div className="flex justify-center"><Pill tone={user.isactive ? "green" : "gray"}>{user.isactive ? "Actif" : "Inactif"}</Pill></div></td>
                     <td className="px-6 py-3">
                       <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => setDetailUser(user)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition"
-                          title="Voir détails"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          onClick={() => setEditUser(user)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
-                          title="Modifier"
-                        >
-                          <Edit3 size={16} />
-                        </button>
-                        <button
-                          onClick={() => setResetUser(user)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition"
-                          title="Réinitialiser mot de passe"
-                        >
-                          <RefreshCw size={16} />
-                        </button>
-                        <button
-                          onClick={() => setConfirmToggle(user)}
-                          className={`p-2 rounded-lg transition ${
-                            user.isactive
-                              ? "text-orange-600 hover:bg-orange-50"
-                              : "text-green-600 hover:bg-green-50"
-                          }`}
-                          title={user.isactive ? "Désactiver" : "Activer"}
-                        >
+                        {[
+                          { icon: Eye,       cb: () => setDetailUser(user),    color: "hover:text-blue-600   dark:hover:text-blue-400   hover:bg-blue-50   dark:hover:bg-blue-950/30",   title: "Voir" },
+                          { icon: Edit3,     cb: () => setEditUser(user),      color: "hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30", title: "Modifier" },
+                          { icon: RefreshCw, cb: () => setResetUser(user),     color: "hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30", title: "Reset mdp" },
+                          { icon: Trash2,    cb: () => setDeleteUser(user),    color: "hover:text-red-600    dark:hover:text-red-400    hover:bg-red-50    dark:hover:bg-red-950/30",     title: "Supprimer" },
+                        ].map(({ icon: Ic, cb, color, title }) => (
+                          <button key={title} onClick={cb} title={title}
+                            className={`p-2 rounded-lg text-gray-400 dark:text-gray-500 transition ${color}`}>
+                            <Ic size={16} />
+                          </button>
+                        ))}
+                        <button onClick={() => setConfirmToggle(user)} title={user.isactive ? "Désactiver" : "Activer"}
+                          className={`p-2 rounded-lg transition ${user.isactive ? "text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30" : "text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30"}`}>
                           <Power size={16} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteUser(user)}
-                          className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
-                          title="Supprimer"
-                        >
-                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* PAGINATION */}
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Affichage {startItem}-{endItem} sur {filteredUsers.length}{" "}
-              résultat{filteredUsers.length > 1 ? "s" : ""}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <ChevronLeft size={16} />
-              </button>
-
-              {[...Array(totalPages)].map((_, idx) => {
-                const pageNum = idx + 1;
-                if (
-                  pageNum === 1 ||
-                  pageNum === totalPages ||
-                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                ) {
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
-                        currentPage === pageNum
-                          ? "bg-blue-600 text-white"
-                          : "border border-gray-200 hover:bg-gray-50"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                } else if (
-                  pageNum === currentPage - 2 ||
-                  pageNum === currentPage + 2
-                ) {
-                  return (
-                    <span key={pageNum} className="px-2">
-                      ...
-                    </span>
-                  );
-                }
-                return null;
-              })}
-
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Affichage {startItem}–{endItem} sur {filteredUsers.length} résultat{filteredUsers.length > 1 ? "s" : ""}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                  <ChevronLeft size={16} />
+                </button>
+                {[...Array(totalPages)].map((_, idx) => {
+                  const n = idx + 1;
+                  if (n === 1 || n === totalPages || (n >= currentPage - 1 && n <= currentPage + 1))
+                    return <button key={n} onClick={() => setCurrentPage(n)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition ${currentPage === n ? "bg-blue-600 text-white" : "border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"}`}>{n}</button>;
+                  if (n === currentPage - 2 || n === currentPage + 2)
+                    return <span key={n} className="px-2 text-gray-500 dark:text-gray-400">...</span>;
+                  return null;
+                })}
+                <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* MODALS */}
-      {showCreate && (
-        <AddUserModal
-          onClose={() => setShowCreate(false)}
-          onCreate={handleCreate}
-        />
-      )}
-      {detailUser && (
-        <UserDetailModal
-          user={detailUser}
-          onClose={() => setDetailUser(null)}
-        />
-      )}
-      {editUser && (
-        <EditUserModal
-          user={editUser}
-          onClose={() => setEditUser(null)}
-          onSave={handleEdit}
-        />
-      )}
-      {resetUser && (
-        <ResetPasswordModal
-          user={resetUser}
-          onClose={() => setResetUser(null)}
-          onConfirm={handleReset}
-        />
-      )}
-
+      {/* Modals */}
+      {showCreate    && <AddUserModal   onClose={() => setShowCreate(false)} onCreate={handleCreate} />}
+      {detailUser    && <UserDetailModal user={detailUser} onClose={() => setDetailUser(null)} />}
+      {editUser      && <EditUserModal  user={editUser}   onClose={() => setEditUser(null)}   onSave={handleEdit} />}
+      {resetUser     && <ResetPasswordModal user={resetUser} onClose={() => setResetUser(null)} onConfirm={handleReset} />}
       {confirmToggle && (
         <ConfirmModal
-          title={
-            confirmToggle.isactive
-              ? "Désactiver le compte"
-              : "Activer le compte"
-          }
-          message={`Voulez-vous vraiment ${
-            confirmToggle.isactive ? "désactiver" : "activer"
-          } le compte de ${confirmToggle.nom} ${confirmToggle.prenom} (${
-            confirmToggle.email
-          }) ?`}
-          icon={Power}
-          confirmText={confirmToggle.isactive ? "Désactiver" : "Activer"}
+          title={confirmToggle.isactive ? "Désactiver le compte" : "Activer le compte"}
+          message={`Voulez-vous vraiment ${confirmToggle.isactive ? "désactiver" : "activer"} le compte de ${confirmToggle.nom} ${confirmToggle.prenom} (${confirmToggle.email}) ?`}
+          icon={Power} confirmText={confirmToggle.isactive ? "Désactiver" : "Activer"}
           confirmColor={confirmToggle.isactive ? "orange" : "green"}
-          onConfirm={toggleActiveStatus}
-          onClose={() => setConfirmToggle(null)}
-        />
+          onConfirm={toggleStatus} onClose={() => setConfirmToggle(null)} />
       )}
-
       {deleteUser && (
         <ConfirmModal
           title="Confirmer suppression"
-          message={`Voulez-vous vraiment supprimer l'utilisateur ${deleteUser.nom} ${deleteUser.prenom} (${deleteUser.email}) ? Cette action est irréversible.`}
-          icon={Trash2}
-          confirmText="Supprimer"
-          confirmColor="red"
-          onConfirm={handleDelete}
-          onClose={() => setDeleteUser(null)}
-        />
+          message={`Voulez-vous vraiment supprimer ${deleteUser.nom} ${deleteUser.prenom} (${deleteUser.email}) ? Cette action est irréversible.`}
+          icon={Trash2} confirmText="Supprimer" confirmColor="red"
+          onConfirm={handleDelete} onClose={() => setDeleteUser(null)} />
       )}
     </div>
   );

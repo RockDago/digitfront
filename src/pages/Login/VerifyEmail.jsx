@@ -98,7 +98,8 @@ const VerifyEmail = () => {
   }, [canResend, timer]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    // ICI : Changement du bg-gradient vers bg-white
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
       {/* Toast Notification */}
       <div
         className={`fixed top-5 right-5 z-50 transition-all duration-300 ${
@@ -123,7 +124,8 @@ const VerifyEmail = () => {
         </div>
       </div>
 
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8">
+      {/* ICI : Ajout de la bordure grise (border border-gray-100) et adaptation de l'ombre */}
+      <div className="bg-white w-full max-w-md rounded-2xl border border-gray-100 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.05)] p-8">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl mb-4 shadow-lg shadow-blue-500/30">
             <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,7 +195,7 @@ const VerifyEmail = () => {
               </button>
             </div>
 
-            <div className="pt-4 border-t border-gray-200 text-center">
+            <div className="pt-4 border-t border-gray-100 text-center">
               <button
                 onClick={handleBackToLogin}
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors inline-flex items-center gap-1"

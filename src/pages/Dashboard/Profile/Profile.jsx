@@ -1,4 +1,4 @@
-// src/components/Dashboard/Profile/Profile.jsx
+// frontend/src/pages/Dashboard/Profile/Profile.jsx
 import React, { useState, useRef, useEffect } from "react";
 import {
   User,
@@ -15,11 +15,17 @@ import {
   CheckCircle,
   AlertCircle,
   Smartphone,
+  Menu,
+  X,
+  MapPin,
+  Briefcase,
+  Mail,
+  Phone,
+  Edit3,
 } from "lucide-react";
 import UserService from "../../../services/user.service";
 import { API_URL } from "../../../config/axios";
 
-// --- LISTE COMPLÈTE DE TOUS LES PAYS DU MONDE (248 pays) ---
 const COUNTRIES = [
   { code: "AF", name: "Afghanistan", dial_code: "+93" },
   { code: "AX", name: "Îles Åland", dial_code: "+358" },
@@ -51,11 +57,7 @@ const COUNTRIES = [
   { code: "BA", name: "Bosnie-Herzégovine", dial_code: "+387" },
   { code: "BW", name: "Botswana", dial_code: "+267" },
   { code: "BR", name: "Brésil", dial_code: "+55" },
-  {
-    code: "IO",
-    name: "Territoire britannique de l'océan Indien",
-    dial_code: "+246",
-  },
+  { code: "IO", name: "Territoire britannique de l'océan Indien", dial_code: "+246" },
   { code: "BN", name: "Brunei", dial_code: "+673" },
   { code: "BG", name: "Bulgarie", dial_code: "+359" },
   { code: "BF", name: "Burkina Faso", dial_code: "+226" },
@@ -270,11 +272,331 @@ const COUNTRIES = [
   { code: "ZW", name: "Zimbabwe", dial_code: "+263" },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
+/* ─── STYLES GLOBAUX ───────────────────────────────────────────────── */
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+  /* ── DARK MODE (défaut) ── */
+  .profile-root {
+    font-family: 'Sora', sans-serif;
+    background: #0f1117;
+    min-height: 100vh;
+    color: #e2e8f0;
+    --pr-bg: #0f1117;
+    --pr-card: #171b26;
+    --pr-section: #1a1f2e;
+    --pr-border: #1e2535;
+    --pr-text: #e2e8f0;
+    --pr-text-muted: #64748b;
+    --pr-text-sub: #475569;
+    --pr-text-body: #cbd5e1;
+    --pr-input-bg: #0f1117;
+    --pr-input-text: #e2e8f0;
+    --pr-input-placeholder: #334155;
+    --pr-icon-bg: #1e2535;
+    --pr-tab-inactive: #64748b;
+    --pr-tab-hover: #94a3b8;
+    --pr-btn-ghost-hover: #1a1f2e;
+    --pr-btn-ghost-text: #64748b;
+    --pr-crit-unmet-bg: #1a1f2e;
+    --pr-crit-unmet-text: #475569;
+    --pr-crit-unmet-border: #1e2535;
+    --pr-2fa-bg: #0f1117;
+    --pr-status-off-bg: #1a1f2e;
+    --pr-status-off-text: #64748b;
+    --pr-toast-bg: #171b26;
+    --pr-shadow: rgba(0,0,0,0.4);
+    --pr-edit-btn: #3b82f6;
+  }
+
+  /* ── LIGHT MODE ── */
+  .profile-root.light,
+  :root:not(.dark) .profile-root {
+    background: #ffffff;
+    color: #0f172a;
+    --pr-bg: #ffffff;
+    --pr-card: #ffffff;
+    --pr-section: #f8fafc;
+    --pr-border: #e2e8f0;
+    --pr-text: #0f172a;
+    --pr-text-muted: #64748b;
+    --pr-text-sub: #94a3b8;
+    --pr-text-body: #334155;
+    --pr-input-bg: #ffffff;
+    --pr-input-text: #0f172a;
+    --pr-input-placeholder: #94a3b8;
+    --pr-icon-bg: #f1f5f9;
+    --pr-tab-inactive: #94a3b8;
+    --pr-tab-hover: #475569;
+    --pr-btn-ghost-hover: #f8fafc;
+    --pr-btn-ghost-text: #475569;
+    --pr-crit-unmet-bg: #f8fafc;
+    --pr-crit-unmet-text: #94a3b8;
+    --pr-crit-unmet-border: #e2e8f0;
+    --pr-2fa-bg: #f8fafc;
+    --pr-status-off-bg: #f1f5f9;
+    --pr-status-off-text: #94a3b8;
+    --pr-toast-bg: #ffffff;
+    --pr-shadow: rgba(0,0,0,0.06);
+    --pr-edit-btn: #2563eb;
+  }
+
+  /* Tailwind dark class support */
+  .dark .profile-root {
+    background: #0f1117;
+    color: #e2e8f0;
+    --pr-bg: #0f1117;
+    --pr-card: #171b26;
+    --pr-section: #1a1f2e;
+    --pr-border: #1e2535;
+    --pr-text: #e2e8f0;
+    --pr-text-muted: #64748b;
+    --pr-text-sub: #475569;
+    --pr-text-body: #cbd5e1;
+    --pr-input-bg: #0f1117;
+    --pr-input-text: #e2e8f0;
+    --pr-input-placeholder: #334155;
+    --pr-icon-bg: #1e2535;
+    --pr-tab-inactive: #64748b;
+    --pr-tab-hover: #94a3b8;
+    --pr-btn-ghost-hover: #1a1f2e;
+    --pr-btn-ghost-text: #64748b;
+    --pr-crit-unmet-bg: #1a1f2e;
+    --pr-crit-unmet-text: #475569;
+    --pr-crit-unmet-border: #1e2535;
+    --pr-2fa-bg: #0f1117;
+    --pr-status-off-bg: #1a1f2e;
+    --pr-status-off-text: #64748b;
+    --pr-toast-bg: #171b26;
+    --pr-shadow: rgba(0,0,0,0.4);
+    --pr-edit-btn: #3b82f6;
+  }
+
+  .profile-root { background: var(--pr-bg); color: var(--pr-text); }
+
+  .profile-card {
+    background: var(--pr-card);
+    border-radius: 16px;
+    border: 1px solid var(--pr-border);
+    box-shadow: 0 2px 12px var(--pr-shadow);
+  }
+
+  .avatar-ring {
+    position: relative;
+    display: inline-block;
+  }
+  .avatar-ring::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid #3b82f6;
+    opacity: 0.6;
+  }
+  .online-dot {
+    width: 10px; height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    box-shadow: 0 0 6px #22c55e88;
+  }
+
+  .profile-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--pr-border);
+    padding: 0 20px;
+    gap: 0;
+  }
+  .profile-tab {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--pr-tab-inactive);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    white-space: nowrap;
+    font-family: 'Sora', sans-serif;
+  }
+  .profile-tab:hover { color: var(--pr-tab-hover); }
+  .profile-tab.active {
+    color: var(--pr-text);
+    border-bottom-color: #3b82f6;
+  }
+
+  .section-card {
+    background: var(--pr-section);
+    border: 1px solid var(--pr-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--pr-text);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+  }
+  .info-item label {
+    display: block;
+    font-size: 11px;
+    color: var(--pr-text-sub);
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .info-item span {
+    font-size: 13px;
+    color: var(--pr-text-body);
+    font-weight: 500;
+  }
+
+  .dark-input {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--pr-input-bg);
+    border: 1px solid var(--pr-border);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--pr-input-text);
+    font-family: 'Sora', sans-serif;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  .dark-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+  }
+  .dark-input::placeholder { color: var(--pr-input-placeholder); }
+  .dark-input.error { border-color: #ef4444; }
+
+  .dark-label {
+    display: block;
+    font-size: 11px;
+    color: var(--pr-text-sub);
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-primary {
+    padding: 9px 20px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-ghost {
+    padding: 9px 16px;
+    background: transparent;
+    color: var(--pr-btn-ghost-text);
+    border: 1px solid var(--pr-border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { background: var(--pr-btn-ghost-hover); color: var(--pr-text-muted); }
+
+  .contact-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--pr-border);
+  }
+  .contact-row:last-child { border-bottom: none; }
+  .contact-icon {
+    width: 32px; height: 32px;
+    background: var(--pr-icon-bg);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .contact-label { font-size: 11px; color: var(--pr-text-sub); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .contact-value { font-size: 13px; color: var(--pr-text-body); font-weight: 500; }
+
+  .verified-badge {
+    width: 16px; height: 16px;
+    background: #3b82f6;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .toast-bar {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    background: var(--pr-toast-bg);
+    border: 1px solid var(--pr-border);
+    border-radius: 10px; padding: 12px 16px;
+    display: flex; align-items: center; gap: 10px;
+    min-width: 240px; box-shadow: 0 8px 32px var(--pr-shadow);
+    transition: all 0.3s;
+  }
+  .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .crit-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .crit-met { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+  .crit-unmet { background: var(--pr-crit-unmet-bg); color: var(--pr-crit-unmet-text); border: 1px solid var(--pr-crit-unmet-border); }
+
+  .two-fa-qr {
+    background: var(--pr-2fa-bg);
+    border: 1px solid var(--pr-border);
+    border-radius: 12px; padding: 24px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  @media (max-width: 640px) {
+    .two-fa-qr { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .security-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .status-on { background: rgba(34,197,94,0.1); color: #22c55e; }
+  .status-off { background: var(--pr-status-off-bg); color: var(--pr-status-off-text); }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+`;
+
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("personal");
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState(null);
-
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("info");
@@ -286,33 +608,16 @@ export default function Profile() {
     setTimeout(() => setShowToast(false), 4000);
   };
 
-  // ✅ CORRECTION ICI : Vérification de l'utilisateur avant chargement
   useEffect(() => {
     const loadProfile = async () => {
-      // ✅ CORRECTION CRITIQUE : Vérifier l'utilisateur avant l'appel API
       const userStr = localStorage.getItem("user");
       const user = userStr ? JSON.parse(userStr) : null;
-
-      console.log("📊 Profile.jsx - Utilisateur stocké:", user);
-
-      if (!user || !user.id) {
-        console.warn(
-          "⚠️ Utilisateur non authentifié. Veuillez vous connecter.",
-        );
-        // Optionnel : afficher un message ou rediriger vers /login
-        // triggerToast("Session expirée. Veuillez vous reconnecter.", "error");
-        return;
-      }
-
+      if (!user || !user.id) return;
       try {
-        console.log("🔄 Chargement du profil pour l'utilisateur:", user.id);
         setLoading(true);
         const data = await UserService.getMyProfile();
-        console.log("✅ Profil chargé:", data);
         setProfileData(data);
       } catch (err) {
-        console.error("❌ Erreur chargement profil:", err);
-        // Ne pas afficher de toast si c'est juste le token manquant (déjà géré)
         if (err.message !== "Token d'authentification manquant") {
           triggerToast("Erreur de chargement du profil", "error");
         }
@@ -320,490 +625,453 @@ export default function Profile() {
         setLoading(false);
       }
     };
-
     loadProfile();
   }, []);
 
   const handleSave = async (formData, imageFile = null) => {
     setLoading(true);
-
     try {
       const response = await UserService.updateMyProfile(formData, imageFile);
       setProfileData(response);
-
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const updatedUser = {
+      localStorage.setItem("user", JSON.stringify({
         ...storedUser,
         nom: response.nom,
         prenom: response.prenom,
         email: response.email,
         profileImage: response.logo,
-      };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-
-      // Rafraîchir l'image de profil dans le localStorage et la navbar
+      }));
       await UserService.refreshProfileImageInStorage();
-
       triggerToast("Profil mis à jour avec succès", "success");
     } catch (err) {
-      console.error("❌ Erreur mise à jour:", err);
-      triggerToast(
-        err.response?.data?.detail || "Erreur lors de la mise à jour",
-        "error",
-      );
+      triggerToast(err.response?.data?.detail || "Erreur lors de la mise à jour", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  const tabs = [
+    { key: "personal", label: "Informations" },
+    { key: "security", label: "Sécurité" },
+    { key: "notifications", label: "Notifications" },
+  ];
+
   const renderContent = () => {
     if (loading && !profileData) {
       return (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 size={32} className="animate-spin text-blue-600" />
+        <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
+          <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: "#3b82f6" }} />
         </div>
       );
     }
-
-    if (!profileData) {
+    if (!profileData && !loading) {
       return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <User size={64} className="text-gray-300 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700">
-            Erreur de chargement
-          </h3>
-          <p className="text-sm text-gray-500 mt-2">
-            Impossible de charger le profil
-          </p>
+        <div style={{ textAlign: "center", padding: "48px 0", color: "var(--pr-text-sub)" }}>
+          <User size={48} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
+          <p style={{ fontSize: 14 }}>Impossible de charger le profil</p>
         </div>
       );
     }
-
     switch (activeTab) {
       case "personal":
-        return (
-          <PersonalInfoForm onSubmit={handleSave} profileData={profileData} />
-        );
+        return <PersonalInfoForm onSubmit={handleSave} profileData={profileData} triggerToast={triggerToast} loading={loading} />;
       case "security":
-        return (
-          <SecurityForm
-            onSubmit={handleSave}
-            profileData={profileData}
-            triggerToast={triggerToast}
-          />
-        );
+        return <SecurityForm onSubmit={handleSave} profileData={profileData} triggerToast={triggerToast} />;
       case "notifications":
         return <NotificationsForm onSubmit={handleSave} />;
       default:
-        return (
-          <PersonalInfoForm onSubmit={handleSave} profileData={profileData} />
-        );
+        return <PersonalInfoForm onSubmit={handleSave} profileData={profileData} triggerToast={triggerToast} loading={loading} />;
     }
   };
 
+  const toastColor = toastType === "success" ? "#22c55e" : toastType === "error" ? "#ef4444" : "#3b82f6";
+
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark") ||
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
+  useEffect(() => {
+    const observer = new MutationObserver(() =>
+      setIsDark(document.documentElement.classList.contains("dark"))
+    );
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 p-4 md:p-8">
-      <div
-        className={`fixed top-4 right-4 z-[100] transition-all duration-300 ${
-          showToast ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
-        }`}
-      >
-        <div
-          className={`bg-white rounded-lg shadow-xl p-3 w-72 flex items-start border-l-4 ${
-            toastType === "success"
-              ? "border-emerald-500"
-              : toastType === "error"
-                ? "border-red-500"
-                : "border-blue-500"
-          }`}
-        >
-          <div className="flex-1 ml-2">
-            <p className="text-xs font-bold text-gray-800">
-              {toastType === "success"
-                ? "Succès"
-                : toastType === "error"
-                  ? "Erreur"
-                  : "Info"}
-            </p>
-            <p className="text-xs text-gray-600 leading-tight">
-              {toastMessage}
-            </p>
+    <div className={`profile-root${isDark ? "" : " light"}`}>
+      <style>{styles}</style>
+
+      {/* Toast */}
+      <div className="toast-bar" style={{ opacity: showToast ? 1 : 0, transform: showToast ? "translateX(0)" : "translateX(120%)", pointerEvents: showToast ? "auto" : "none" }}>
+        <div className="toast-dot" style={{ background: toastColor }} />
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--pr-text)", marginBottom: 2 }}>
+            {toastType === "success" ? "Succès" : toastType === "error" ? "Erreur" : "Info"}
           </div>
+          <div style={{ fontSize: 11, color: "var(--pr-tab-hover)" }}>{toastMessage}</div>
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 md:gap-8">
-        <aside className="w-full lg:w-64 flex-shrink-0">
-          <nav className="flex flex-col gap-2">
-            <SidebarItem
-              icon={<User size={18} />}
-              label="Informations personnelles"
-              isActive={activeTab === "personal"}
-              onClick={() => setActiveTab("personal")}
-            />
-            <SidebarItem
-              icon={<Lock size={18} />}
-              label="Sécurité"
-              isActive={activeTab === "security"}
-              onClick={() => setActiveTab("security")}
-            />
-            <SidebarItem
-              icon={<Bell size={18} />}
-              label="Notifications"
-              isActive={activeTab === "notifications"}
-              onClick={() => setActiveTab("notifications")}
-            />
-          </nav>
-        </aside>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 24px" }}>
 
-        <section className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 lg:p-8 relative">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 md:mb-8 gap-3 md:gap-4">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-800">
-              {activeTab === "personal" && "Informations personnelles"}
-              {activeTab === "security" && "Sécurité et Connexion"}
-              {activeTab === "notifications" && "Préférences de notification"}
-            </h2>
+        {/* En-tête profil */}
+        <ProfileHeader profileData={profileData} loading={loading} onSave={handleSave} triggerToast={triggerToast} />
 
-            {loading && (
-              <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-full text-sm font-medium animate-pulse">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="hidden sm:inline">Enregistrement...</span>
+        {/* Carte principale */}
+        <div className="profile-card" style={{ marginTop: 16 }}>
+          {/* Tabs */}
+          <div className="profile-tabs">
+            {tabs.map(t => (
+              <button key={t.key} className={`profile-tab${activeTab === t.key ? " active" : ""}`} onClick={() => setActiveTab(t.key)}>
+                {t.label}
+              </button>
+            ))}
+            {loading && profileData && (
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, color: "#22c55e", fontSize: 11 }}>
+                <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                Enregistrement...
               </div>
             )}
           </div>
 
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {/* Contenu */}
+          <div style={{ padding: "20px" }}>
             {renderContent()}
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
 
-// --- FORMULAIRE INFORMATIONS PERSONNELLES ---
-
-function PersonalInfoForm({ onSubmit, profileData }) {
-  const [selectedCountry, setSelectedCountry] = useState(
-    COUNTRIES.find((c) => c.code === "MG"),
-  );
-  const [formData, setFormData] = useState({
-    nom: "",
-    prenom: "",
-    email: "",
-    telephone: "",
-    code_postal: "",
-    adresse: "",
-  });
-  const [selectedFile, setSelectedFile] = useState(null);
+/* ─── PROFILE HEADER ─────────────────────────────────────────────────── */
+function ProfileHeader({ profileData, loading, onSave, triggerToast }) {
   const [previewImage, setPreviewImage] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef(null);
-  const [errors, setErrors] = useState({});
 
-  // ✅ CORRECTION ICI : Vérification du token avant chargement de l'image
   useEffect(() => {
-    const loadProfileImage = () => {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = localStorage.getItem("token"); // ✅ AJOUT
-
-      // 1. D'abord vérifier localStorage (image déjà chargée)
-      if (storedUser.profileImage) {
-        setPreviewImage(storedUser.profileImage);
-      }
-      // 2. Sinon, charger depuis l'API SEULEMENT si le token existe
-      else if (storedUser.id && token) {
-        // ✅ AJOUT && token
-        const fetchProfileImage = async () => {
-          try {
-            console.log("🔄 Chargement de l'image de profil depuis l'API...");
-            const profileData = await UserService.getMyProfile();
-
-            if (profileData.logo) {
-              const baseURL = API_URL;
-              const imageURL = profileData.logo.startsWith("/")
-                ? `${baseURL}${profileData.logo}`
-                : profileData.logo;
-
-              setPreviewImage(imageURL);
-              localStorage.setItem(
-                "user",
-                JSON.stringify({ ...storedUser, profileImage: imageURL }),
-              );
-              console.log("✅ Image de profil chargée avec succès:", imageURL);
-            }
-          } catch (error) {
-            // Ignorer l'erreur si c'est le token manquant
-            if (error.message !== "Token d'authentification manquant") {
-              console.error("❌ Erreur chargement image profil:", error);
-            }
-            setPreviewImage(null);
-          }
-        };
-
-        fetchProfileImage();
-      }
-    };
-
-    loadProfileImage();
-
-    const handleProfileUpdate = (e) => {
-      if (e.detail?.profileImage) {
-        setPreviewImage(e.detail.profileImage);
-      }
-    };
-
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    if (storedUser.profileImage) {
+      setPreviewImage(storedUser.profileImage);
+    } else if (profileData?.logo) {
+      const imageURL = profileData.logo.startsWith("/") ? `${API_URL}${profileData.logo}` : profileData.logo;
+      setPreviewImage(imageURL);
+    }
+    const handleProfileUpdate = (e) => { if (e.detail?.profileImage) setPreviewImage(e.detail.profileImage); };
     window.addEventListener("profileImageUpdated", handleProfileUpdate);
-    return () =>
-      window.removeEventListener("profileImageUpdated", handleProfileUpdate);
-  }, []);
+    return () => window.removeEventListener("profileImageUpdated", handleProfileUpdate);
+  }, [profileData]);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { triggerToast("L'image ne doit pas dépasser 5MB", "error"); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => setPreviewImage(reader.result);
+    reader.readAsDataURL(file);
+    setUploadingImage(true);
+    try {
+      await onSave({ nom: profileData?.nom || "", prenom: profileData?.prenom || "", email: profileData?.email || "", telephone: profileData?.telephone || "", code_postal: profileData?.code_postal || "", adresse: profileData?.adresse || "" }, file);
+    } catch { triggerToast("Erreur lors de la mise à jour de la photo", "error"); }
+    finally { setUploadingImage(false); }
+  };
+
+  const initials = profileData ? `${profileData.prenom?.[0] || ""}${profileData.nom?.[0] || ""}`.toUpperCase() : "U";
+
+  return (
+    <div className="profile-card" style={{ padding: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        {/* Avatar */}
+        <div className="avatar-ring" style={{ cursor: "pointer" }} onClick={() => fileInputRef.current?.click()}>
+          <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(135deg,#3b82f6,#6366f1)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+            {previewImage ? (
+              <img src={previewImage} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} />
+            ) : (
+              <span style={{ fontSize: 22, fontWeight: 700, color: "white" }}>{initials}</span>
+            )}
+            {uploadingImage && (
+              <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}>
+                <Loader2 size={16} style={{ animation: "spin 1s linear infinite", color: "white" }} />
+              </div>
+            )}
+            <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.4)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0)"}>
+              <Camera size={14} style={{ color: "white", opacity: 0, transition: "opacity 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0} />
+            </div>
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
+        </div>
+
+        {/* Infos */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: "var(--pr-text)", margin: 0 }}>
+              {profileData ? `${profileData.nom || ""} ${profileData.prenom || ""}` : "—"}
+            </h1>
+            <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--pr-text-sub)", padding: 0 }}>
+              <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor"><circle cx="2" cy="2" r="2"/><circle cx="8" cy="2" r="2"/><circle cx="14" cy="2" r="2"/></svg>
+            </button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", marginTop: 4, gap: 4 }}>
+            <span className="online-dot" />
+            <span style={{ fontSize: 12, color: "var(--pr-text-muted)" }}>En ligne</span>
+          </div>
+          {profileData?.adresse && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+              <MapPin size={12} style={{ color: "var(--pr-text-sub)" }} />
+              <span style={{ fontSize: 12, color: "var(--pr-text-muted)" }}>{profileData.adresse}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Badge email */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className={`security-status ${profileData?.email_verified ? "status-on" : "status-off"}`}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+            {profileData?.email_verified ? "Vérifié" : "Non vérifié"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── PERSONAL INFO FORM ─────────────────────────────────────────────── */
+function PersonalInfoForm({ onSubmit, profileData, triggerToast, loading }) {
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES.find((c) => c.code === "MG"));
+  const [formData, setFormData] = useState({ nom: "", prenom: "", email: "", telephone: "", code_postal: "", adresse: "" });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [editInfo, setEditInfo] = useState(false);   // mode édition infos perso
+  const [editContact, setEditContact] = useState(false); // mode édition contacts
 
   useEffect(() => {
     if (profileData) {
-      setFormData({
-        nom: profileData.nom || "",
-        prenom: profileData.prenom || "",
-        email: profileData.email || "",
-        telephone: profileData.telephone || "",
-        code_postal: profileData.code_postal || "",
-        adresse: profileData.adresse || "",
-      });
+      setFormData({ nom: profileData.nom || "", prenom: profileData.prenom || "", email: profileData.email || "", telephone: profileData.telephone || "", code_postal: profileData.code_postal || "", adresse: profileData.adresse || "" });
     }
   }, [profileData]);
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("L'image ne doit pas dépasser 5MB");
-        return;
-      }
-
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.nom.trim()) newErrors.nom = "Le nom est requis";
-    if (!formData.prenom.trim()) newErrors.prenom = "Le prénom est requis";
-    if (!formData.email.trim()) newErrors.email = "L'email est requis";
+    if (!formData.nom.trim()) newErrors.nom = "Requis";
+    if (!formData.prenom.trim()) newErrors.prenom = "Requis";
+    if (!formData.email.trim()) newErrors.email = "Requis";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmitInfo = (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSubmit(formData, selectedFile);
-    }
+    if (validateForm()) { onSubmit(formData, selectedFile); setEditInfo(false); }
+  };
+
+  const handleSubmitContact = (e) => {
+    e.preventDefault();
+    if (!formData.email.trim()) { setErrors({ email: "Requis" }); return; }
+    onSubmit(formData, selectedFile);
+    setEditContact(false);
   };
 
   const isEmailVerified = profileData?.email_verified || false;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* ✅ Photo de profil - EXACTEMENT COMME NAVBAR.JSX */}
-      <div className="flex items-center gap-6 pb-6 border-b border-gray-100">
-        <div className="relative group">
-          <button
-            type="button"
-            onClick={handleAvatarClick}
-            className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 shadow-sm bg-gray-100 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-          >
-            <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm overflow-hidden">
-              {previewImage ? (
-                <img
-                  src={previewImage}
-                  alt={`${profileData?.prenom} ${profileData?.nom}`}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    console.error("❌ Erreur chargement image:", e);
-                    e.target.style.display = "none";
-                    e.target.parentElement.innerHTML = `<span class="font-bold text-xs md:text-sm">${
-                      profileData?.prenom?.[0]?.toUpperCase() || "U"
-                    }</span>`;
-                  }}
-                />
+    <div>
+      {/* ── Section Informations personnelles ── */}
+      <form onSubmit={handleSubmitInfo}>
+        <div className="section-card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <span className="section-title" style={{ margin: 0 }}>Informations personnelles</span>
+            <button type="button" onClick={() => { setEditInfo(!editInfo); setErrors({}); }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#3b82f6", display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontFamily: "inherit", fontWeight: 500 }}>
+              <Edit3 size={13} /> {editInfo ? "Annuler" : "Modifier"}
+            </button>
+          </div>
+
+          {!editInfo ? (
+            <div className="info-grid">
+              <div className="info-item"><label>Nom</label><span>{profileData?.nom || "—"}</span></div>
+              <div className="info-item"><label>Prénom</label><span>{profileData?.prenom || "—"}</span></div>
+              <div className="info-item"><label>Pays</label><span>{selectedCountry?.name || "—"}</span></div>
+              <div className="info-item"><label>Adresse</label><span>{profileData?.adresse || "—"}</span></div>
+              <div className="info-item"><label>Code postal</label><span>{profileData?.code_postal || "—"}</span></div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <DarkInput label="Nom" name="nom" value={formData.nom} onChange={handleInputChange} error={errors.nom} required placeholder="Ex: Rakoto" />
+                <DarkInput label="Prénom" name="prenom" value={formData.prenom} onChange={handleInputChange} error={errors.prenom} required placeholder="Ex: Jean" />
+              </div>
+              <CountrySelectDark selectedCountry={selectedCountry} onCountryChange={setSelectedCountry} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 160px", gap: 14 }}>
+                <DarkInput label="Adresse" name="adresse" value={formData.adresse} onChange={handleInputChange} placeholder="123 Rue Exemple, Antananarivo" />
+                <DarkInput label="Code postal" name="code_postal" value={formData.code_postal} onChange={handleInputChange} placeholder="101" />
+              </div>
+            </div>
+          )}
+
+          {editInfo && (
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+              <button type="button" className="btn-ghost" onClick={() => { setEditInfo(false); setErrors({}); }}>Annuler</button>
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : "Enregistrer"}
+              </button>
+            </div>
+          )}
+        </div>
+      </form>
+
+      {/* ── Section Contacts ── */}
+      <form onSubmit={handleSubmitContact}>
+        <div className="section-card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span className="section-title" style={{ margin: 0 }}>Contacts</span>
+            <button type="button" onClick={() => { setEditContact(!editContact); setErrors({}); }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#3b82f6", display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontFamily: "inherit", fontWeight: 500 }}>
+              <Edit3 size={13} /> {editContact ? "Annuler" : "Modifier"}
+            </button>
+          </div>
+
+          <div className="contact-row">
+            <div className="contact-icon"><Phone size={14} style={{ color: "#3b82f6" }} /></div>
+            <div style={{ flex: 1 }}>
+              <div className="contact-label">Téléphone</div>
+              {editContact ? (
+                <PhoneInputDark selectedCountry={selectedCountry} onCountryChange={setSelectedCountry} value={formData.telephone} onChange={(v) => setFormData({ ...formData, telephone: v })} />
               ) : (
-                <span className="font-bold text-2xl">
-                  {profileData?.prenom?.[0]?.toUpperCase() || "U"}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="contact-value">{formData.telephone ? `${selectedCountry?.dial_code} ${formData.telephone}` : "—"}</span>
+                  {formData.telephone && <span className="verified-badge"><Check size={9} color="white" /></span>}
+                </div>
               )}
             </div>
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
-              <Camera
-                size={24}
-                className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              />
+          </div>
+
+          <div className="contact-row">
+            <div className="contact-icon"><Mail size={14} style={{ color: "#3b82f6" }} /></div>
+            <div style={{ flex: 1 }}>
+              <div className="contact-label">Email</div>
+              {editContact ? (
+                <DarkInput name="email" type="email" value={formData.email} onChange={handleInputChange} error={errors.email} placeholder="votre.email@exemple.com" />
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="contact-value">{formData.email || "—"}</span>
+                  {isEmailVerified && <span className="verified-badge"><Check size={9} color="white" /></span>}
+                </div>
+              )}
             </div>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
+          </div>
+
+          {!isEmailVerified && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", borderTop: "1px solid var(--pr-border)", marginTop: 4 }}>
+              <AlertCircle size={14} style={{ color: "#f59e0b" }} />
+              <span style={{ fontSize: 12, color: "#f59e0b", flex: 1 }}>Email non vérifié</span>
+              <button type="button" style={{ fontSize: 11, color: "#3b82f6", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>Renvoyer</button>
+            </div>
+          )}
+
+          {editContact && (
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+              <button type="button" className="btn-ghost" onClick={() => { setEditContact(false); setErrors({}); }}>Annuler</button>
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : "Enregistrer"}
+              </button>
+            </div>
+          )}
         </div>
-        <div>
-          <h3 className="font-semibold text-base text-gray-900 mb-1">
-            Photo de profil
-          </h3>
-          <p className="text-sm text-gray-500">PNG, JPG jusqu'à 5MB</p>
-        </div>
-      </div>
-
-      {/* ✅ STATUT VÉRIFICATION EMAIL */}
-      <div
-        className={`flex items-center gap-3 p-4 rounded-xl border ${
-          isEmailVerified
-            ? "bg-emerald-50 border-emerald-200"
-            : "bg-amber-50 border-amber-200"
-        }`}
-      >
-        {isEmailVerified ? (
-          <>
-            <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-emerald-800">
-                Email vérifié
-              </p>
-              <p className="text-xs text-emerald-600">
-                Votre adresse email a été confirmée
-              </p>
-            </div>
-          </>
-        ) : (
-          <>
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-800">
-                Email non vérifié
-              </p>
-              <p className="text-xs text-amber-600">
-                Veuillez vérifier votre email
-              </p>
-            </div>
-            <button
-              type="button"
-              className="text-xs font-medium text-amber-700 hover:text-amber-800 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Renvoyer
-            </button>
-          </>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SimpleInput
-          label="Prénom"
-          name="prenom"
-          value={formData.prenom}
-          onChange={handleInputChange}
-          placeholder="Votre prénom"
-          error={errors.prenom}
-          required
-        />
-        <SimpleInput
-          label="Nom"
-          name="nom"
-          value={formData.nom}
-          onChange={handleInputChange}
-          placeholder="Votre nom"
-          error={errors.nom}
-          required
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SimpleInput
-          label="Adresse Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleInputChange}
-          placeholder="votre.email@exemple.com"
-          error={errors.email}
-          required
-        />
-        <PhoneInput
-          label="Numéro de téléphone"
-          selectedCountry={selectedCountry}
-          onCountryChange={setSelectedCountry}
-          value={formData.telephone}
-          onChange={(value) => setFormData({ ...formData, telephone: value })}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CountrySelect
-          selectedCountry={selectedCountry}
-          onCountryChange={setSelectedCountry}
-        />
-        <SimpleInput
-          label="Code Postal"
-          name="code_postal"
-          value={formData.code_postal}
-          onChange={handleInputChange}
-          placeholder="101"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        <SimpleInput
-          label="Adresse exacte"
-          name="adresse"
-          value={formData.adresse}
-          onChange={handleInputChange}
-          placeholder="123 Rue Exemple, Ville"
-        />
-      </div>
-
-      <div className="pt-4 flex justify-end">
-        <button
-          type="submit"
-          className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
-        >
-          Enregistrer les modifications
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }
 
-// --- FORMULAIRE SÉCURITÉ AVEC 2FA ---
+/* ─── DARK INPUT ─────────────────────────────────────────────────────── */
+function DarkInput({ label, name, type = "text", value, onChange, placeholder, error, required, style }) {
+  return (
+    <div style={{ ...style }}>
+      {label && <label className="dark-label">{label}{required && <span style={{ color: "#ef4444" }}> *</span>}</label>}
+      <input name={name} type={type} value={value} onChange={onChange} placeholder={placeholder} className={`dark-input${error ? " error" : ""}`} />
+      {error && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{error}</p>}
+    </div>
+  );
+}
 
+/* ─── PHONE INPUT DARK ───────────────────────────────────────────────── */
+function PhoneInputDark({ selectedCountry, onCountryChange, value, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 8, width: "100%" }}>
+      <div style={{ width: 90, flexShrink: 0 }}>
+        <button type="button" className="dark-input" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", padding: "9px 10px", width: "100%" }}>
+          <span style={{ fontSize: 12 }}>{selectedCountry?.dial_code}</span>
+          <ChevronDown size={12} style={{ color: "var(--pr-text-sub)" }} />
+        </button>
+      </div>
+      <input type="tel" value={value} onChange={(e) => onChange(e.target.value)} placeholder="34 12 345 67" className="dark-input" style={{ flex: 1 }} />
+    </div>
+  );
+}
+
+/* ─── COUNTRY SELECT DARK ────────────────────────────────────────────── */
+function CountrySelectDark({ selectedCountry, onCountryChange }) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const filteredCountries = COUNTRIES.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
+
+  useEffect(() => {
+    const handleClickOutside = (e) => { if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div style={{ position: "relative" }} ref={containerRef}>
+      <label className="dark-label">Pays</label>
+      <button type="button" onClick={() => setOpen(!open)} className="dark-input" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", width: "100%", textAlign: "left" }}>
+        <span style={{ fontSize: 12, color: selectedCountry ? "var(--pr-text)" : "var(--pr-input-placeholder)" }}>{selectedCountry?.name || "Sélectionner..."}</span>
+        <ChevronDown size={12} style={{ color: "var(--pr-text-sub)" }} />
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100, background: "var(--pr-card)", border: "1px solid var(--pr-border)", borderRadius: 8, maxHeight: 220, overflow: "hidden", boxShadow: "0 8px 32px var(--pr-shadow)", marginTop: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", padding: "8px 10px", borderBottom: "1px solid #1e2535", gap: 6 }}>
+            <Search size={12} style={{ color: "var(--pr-text-sub)" }} />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher..." style={{ background: "none", border: "none", outline: "none", fontSize: 12, color: "var(--pr-text)", flex: 1, fontFamily: "inherit" }} />
+          </div>
+          <ul style={{ maxHeight: 180, overflowY: "auto", listStyle: "none", margin: 0, padding: 0 }}>
+            {filteredCountries.map((c) => (
+              <li key={c.code} onClick={() => { onCountryChange(c); setOpen(false); setSearch(""); }}
+                style={{ padding: "8px 12px", fontSize: 12, cursor: "pointer", display: "flex", justifyContent: "space-between", color: selectedCountry?.code === c.code ? "#3b82f6" : "var(--pr-text-body)", background: selectedCountry?.code === c.code ? "rgba(59,130,246,0.08)" : "transparent" }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--pr-btn-ghost-hover)"}
+                onMouseLeave={e => e.currentTarget.style.background = selectedCountry?.code === c.code ? "rgba(59,130,246,0.08)" : "transparent"}>
+                <span>{c.name}</span>
+                <span style={{ color: "var(--pr-text-sub)" }}>{c.dial_code}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── SECURITY FORM ──────────────────────────────────────────────────── */
 function SecurityForm({ onSubmit, profileData, triggerToast }) {
-  const [passwords, setPasswords] = useState({
-    passwordCurrent: "",
-    passwordNew: "",
-    passwordConfirm: "",
-  });
+  const [passwords, setPasswords] = useState({ passwordCurrent: "", passwordNew: "", passwordConfirm: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
-
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(
-    profileData?.two_factor_enabled || false,
-  );
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(profileData?.two_factor_enabled || false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [qrCodeUrl, setQrCodeUrl] = useState("");
@@ -814,818 +1082,203 @@ function SecurityForm({ onSubmit, profileData, triggerToast }) {
     { uppercase: { regex: /[A-Z]/, label: "Majuscule" } },
     { lowercase: { regex: /[a-z]/, label: "Minuscule" } },
     { digit: { regex: /\d/, label: "Chiffre" } },
-    {
-      validSymbols: {
-        regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-        label: "Symbole",
-        required: true,
-      },
-    },
+    { validSymbols: { regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, label: "Symbole" } },
   ];
 
-  const validatePasswordCriteria = (password) => ({
-    minLength: passwordCriteria[0].minLength.regex.test(password),
-    uppercase: passwordCriteria[1].uppercase.regex.test(password),
-    lowercase: passwordCriteria[2].lowercase.regex.test(password),
-    digit: passwordCriteria[3].digit.regex.test(password),
-    validSymbols: passwordCriteria[4].validSymbols.regex.test(password),
+  const validatePasswordCriteria = (p) => ({
+    minLength: /.{8,}/.test(p), uppercase: /[A-Z]/.test(p),
+    lowercase: /[a-z]/.test(p), digit: /\d/.test(p),
+    validSymbols: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p),
   });
 
-  const allPasswordCriteriaMet = (password) => {
-    const criteria = validatePasswordCriteria(password);
-    return Object.values(criteria).every((val) => val === true);
-  };
-
   const passwordValidation = validatePasswordCriteria(passwords.passwordNew);
-  const isPasswordValid = allPasswordCriteriaMet(passwords.passwordNew);
-  const passwordsMatch =
-    passwords.passwordNew === passwords.passwordConfirm &&
-    passwords.passwordConfirm !== "";
-  const passwordsDontMatch =
-    passwords.passwordNew !== "" &&
-    passwords.passwordConfirm !== "" &&
-    passwords.passwordNew !== passwords.passwordConfirm;
-  const showPasswordCriteria =
-    passwords.passwordNew.length > 0 && !isPasswordValid;
+  const isPasswordValid = Object.values(passwordValidation).every(Boolean);
+  const passwordsMatch = passwords.passwordNew === passwords.passwordConfirm && passwords.passwordConfirm !== "";
+  const passwordsDontMatch = passwords.passwordNew !== "" && passwords.passwordConfirm !== "" && passwords.passwordNew !== passwords.passwordConfirm;
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswords(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: "" }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const newErrors = {};
-    if (!passwords.passwordCurrent.trim())
-      newErrors.passwordCurrent = "Le mot de passe actuel est requis";
-    if (!passwords.passwordNew.trim()) {
-      newErrors.passwordNew = "Le nouveau mot de passe est requis";
-    } else if (!isPasswordValid) {
-      newErrors.passwordNew = "Mot de passe faible";
-    }
-    if (!passwords.passwordConfirm.trim()) {
-      newErrors.passwordConfirm = "La confirmation est requise";
-    } else if (passwords.passwordNew !== passwords.passwordConfirm) {
-      newErrors.passwordConfirm = "Les mots de passe ne correspondent pas";
-    }
-
+    if (!passwords.passwordCurrent.trim()) newErrors.passwordCurrent = "Requis";
+    if (!passwords.passwordNew.trim()) newErrors.passwordNew = "Requis";
+    else if (!isPasswordValid) newErrors.passwordNew = "Mot de passe faible";
+    if (!passwords.passwordConfirm.trim()) newErrors.passwordConfirm = "Requis";
+    else if (passwords.passwordNew !== passwords.passwordConfirm) newErrors.passwordConfirm = "Ne correspond pas";
     setErrors(newErrors);
-
     if (Object.keys(newErrors).length === 0) {
-      onSubmit({
-        passwordCurrent: passwords.passwordCurrent,
-        passwordNew: passwords.passwordNew,
-      });
-      setPasswords({
-        passwordCurrent: "",
-        passwordNew: "",
-        passwordConfirm: "",
-      });
+      onSubmit({ passwordCurrent: passwords.passwordCurrent, passwordNew: passwords.passwordNew });
+      setPasswords({ passwordCurrent: "", passwordNew: "", passwordConfirm: "" });
     }
   };
 
   const handleEnable2FA = async () => {
     try {
       setLoading2FA(true);
-      // TODO: Remplacer par votre appel API réel
       const response = await UserService.enable2FA();
       setQrCodeUrl(response.qr_code_url);
-
-      // Simulation pour la démo
-      setQrCodeUrl(
-        "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/YourApp:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=YourApp",
-      );
       setShowQRCode(true);
       triggerToast("QR Code généré avec succès", "success");
-    } catch (error) {
-      console.error("Erreur activation 2FA:", error);
-      triggerToast("Erreur lors de l'activation du 2FA", "error");
-    } finally {
-      setLoading2FA(false);
-    }
+    } catch { triggerToast("Erreur lors de l'activation du 2FA", "error"); }
+    finally { setLoading2FA(false); }
   };
 
   const handleVerify2FA = async () => {
-    if (verificationCode.length !== 6) {
-      triggerToast("Le code doit contenir 6 chiffres", "error");
-      return;
-    }
-
+    if (verificationCode.length !== 6) { triggerToast("Le code doit contenir 6 chiffres", "error"); return; }
     try {
       setLoading2FA(true);
-      // TODO: Remplacer par votre appel API réel
       await UserService.verify2FA(verificationCode);
-
-      // Simulation
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setTwoFactorEnabled(true);
-      setShowQRCode(false);
-      setVerificationCode("");
-      triggerToast("2FA activé avec succès !", "success");
-    } catch (error) {
-      console.error("Erreur vérification 2FA:", error);
-      triggerToast("Code invalide. Veuillez réessayer.", "error");
-    } finally {
-      setLoading2FA(false);
-    }
+      await new Promise(r => setTimeout(r, 1000));
+      setTwoFactorEnabled(true); setShowQRCode(false); setVerificationCode("");
+      triggerToast("Authentification à 2 facteurs activée", "success");
+    } catch { triggerToast("Code invalide ou erreur lors de la vérification", "error"); }
+    finally { setLoading2FA(false); }
   };
 
   const handleDisable2FA = async () => {
-    if (
-      window.confirm(
-        "Êtes-vous sûr de vouloir désactiver l'authentification deux facteurs ?",
-      )
-    ) {
-      try {
-        setLoading2FA(true);
-        // TODO: Remplacer par votre appel API réel
-        await UserService.disable2FA();
-
-        // Simulation
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        setTwoFactorEnabled(false);
-        triggerToast("2FA désactivé avec succès", "success");
-      } catch (error) {
-        console.error("Erreur désactivation 2FA:", error);
-        triggerToast("Erreur lors de la désactivation du 2FA", "error");
-      } finally {
-        setLoading2FA(false);
-      }
-    }
+    try {
+      setLoading2FA(true);
+      await UserService.disable2FA();
+      setTwoFactorEnabled(false); setShowQRCode(false); setVerificationCode("");
+      triggerToast("Authentification à 2 facteurs désactivée", "success");
+    } catch { triggerToast("Erreur lors de la désactivation", "error"); }
+    finally { setLoading2FA(false); }
   };
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      {/* SECTION 2FA */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Shield className="w-6 h-6 text-white" />
+    <form onSubmit={handleSubmit}>
+      {/* Mot de passe */}
+      <div className="section-card">
+        <span className="section-title">Changer le mot de passe</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <DarkPasswordInput label="Mot de passe actuel" name="passwordCurrent" value={passwords.passwordCurrent} onChange={handlePasswordChange} error={errors.passwordCurrent} show={showPassword} setShow={setShowPassword} placeholder="Entrez votre mot de passe actuel" />
+          <DarkPasswordInput label="Nouveau mot de passe" name="passwordNew" value={passwords.passwordNew} onChange={handlePasswordChange} error={errors.passwordNew} show={showNewPassword} setShow={setShowNewPassword} placeholder="Minimum 8 caractères" />
+          <DarkPasswordInput label="Confirmer le nouveau mot de passe" name="passwordConfirm" value={passwords.passwordConfirm} onChange={handlePasswordChange} error={errors.passwordConfirm} show={showConfirmPassword} setShow={setShowConfirmPassword} placeholder="Répétez le nouveau mot de passe" />
+
+          <div>
+            <label className="dark-label">Critères de sécurité</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+              {passwordCriteria.map((item, i) => {
+                const key = Object.keys(item)[0];
+                const met = passwordValidation[key];
+                return (
+                  <span key={i} className={`crit-badge ${met ? "crit-met" : "crit-unmet"}`}>
+                    <Check size={10} /> {item[key].label}
+                  </span>
+                );
+              })}
+            </div>
+            {passwordsMatch && <p style={{ fontSize: 11, color: "#22c55e", marginTop: 6 }}>Les mots de passe correspondent.</p>}
+            {passwordsDontMatch && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 6 }}>Les mots de passe ne correspondent pas.</p>}
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              Authentification deux facteurs (2FA)
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Ajoutez une couche de sécurité supplémentaire à votre compte en
-              activant l'authentification deux facteurs.
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+          <button type="submit" className="btn-primary">Mettre à jour</button>
+        </div>
+      </div>
+
+      {/* 2FA */}
+      <div className="section-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <Shield size={15} style={{ color: "#3b82f6" }} />
+              <span className="section-title" style={{ margin: 0 }}>Authentification à deux facteurs</span>
+              <span className={`security-status ${twoFactorEnabled ? "status-on" : "status-off"}`}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+                {twoFactorEnabled ? "Activé" : "Désactivé"}
+              </span>
+            </div>
+            <p style={{ fontSize: 12, color: "var(--pr-text-sub)", margin: 0, maxWidth: 480 }}>
+              Protégez votre compte en exigeant un code lors de la connexion en plus de votre mot de passe.
             </p>
+          </div>
+          {twoFactorEnabled ? (
+            <button type="button" onClick={handleDisable2FA} disabled={loading2FA} className="btn-ghost">Désactiver</button>
+          ) : (
+            <button type="button" onClick={handleEnable2FA} disabled={loading2FA} className="btn-primary">Activer le 2FA</button>
+          )}
+        </div>
 
-            {!twoFactorEnabled && !showQRCode && (
-              <button
-                type="button"
-                onClick={handleEnable2FA}
-                disabled={loading2FA}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm disabled:bg-blue-400 disabled:cursor-not-allowed"
-              >
-                {loading2FA ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Smartphone size={16} />
-                )}
-                {loading2FA ? "Chargement..." : "Activer 2FA"}
-              </button>
-            )}
-
-            {twoFactorEnabled && (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg">
-                  <CheckCircle size={16} />
-                  <span className="text-sm font-medium">2FA activé</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleDisable2FA}
-                  disabled={loading2FA}
-                  className="text-sm text-red-600 hover:text-red-700 font-medium disabled:text-red-400"
-                >
-                  {loading2FA ? "Chargement..." : "Désactiver"}
+        {showQRCode && (
+          <div className="two-fa-qr" style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 140, height: 140, background: "white", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                {qrCodeUrl ? <img src={qrCodeUrl} alt="QR Code" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <Loader2 size={24} style={{ animation: "spin 1s linear infinite", color: "var(--pr-tab-hover)" }} />}
+              </div>
+              <p style={{ fontSize: 11, color: "var(--pr-text-muted)", textAlign: "center" }}>Scannez avec Google Authenticator, Authy, etc.</p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <p style={{ fontSize: 12, color: "var(--pr-tab-hover)", margin: 0 }}>Entrez le code à 6 chiffres de votre application.</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Smartphone size={13} style={{ color: "var(--pr-text-sub)" }} />
+                <span className="dark-label" style={{ margin: 0 }}>Code de vérification</span>
+              </div>
+              <input type="text" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))} maxLength={6}
+                className="dark-input" style={{ textAlign: "center", letterSpacing: "0.4em", fontSize: 18, fontFamily: "monospace" }} placeholder="••••••" />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" onClick={handleVerify2FA} disabled={loading2FA} className="btn-primary" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  {loading2FA && <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />} Confirmer
                 </button>
+                <button type="button" onClick={() => setShowQRCode(false)} className="btn-ghost">Annuler</button>
               </div>
-            )}
-
-            {showQRCode && (
-              <div className="mt-4 bg-white p-4 rounded-lg border border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-3 text-sm">
-                  Scannez ce QR code avec votre application d'authentification
-                </h4>
-                <div className="flex flex-col items-center gap-4 mb-4">
-                  <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                    {qrCodeUrl ? (
-                      <img
-                        src={qrCodeUrl}
-                        alt="QR Code 2FA"
-                        className="w-full h-full object-contain p-2"
-                      />
-                    ) : (
-                      <Loader2
-                        size={32}
-                        className="animate-spin text-gray-400"
-                      />
-                    )}
-                  </div>
-                  <div className="w-full">
-                    <label className="block text-xs font-semibold text-gray-700 mb-2">
-                      Code de vérification
-                    </label>
-                    <input
-                      type="text"
-                      value={verificationCode}
-                      onChange={(e) =>
-                        setVerificationCode(
-                          e.target.value.replace(/\D/g, "").slice(0, 6),
-                        )
-                      }
-                      placeholder="000 000"
-                      maxLength={6}
-                      className="w-full px-3 py-2 text-center text-lg font-mono border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleVerify2FA}
-                    disabled={verificationCode.length !== 6 || loading2FA}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {loading2FA ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 size={16} className="animate-spin" />
-                        Vérification...
-                      </span>
-                    ) : (
-                      "Vérifier et activer"
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowQRCode(false);
-                      setVerificationCode("");
-                    }}
-                    disabled={loading2FA}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm disabled:bg-gray-50"
-                  >
-                    Annuler
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-3">
-                  Utilisez Google Authenticator, Authy ou toute autre
-                  application compatible.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION CHANGEMENT MOT DE PASSE */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-          <h4 className="font-semibold text-blue-800 text-sm mb-1">
-            Changer le mot de passe
-          </h4>
-          <p className="text-blue-600 text-sm">
-            Utilisez un mot de passe fort contenant au moins 8 caractères, une
-            majuscule, une minuscule, un chiffre et un symbole (!@#$%...).
-          </p>
-        </div>
-
-        {profileData?.google_auth && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-            <p className="text-yellow-800 text-sm">
-              Vous êtes connecté avec Google OAuth. Le changement de mot de
-              passe n'est pas disponible.
-            </p>
+              <p style={{ fontSize: 10, color: "var(--pr-input-placeholder)", margin: 0 }}>Conservez votre code de secours en lieu sûr.</p>
+            </div>
           </div>
         )}
-
-        <div className="relative group">
-          <input
-            type={showPassword ? "text" : "password"}
-            id="passwordCurrent"
-            value={passwords.passwordCurrent}
-            onChange={(e) =>
-              setPasswords({ ...passwords, passwordCurrent: e.target.value })
-            }
-            disabled={profileData?.google_auth}
-            className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder:text-transparent ${
-              errors.passwordCurrent ? "border-red-500" : "border-gray-300"
-            } ${
-              profileData?.google_auth ? "bg-gray-100 cursor-not-allowed" : ""
-            }`}
-            placeholder=" "
-            required
-          />
-          <label
-            htmlFor="passwordCurrent"
-            className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-          >
-            Mot de passe actuel
-          </label>
-          {!profileData?.google_auth && (
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          )}
-          {errors.passwordCurrent && (
-            <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-              {errors.passwordCurrent}
-            </p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="relative group">
-            <input
-              type={showNewPassword ? "text" : "password"}
-              id="passwordNew"
-              value={passwords.passwordNew}
-              onChange={(e) =>
-                setPasswords({ ...passwords, passwordNew: e.target.value })
-              }
-              disabled={profileData?.google_auth}
-              className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent peer placeholder:text-transparent ${
-                errors.passwordNew ? "border-red-500" : "border-gray-300"
-              } ${
-                profileData?.google_auth ? "bg-gray-100 cursor-not-allowed" : ""
-              }`}
-              placeholder=" "
-              required
-            />
-            <label
-              htmlFor="passwordNew"
-              className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1"
-            >
-              Nouveau mot de passe
-            </label>
-            {!profileData?.google_auth && (
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                tabIndex={-1}
-              >
-                {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            )}
-            {errors.passwordNew && (
-              <p className="text-[10px] text-red-500 absolute -bottom-4 right-0">
-                {errors.passwordNew}
-              </p>
-            )}
-          </div>
-
-          <div className="relative group">
-            <input
-              type={showConfirmPassword ? "text" : "password"}
-              id="passwordConfirm"
-              value={passwords.passwordConfirm}
-              onChange={(e) =>
-                setPasswords({ ...passwords, passwordConfirm: e.target.value })
-              }
-              disabled={!isPasswordValid || profileData?.google_auth}
-              className={`block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border appearance-none focus:outline-none focus:ring-2 peer placeholder:text-transparent ${
-                !isPasswordValid
-                  ? "bg-gray-100 cursor-not-allowed border-gray-200"
-                  : passwordsDontMatch
-                    ? "border-red-400 focus:ring-red-300"
-                    : passwordsMatch
-                      ? "border-emerald-400 focus:ring-emerald-300"
-                      : "border-gray-300 focus:ring-blue-500"
-              } ${
-                profileData?.google_auth ? "bg-gray-100 cursor-not-allowed" : ""
-              }`}
-              placeholder=" "
-              required
-            />
-            <label
-              htmlFor="passwordConfirm"
-              className={`absolute text-sm duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1 ${
-                !isPasswordValid
-                  ? "text-gray-400"
-                  : "text-gray-500 peer-focus:text-blue-600"
-              }`}
-            >
-              {!isPasswordValid
-                ? "Complétez le mot de passe d'abord"
-                : "Confirmer"}
-            </label>
-            {isPasswordValid && !profileData?.google_auth && (
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            )}
-            {passwords.passwordConfirm && isPasswordValid && (
-              <p
-                className={`text-[10px] mt-1 font-medium absolute -bottom-4 left-0 ${
-                  passwordsMatch ? "text-emerald-600" : "text-red-500"
-                }`}
-              >
-                {passwordsMatch ? "✓ OK" : "✗ Différent"}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {showPasswordCriteria && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-            {[
-              { key: "minLength", label: "8 caractères" },
-              { key: "uppercase", label: "Majuscule" },
-              { key: "lowercase", label: "Minuscule" },
-              { key: "digit", label: "Chiffre" },
-              { key: "validSymbols", label: "Symbole" },
-            ].map(({ key, label }) => (
-              <div key={key} className="flex items-center text-[10px]">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full mr-2 ${
-                    passwordValidation[key] ? "bg-emerald-500" : "bg-gray-300"
-                  }`}
-                />
-                <span
-                  className={
-                    passwordValidation[key]
-                      ? "text-emerald-600 font-medium"
-                      : "text-gray-500"
-                  }
-                >
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="pt-4 flex justify-end">
-          <button
-            type="submit"
-            disabled={profileData?.google_auth}
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            Mettre à jour le mot de passe
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-// --- FORMULAIRE NOTIFICATIONS ---
-
-function NotificationsForm({ onSubmit }) {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Notifications sauvegardées");
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <ToggleItem
-          title="Notifications par email"
-          description="Recevoir des emails pour chaque nouvelle activité."
-          defaultChecked={true}
-        />
-        <ToggleItem
-          title="Mises à jour produit"
-          description="Être informé des nouvelles fonctionnalités et améliorations."
-          defaultChecked={true}
-        />
-        <ToggleItem
-          title="Rappels système"
-          description="Recevoir des rappels pour les tâches importantes."
-          defaultChecked={false}
-        />
-      </div>
-
-      <div className="pt-4 flex justify-end">
-        <button
-          type="submit"
-          className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm"
-        >
-          Enregistrer les préférences
-        </button>
       </div>
     </form>
   );
 }
 
-// --- COMPOSANTS UI RÉUTILISABLES ---
-
-function SidebarItem({ icon, label, isActive, onClick }) {
+/* ─── DARK PASSWORD INPUT ────────────────────────────────────────────── */
+function DarkPasswordInput({ label, name, value, onChange, error, show, setShow, placeholder }) {
   return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 w-full text-left ${
-        isActive
-          ? "bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100"
-          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-      }`}
-    >
-      <span
-        className={`flex-shrink-0 ${isActive ? "text-blue-600" : "text-gray-400"}`}
-      >
-        {icon}
-      </span>
-      <span>{label}</span>
-    </button>
-  );
-}
-
-function SimpleInput({
-  label,
-  name,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  disabled = false,
-  error = "",
-  required = false,
-}) {
-  return (
-    <div className="w-full">
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        disabled={disabled}
-        required={required}
-        className={`w-full px-4 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-          error ? "border-red-500" : "border-gray-300"
-        } ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
-      />
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
-    </div>
-  );
-}
-
-function CountrySelect({ selectedCountry, onCountryChange }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filteredCountries = COUNTRIES.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.dial_code.includes(search),
-  );
-
-  return (
-    <div className="relative w-full" ref={dropdownRef}>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        Pays
-      </label>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-gray-900 font-medium bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all flex items-center justify-between gap-2"
-      >
-        <div className="flex items-center gap-2">
-          <img
-            src={`https://flagcdn.com/w20/${selectedCountry.code.toLowerCase()}.png`}
-            alt={selectedCountry.name}
-            className="w-5 h-auto rounded-sm shadow-sm"
-          />
-          <span className="text-sm">{selectedCountry.name}</span>
-        </div>
-        <ChevronDown size={16} className="text-gray-400 flex-shrink-0" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
-          <div className="p-2 border-b border-gray-100 bg-gray-50 sticky top-0">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Rechercher un pays..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-          </div>
-
-          <div className="max-h-60 overflow-y-auto">
-            {filteredCountries.length > 0 ? (
-              filteredCountries.map((country) => (
-                <button
-                  key={country.code}
-                  type="button"
-                  onClick={() => {
-                    onCountryChange(country);
-                    setIsOpen(false);
-                    setSearch("");
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors text-left ${
-                    selectedCountry.code === country.code
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-700"
-                  }`}
-                >
-                  <img
-                    src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
-                    alt={country.code}
-                    className="w-5 h-auto rounded-sm shadow-sm flex-shrink-0"
-                  />
-                  <span className="flex-1 truncate">{country.name}</span>
-                  {selectedCountry.code === country.code && (
-                    <Check size={14} className="text-blue-600 flex-shrink-0" />
-                  )}
-                </button>
-              ))
-            ) : (
-              <div className="p-4 text-center text-sm text-gray-500">
-                Aucun pays trouvé
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PhoneInput({
-  label,
-  selectedCountry,
-  onCountryChange,
-  value,
-  onChange,
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filteredCountries = COUNTRIES.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.dial_code.includes(search),
-  );
-
-  const handlePhoneChange = (e) => {
-    const value = e.target.value.replace(/\D/g, "");
-    onChange(value);
-  };
-
-  return (
-    <div className="w-full" ref={dropdownRef}>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label}
-      </label>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 border border-gray-300 rounded-xl px-3 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 w-32"
-        >
-          <img
-            src={`https://flagcdn.com/w20/${selectedCountry.code.toLowerCase()}.png`}
-            alt={selectedCountry.code}
-            className="w-5 h-auto rounded-sm shadow-sm flex-shrink-0"
-          />
-          <span className="text-sm font-medium text-gray-700 truncate">
-            {selectedCountry.dial_code}
-          </span>
-          <ChevronDown
-            size={12}
-            className="text-gray-400 ml-auto flex-shrink-0"
-          />
+    <div>
+      <label className="dark-label">{label}</label>
+      <div style={{ position: "relative" }}>
+        <input name={name} type={show ? "text" : "password"} value={value} onChange={onChange} placeholder={placeholder}
+          className={`dark-input${error ? " error" : ""}`} style={{ paddingRight: 36 }} />
+        <button type="button" onClick={() => setShow(!show)}
+          style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--pr-text-sub)", display: "flex", alignItems: "center" }}>
+          {show ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
-
-        <input
-          type="tel"
-          value={value}
-          onChange={handlePhoneChange}
-          placeholder=""
-          className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-        />
       </div>
-
-      {isOpen && (
-        <div className="absolute mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden">
-          <div className="p-2 border-b border-gray-100 bg-gray-50">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Rechercher (+261, Mada...)"
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-          </div>
-
-          <div className="max-h-60 overflow-y-auto">
-            {filteredCountries.length > 0 ? (
-              filteredCountries.map((country) => (
-                <button
-                  key={country.code}
-                  type="button"
-                  onClick={() => {
-                    onCountryChange(country);
-                    setIsOpen(false);
-                    setSearch("");
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors text-left ${
-                    selectedCountry.code === country.code
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-700"
-                  }`}
-                >
-                  <img
-                    src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
-                    alt={country.code}
-                    className="w-5 h-auto rounded-sm shadow-sm flex-shrink-0"
-                  />
-                  <span className="flex-1 truncate">{country.name}</span>
-                  <span className="text-xs text-gray-500">
-                    {country.dial_code}
-                  </span>
-                  {selectedCountry.code === country.code && (
-                    <Check size={14} className="text-blue-600 flex-shrink-0" />
-                  )}
-                </button>
-              ))
-            ) : (
-              <div className="p-4 text-center text-sm text-gray-500">
-                Aucun pays trouvé
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {error && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{error}</p>}
     </div>
   );
 }
 
-function ToggleItem({ title, description, defaultChecked = false }) {
-  const [checked, setChecked] = useState(defaultChecked);
+/* ─── NOTIFICATIONS FORM ─────────────────────────────────────────────── */
+function NotificationsForm({ onSubmit }) {
+  const items = [
+    { label: "Notifications par email", desc: "Recevoir les mises à jour importantes par email", enabled: true },
+    { label: "Alertes de sécurité", desc: "Être notifié lors d'une connexion suspecte", enabled: true },
+  ];
+  const [prefs, setPrefs] = useState(items.map(i => i.enabled));
 
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-all">
-      <div className="flex-1">
-        <h4 className="font-semibold text-sm text-gray-800">{title}</h4>
-        <p className="text-xs text-gray-500 mt-1">{description}</p>
+    <div className="section-card">
+      <span className="section-title">Préférences de notification</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        {items.map((item, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: i < items.length - 1 ? "1px solid var(--pr-border)" : "none" }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--pr-text-body)", marginBottom: 2 }}>{item.label}</div>
+              <div style={{ fontSize: 11, color: "var(--pr-text-sub)" }}>{item.desc}</div>
+            </div>
+            <button type="button" onClick={() => setPrefs(p => p.map((v, j) => j === i ? !v : v))}
+              style={{ width: 40, height: 22, borderRadius: 11, background: prefs[i] ? "#3b82f6" : "var(--pr-border)", border: "none", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0, marginLeft: 16 }}>
+              <span style={{ position: "absolute", top: 3, left: prefs[i] ? 21 : 3, width: 16, height: 16, borderRadius: "50%", background: "white", transition: "left 0.2s", display: "block" }} />
+            </button>
+          </div>
+        ))}
       </div>
-      <button
-        type="button"
-        onClick={() => setChecked(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          checked ? "bg-blue-600" : "bg-gray-300"
-        }`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            checked ? "translate-x-6" : "translate-x-1"
-          }`}
-        />
-      </button>
     </div>
   );
 }
