@@ -1,4 +1,5 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaFileAlt,
   FaMapMarkerAlt,
@@ -16,116 +17,54 @@ import {
   FaHistory,
   FaExclamationTriangle,
   FaInfoCircle,
-  FaChevronDown,
-  FaChevronUp,
+  FaSpinner,
 } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { ThemeContext } from "../../../../context/ThemeContext";
+import { getUserDemandes } from "../../../../services/equivalence.services";
 
 const GRADES_AUTORISES = ["Licence", "Master", "Doctorat"];
 
-const mockDemandes = [
-  {
-    id: "REQ-2025-0842",
-    reference: "EQ-2025-0842",
-    date_depot: "10 Déc. 2025",
-    type_diplome: "Master",
-    statut: "En cours",
-    nom: "ANDRIAMANANTSOA",
-    prenoms: "Jean-Luc",
-    email: "jean.luc@example.com",
-    telephone: "+261 34 12 345 67",
-    adresse: "Lot IVC 123 Bis, Antananarivo 101",
-    diplome_cible: "Master en Informatique Appliquée",
-    etablissement_cible: "Université de Bordeaux",
-    pays_cible: "France",
-    jours_ecoules: 25,
-    remarque: null,
-    historique_soumissions: [
-      {
-        date: "10 Déc. 2025",
-        statut: "En cours",
-        note: "Dossier reçu et en cours de traitement à la DGES.",
-      },
-    ],
-    documents: [
-      { nom: "Carte d'Identité Nationale.pdf", type: "Identité" },
-      { nom: "Diplôme de Licence.pdf", type: "Diplôme" },
-      { nom: "Relevés de notes L1-L3.pdf", type: "Relevés" },
-      { nom: "Mémoire de Master.pdf", type: "Mémoire" },
-    ],
-  },
-  {
-    id: "REQ-2025-0935",
-    reference: "EQ-2025-0935",
-    date_depot: "05 Jan. 2026",
-    type_diplome: "Licence",
-    statut: "Ajournée",
-    nom: "ANDRIAMANANTSOA",
-    prenoms: "Jean-Luc",
-    email: "jean.luc@example.com",
-    telephone: "+261 32 98 765 43",
-    adresse: "Lot IVC 123 Bis, Antananarivo 101",
-    diplome_cible: "Licence en Sciences Économiques",
-    etablissement_cible: "Université de Montréal",
-    pays_cible: "Canada",
-    jours_ecoules: 52,
-    remarque:
-      "Le dossier a été ajourné en raison de pièces justificatives manquantes : les relevés de notes officiels des années L2 et L3 n'ont pas été fournis. Veuillez soumettre à nouveau avec les documents complets.",
-    historique_soumissions: [
-      {
-        date: "05 Jan. 2026",
-        statut: "En cours",
-        note: "Première soumission reçue à la DGES.",
-      },
-      {
-        date: "20 Jan. 2026",
-        statut: "Ajournée",
-        note: "Dossier ajourné — relevés de notes L2 et L3 manquants.",
-      },
-    ],
-    documents: [
-      { nom: "Passeport.pdf", type: "Identité" },
-      { nom: "Diplôme Baccalauréat.pdf", type: "Diplôme" },
-      { nom: "Relevés de notes.pdf", type: "Relevés" },
-    ],
-  },
-  {
-    id: "REQ-2025-0789",
-    reference: "EQ-2025-0789",
-    date_depot: "25 Nov. 2025",
-    type_diplome: "Doctorat",
-    statut: "Refusé",
-    nom: "ANDRIAMANANTSOA",
-    prenoms: "Jean-Luc",
-    email: "paul.randria@example.com",
-    telephone: "+261 33 45 678 90",
-    adresse: "Lot IVC 123 Bis, Antananarivo 101",
-    diplome_cible: "Doctorat en Biologie Moléculaire",
-    etablissement_cible: "Université de Genève",
-    pays_cible: "Suisse",
-    jours_ecoules: 93,
-    remarque:
-      "La demande d'équivalence a été refusée par la DGES. Motif : l'établissement étranger présentant la thèse n'est pas reconnu par les instances académiques malgaches. De plus, le programme doctoral ne correspond pas aux critères nationaux d'équivalence en vigueur.",
-    historique_soumissions: [
-      {
-        date: "25 Nov. 2025",
-        statut: "En cours",
-        note: "Première soumission reçue et transmise à la DGES.",
-      },
-      {
-        date: "10 Déc. 2025",
-        statut: "En cours",
-        note: "Dossier en cours d'examen approfondi à la DGES.",
-      },
-      {
-        date: "15 Jan. 2026",
-        statut: "Refusé",
-        note: "Refus définitif — établissement non reconnu et programme non conforme.",
-      },
-    ],
-    documents: [],
-  },
-];
+// Mapper les statuts du backend vers ceux affichés dans l'UI
+const mapStatutToDisplay = (statut) => {
+  const mapping = {
+    brouillon: "En cours",
+    soumise: "En cours",
+    en_cours: "En cours",
+    complet: "Complété",
+    rejete: "Refusé",
+    accorde: "Complété",
+    // variantes sans/avec accent
+    ajourne: "Ajournée",
+    ajourné: "Ajournée",
+    ajournee: "Ajournée",
+  };
+  return mapping[statut] || statut;
+};
+
+// Formatter les dates
+const formatDate = (dateString) => {
+  if (!dateString) return "Non définie";
+  const date = new Date(dateString);
+  return date
+    .toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+    .replace(".", "");
+};
+
+// Calculer les jours écoulés
+const calculateDaysElapsed = (dateString) => {
+  if (!dateString) return 0;
+  const startDate = new Date(dateString);
+  const today = new Date();
+  const diffTime = Math.abs(today - startDate);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
 
 // --- Config statut ---
 const statutConfig = {
@@ -169,7 +108,8 @@ const statutConfig = {
 
 // --- Badge Statut ---
 const StatutBadge = ({ statut, size = "md" }) => {
-  const cfg = statutConfig[statut] || statutConfig["En cours"];
+  const displayStatut = mapStatutToDisplay(statut);
+  const cfg = statutConfig[displayStatut] || statutConfig["En cours"];
   const padding =
     size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs";
   return (
@@ -207,7 +147,8 @@ const TypeBadge = ({ type }) => {
 // --- Card Remarque / Motif ---
 const RemarqueCard = ({ remarque, statut }) => {
   if (!remarque) return null;
-  const isRefus = statut === "Refusé";
+  const displayStatut = mapStatutToDisplay(statut);
+  const isRefus = displayStatut === "Refusé";
   return (
     <div
       className={`rounded-xl border p-4 ${
@@ -255,68 +196,182 @@ const RemarqueCard = ({ remarque, statut }) => {
   );
 };
 
-// --- Historique Soumissions — timeline verticale, récent en premier ---
-const HistoriqueCard = ({ historique, statut, isDark }) => {
-  const sorted = [...historique].reverse();
-  const cfg = statutConfig[statut] || statutConfig["En cours"];
+// --- Historique Soumissions amélioré ---
+const HistoriqueCard = ({ demande, isDark }) => {
+  const generateHistorique = () => {
+    const historique = [];
+
+    if (demande.created_at) {
+      historique.push({
+        date: demande.created_at,
+        formattedDate: formatDate(demande.created_at),
+        statut: "brouillon",
+        action: "Création",
+        note: "Création de la demande d'équivalence.",
+        type: "creation",
+      });
+    }
+
+    if (demande.submitted_at && demande.submitted_at !== demande.created_at) {
+      historique.push({
+        date: demande.submitted_at,
+        formattedDate: formatDate(demande.submitted_at),
+        statut: "soumise",
+        action: "Soumission",
+        note: "Demande soumise et en cours de traitement à la DGES.",
+        type: "submission",
+      });
+    }
+
+    // Vérifier s'il y a eu des modifications
+    if (
+      demande.updated_at &&
+      demande.updated_at !== demande.created_at &&
+      demande.updated_at !== demande.submitted_at
+    ) {
+      historique.push({
+        date: demande.updated_at,
+        formattedDate: formatDate(demande.updated_at),
+        statut: demande.statut,
+        action: "Modification",
+        note: "Mise à jour du dossier.",
+        type: "update",
+      });
+    }
+
+    // Ajouter le commentaire admin s'il existe
+    if (demande.commentaire_admin) {
+      const commentaireDate =
+        demande.updated_at || demande.submitted_at || demande.created_at;
+      historique.push({
+        date: commentaireDate,
+        formattedDate: formatDate(commentaireDate),
+        statut: demande.statut,
+        action: "Note administrative",
+        note: demande.commentaire_admin,
+        type: "admin",
+      });
+    }
+
+    // Trier par date (plus récent en premier)
+    return historique.sort((a, b) => new Date(b.date) - new Date(a.date));
+  };
+
+  const historique = generateHistorique();
+  if (historique.length === 0) return null;
 
   return (
     <div
       className={`border rounded-xl p-5 ${
-        isDark
-          ? "bg-gray-800 border-gray-700"
-          : "bg-white border-gray-100"
+        isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"
       }`}
     >
-      {/* En-tête */}
       <div className="flex items-center gap-2 mb-5">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${cfg.iconBg}`}>
-          <FaHistory className={cfg.text} size={13} />
+        <div
+          className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDark ? "bg-gray-700" : "bg-gray-100"}`}
+        >
+          <FaHistory
+            className={isDark ? "text-gray-500" : "text-gray-400"}
+            size={13}
+          />
         </div>
         <h3
           className={`text-sm font-bold ${
             isDark ? "text-gray-200" : "text-gray-700"
           }`}
         >
-          Historique des soumissions
+          Historique des modifications
         </h3>
         <span
           className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
-            isDark
-              ? "bg-gray-700 text-gray-400"
-              : "bg-gray-100 text-gray-400"
+            isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-400"
           }`}
         >
           {historique.length} entrée{historique.length > 1 ? "s" : ""}
         </span>
       </div>
 
-      {/* Timeline */}
       <div className="relative">
-        {sorted.map((entry, idx) => {
-          const eCfg = statutConfig[entry.statut] || statutConfig["En cours"];
+        {historique.map((entry, idx) => {
+          const displayStatut = mapStatutToDisplay(entry.statut);
+          const eCfg = statutConfig[displayStatut] || statutConfig["En cours"];
           const EIcon = eCfg.icon;
           const isFirst = idx === 0;
-          const isLast = idx === sorted.length - 1;
+          const isLast = idx === historique.length - 1;
+
+          // Couleur selon le type d'événement
+          let bgColor = eCfg.bg;
+          let borderColor = eCfg.border;
+          let textColor = eCfg.text;
+
+          if (entry.type === "creation") {
+            bgColor = isDark ? "bg-blue-950/40" : "bg-blue-50";
+            borderColor = isDark ? "border-blue-800" : "border-blue-200";
+            textColor = isDark ? "text-blue-400" : "text-blue-700";
+          } else if (entry.type === "admin") {
+            bgColor = isDark ? "bg-purple-950/40" : "bg-purple-50";
+            borderColor = isDark ? "border-purple-800" : "border-purple-200";
+            textColor = isDark ? "text-purple-400" : "text-purple-700";
+          }
 
           return (
             <div key={idx} className="relative flex gap-4">
-              {/* Icône + ligne */}
               <div className="flex flex-col items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 z-10
                     ${
                       isFirst
-                        ? `${eCfg.iconBg} ${eCfg.border}`
+                        ? `${bgColor} ${borderColor}`
                         : isDark
                           ? "bg-gray-700 border-gray-600"
                           : "bg-gray-50 border-gray-200"
                     }`}
                 >
-                  <EIcon
-                    size={13}
-                    className={isFirst ? eCfg.text : isDark ? "text-gray-500" : "text-gray-400"}
-                  />
+                  {entry.type === "creation" ? (
+                    <FaPlus
+                      size={13}
+                      className={
+                        isFirst
+                          ? textColor
+                          : isDark
+                            ? "text-gray-500"
+                            : "text-gray-400"
+                      }
+                    />
+                  ) : entry.type === "submission" ? (
+                    <FaCheckCircle
+                      size={13}
+                      className={
+                        isFirst
+                          ? textColor
+                          : isDark
+                            ? "text-gray-500"
+                            : "text-gray-400"
+                      }
+                    />
+                  ) : entry.type === "admin" ? (
+                    <FaInfoCircle
+                      size={13}
+                      className={
+                        isFirst
+                          ? textColor
+                          : isDark
+                            ? "text-gray-500"
+                            : "text-gray-400"
+                      }
+                    />
+                  ) : (
+                    <EIcon
+                      size={13}
+                      className={
+                        isFirst
+                          ? textColor
+                          : isDark
+                            ? "text-gray-500"
+                            : "text-gray-400"
+                      }
+                    />
+                  )}
                 </div>
                 {!isLast && (
                   <div
@@ -329,12 +384,11 @@ const HistoriqueCard = ({ historique, statut, isDark }) => {
                 )}
               </div>
 
-              {/* Contenu */}
               <div className={`flex-1 ${isLast ? "pb-0" : "pb-5"}`}>
                 <div
                   className={`rounded-xl border p-4 transition-all ${
                     isFirst
-                      ? `${eCfg.bg} ${eCfg.border}`
+                      ? `${bgColor} ${borderColor}`
                       : isDark
                         ? "bg-gray-700/50 border-gray-600"
                         : "bg-gray-50 border-gray-100"
@@ -342,7 +396,11 @@ const HistoriqueCard = ({ historique, statut, isDark }) => {
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <StatutBadge statut={entry.statut} size="sm" />
+                      <span
+                        className={`text-xs font-bold uppercase ${textColor}`}
+                      >
+                        {entry.action}
+                      </span>
                       {isFirst && (
                         <span
                           className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border ${
@@ -357,17 +415,21 @@ const HistoriqueCard = ({ historique, statut, isDark }) => {
                     </div>
                     <span
                       className={`text-[11px] flex items-center gap-1 flex-shrink-0 ${
-                        isFirst ? eCfg.text : isDark ? "text-gray-500" : "text-gray-400"
+                        isFirst
+                          ? textColor
+                          : isDark
+                            ? "text-gray-500"
+                            : "text-gray-400"
                       }`}
                     >
                       <FaCalendarAlt size={9} />
-                      {entry.date}
+                      {entry.formattedDate}
                     </span>
                   </div>
                   <p
                     className={`text-sm leading-relaxed ${
                       isFirst
-                        ? `${eCfg.text} opacity-90`
+                        ? `${textColor} opacity-90`
                         : isDark
                           ? "text-gray-400"
                           : "text-gray-500"
@@ -386,8 +448,16 @@ const HistoriqueCard = ({ historique, statut, isDark }) => {
 };
 
 // --- Modal Détails ---
-const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
-  if (!isOpen || !dossier) return null;
+const DetailModal = ({ isOpen, onClose, demande, isDark }) => {
+  if (!isOpen || !demande) return null;
+
+  // Extraire la première formation pour afficher le diplôme cible
+  const firstFormation =
+    demande.recapitulatif_formation &&
+    demande.recapitulatif_formation.length > 0
+      ? demande.recapitulatif_formation[0]
+      : null;
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
       <div
@@ -414,15 +484,19 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
                   isDark ? "text-gray-100" : "text-gray-800"
                 }`}
               >
-                {dossier.reference}
+                EQ-{demande.id.toString().padStart(4, "0")}
               </h2>
-              <p className={isDark ? "text-gray-500 text-xs" : "text-gray-400 text-xs"}>
+              <p
+                className={
+                  isDark ? "text-gray-500 text-xs" : "text-gray-400 text-xs"
+                }
+              >
                 Détails du dossier
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <StatutBadge statut={dossier.statut} />
+            <StatutBadge statut={demande.statut} />
             <button
               onClick={onClose}
               className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors text-sm font-bold ${
@@ -452,11 +526,25 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
                   {
                     icon: FaUser,
                     label: "Nom complet",
-                    value: `${dossier.nom} ${dossier.prenoms}`,
+                    value:
+                      `${demande.nom || ""} ${demande.prenoms || ""}`.trim() ||
+                      "Non renseigné",
                   },
-                  { icon: FaEnvelope, label: "Email", value: dossier.email },
-                  { icon: FaPhoneAlt, label: "Téléphone", value: dossier.telephone },
-                  { icon: FaMapMarkerAlt, label: "Adresse", value: dossier.adresse },
+                  {
+                    icon: FaEnvelope,
+                    label: "Email",
+                    value: demande.email || "Non renseigné",
+                  },
+                  {
+                    icon: FaPhoneAlt,
+                    label: "Téléphone",
+                    value: demande.telephone || "Non renseigné",
+                  },
+                  {
+                    icon: FaMapMarkerAlt,
+                    label: "Adresse",
+                    value: demande.code_postal || "Non renseignée",
+                  },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex items-start gap-3">
                     <div
@@ -509,7 +597,7 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
                     Niveau
                   </p>
                   <div className="mt-1">
-                    <TypeBadge type={dossier.type_diplome} />
+                    <TypeBadge type={demande.type_diplome} />
                   </div>
                 </div>
                 <div>
@@ -525,7 +613,9 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
                       isDark ? "text-gray-200" : "text-gray-800"
                     }`}
                   >
-                    {dossier.diplome_cible}
+                    {firstFormation?.diplome ||
+                      demande.type_diplome ||
+                      "Non spécifié"}
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
@@ -552,10 +642,7 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
                         isDark ? "text-gray-200" : "text-gray-800"
                       }`}
                     >
-                      {dossier.etablissement_cible}
-                    </p>
-                    <p className={isDark ? "text-gray-500 text-[11px]" : "text-gray-400 text-[11px]"}>
-                      {dossier.pays_cible}
+                      {firstFormation?.etablissement || "Non spécifié"}
                     </p>
                   </div>
                 </div>
@@ -572,7 +659,7 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
                       isDark ? "text-gray-200" : "text-gray-800"
                     }`}
                   >
-                    {dossier.date_depot}
+                    {formatDate(demande.submitted_at || demande.created_at)}
                   </p>
                 </div>
                 <div>
@@ -581,14 +668,14 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
                       isDark ? "text-gray-500" : "text-gray-400"
                     }`}
                   >
-                    Durée de traitement
+                    Dernière mise à jour
                   </p>
                   <p
                     className={`text-sm font-medium ${
                       isDark ? "text-gray-200" : "text-gray-800"
                     }`}
                   >
-                    {dossier.jours_ecoules} jours
+                    {formatDate(demande.updated_at || demande.created_at)}
                   </p>
                 </div>
               </div>
@@ -596,19 +683,18 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
           </div>
 
           {/* Remarque dans modal */}
-          {dossier.remarque && (
+          {demande.commentaire_admin && (
             <div className="mt-4">
-              <RemarqueCard remarque={dossier.remarque} statut={dossier.statut} />
+              <RemarqueCard
+                remarque={demande.commentaire_admin}
+                statut={demande.statut}
+              />
             </div>
           )}
 
           {/* Historique dans modal */}
           <div className="mt-6">
-            <HistoriqueCard
-              historique={dossier.historique_soumissions}
-              statut={dossier.statut}
-              isDark={isDark}
-            />
+            <HistoriqueCard demande={demande} isDark={isDark} />
           </div>
         </div>
       </div>
@@ -618,7 +704,16 @@ const DetailModal = ({ isOpen, onClose, dossier, isDark }) => {
 
 // --- Card Dossier ---
 const DemandeCard = ({ demande, isActive, onClick, onViewDetails, isDark }) => {
-  const cfg = statutConfig[demande.statut] || statutConfig["En cours"];
+  const displayStatut = mapStatutToDisplay(demande.statut);
+  const cfg = statutConfig[displayStatut] || statutConfig["En cours"];
+  const daysElapsed = calculateDaysElapsed(
+    demande.submitted_at || demande.created_at,
+  );
+  const firstFormation =
+    demande.recapitulatif_formation &&
+    demande.recapitulatif_formation.length > 0
+      ? demande.recapitulatif_formation[0]
+      : null;
 
   return (
     <div
@@ -636,20 +731,27 @@ const DemandeCard = ({ demande, isActive, onClick, onViewDetails, isDark }) => {
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <TypeBadge type={demande.type_diplome} />
             <StatutBadge statut={demande.statut} size="sm" />
+            {demande.is_archived && (
+              <span className="ml-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded border bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600">
+                Archivé
+              </span>
+            )}
           </div>
           <p
             className={`text-sm font-semibold truncate ${
               isDark ? "text-gray-200" : "text-gray-800"
             }`}
           >
-            {demande.reference}
+            EQ-{demande.id.toString().padStart(4, "0")}
           </p>
           <p
             className={`text-xs mt-0.5 truncate ${
               isDark ? "text-gray-500" : "text-gray-400"
             }`}
           >
-            {demande.diplome_cible}
+            {firstFormation?.diplome ||
+              demande.type_diplome ||
+              "Demande d'équivalence"}
           </p>
         </div>
         <button
@@ -678,11 +780,13 @@ const DemandeCard = ({ demande, isActive, onClick, onViewDetails, isDark }) => {
           }`}
         >
           <FaCalendarAlt size={9} />
-          {demande.date_depot}
+          {formatDate(demande.submitted_at || demande.created_at)}
         </span>
-        <span className={`text-[11px] font-semibold flex items-center gap-1 ${cfg.text}`}>
+        <span
+          className={`text-[11px] font-semibold flex items-center gap-1 ${cfg.text}`}
+        >
           <FaClock size={9} />
-          {demande.jours_ecoules} jours
+          {daysElapsed} jours
         </span>
       </div>
     </div>
@@ -691,8 +795,17 @@ const DemandeCard = ({ demande, isActive, onClick, onViewDetails, isDark }) => {
 
 // --- Panneau Détail Dossier ---
 const DossierDetail = ({ demande, isDark }) => {
-  const cfg = statutConfig[demande.statut] || statutConfig["En cours"];
+  const displayStatut = mapStatutToDisplay(demande.statut);
+  const cfg = statutConfig[displayStatut] || statutConfig["En cours"];
   const Icon = cfg.icon;
+  const daysElapsed = calculateDaysElapsed(
+    demande.submitted_at || demande.created_at,
+  );
+  const firstFormation =
+    demande.recapitulatif_formation &&
+    demande.recapitulatif_formation.length > 0
+      ? demande.recapitulatif_formation[0]
+      : null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -708,22 +821,23 @@ const DossierDetail = ({ demande, isDark }) => {
             </div>
             <div className="flex-1">
               <h3 className={`text-base font-bold mb-1 ${cfg.text}`}>
-                {demande.statut === "En cours" && "Dossier en cours de traitement"}
-                {demande.statut === "Ajournée" && "Dossier ajourné"}
-                {demande.statut === "Complété" && "Traitement complété"}
-                {demande.statut === "Refusé" && "Demande refusée"}
+                {displayStatut === "En cours" &&
+                  "Dossier en cours de traitement"}
+                {displayStatut === "Ajournée" && "Dossier ajourné"}
+                {displayStatut === "Complété" && "Traitement complété"}
+                {displayStatut === "Refusé" && "Demande refusée"}
               </h3>
               <p className={`text-sm leading-relaxed ${cfg.text} opacity-80`}>
-                {demande.statut === "En cours" &&
+                {displayStatut === "En cours" &&
                   "Votre dossier est actuellement examiné par la Direction Générale de l'Enseignement Supérieur (DGES)."}
-                {demande.statut === "Ajournée" &&
+                {displayStatut === "Ajournée" &&
                   "Votre dossier a été ajourné par la DGES. Des informations ou documents complémentaires sont requis."}
-                {demande.statut === "Complété" &&
+                {displayStatut === "Complété" &&
                   "Votre demande d'équivalence a été traitée avec succès. L'arrêté a été signé et le document officiel est disponible."}
-                {demande.statut === "Refusé" &&
+                {displayStatut === "Refusé" &&
                   "Votre demande d'équivalence a été refusée par la DGES. Consultez le motif ci-dessous pour plus d'informations."}
               </p>
-              {demande.statut === "En cours" && (
+              {displayStatut === "En cours" && (
                 <div className="mt-3 flex items-center gap-2">
                   <div className="flex gap-0.5">
                     {[0, 1, 2].map((i) => (
@@ -744,16 +858,15 @@ const DossierDetail = ({ demande, isDark }) => {
         </div>
 
         {/* Remarque / Motif */}
-        {demande.remarque && (
-          <RemarqueCard remarque={demande.remarque} statut={demande.statut} />
+        {demande.commentaire_admin && (
+          <RemarqueCard
+            remarque={demande.commentaire_admin}
+            statut={demande.statut}
+          />
         )}
 
         {/* Historique soumissions */}
-        <HistoriqueCard
-          historique={demande.historique_soumissions}
-          statut={demande.statut}
-          isDark={isDark}
-        />
+        <HistoriqueCard demande={demande} isDark={isDark} />
       </div>
 
       {/* Colonne droite — Résumé */}
@@ -773,52 +886,84 @@ const DossierDetail = ({ demande, isDark }) => {
           <div className="space-y-4">
             {/* Référence */}
             <div>
-              <p className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p
+                className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              >
                 Référence
               </p>
-              <p className={`text-sm font-mono font-semibold ${isDark ? "text-gray-200" : "text-gray-800"}`}>
-                {demande.reference}
+              <p
+                className={`text-sm font-mono font-semibold ${isDark ? "text-gray-200" : "text-gray-800"}`}
+              >
+                EQ-{demande.id.toString().padStart(4, "0")}
+              </p>
+            </div>
+            {/* Nom complet */}
+            <div>
+              <p
+                className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              >
+                Nom complet
+              </p>
+              <p
+                className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}
+              >
+                {demande.nom} {demande.prenoms}
               </p>
             </div>
             {/* Niveau */}
             <div>
-              <p className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p
+                className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              >
                 Niveau
               </p>
               <TypeBadge type={demande.type_diplome} />
             </div>
             {/* Diplôme visé */}
             <div>
-              <p className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p
+                className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              >
                 Diplôme visé
               </p>
-              <p className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>
-                {demande.diplome_cible}
+              <p
+                className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}
+              >
+                {firstFormation?.diplome ||
+                  demande.type_diplome ||
+                  "Non spécifié"}
               </p>
             </div>
             {/* Établissement */}
             <div>
-              <p className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p
+                className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              >
                 Établissement
               </p>
               <div className="flex items-start gap-2">
                 <FaUniversity
-                  className={isDark ? "text-gray-600 mt-0.5 flex-shrink-0" : "text-gray-300 mt-0.5 flex-shrink-0"}
+                  className={
+                    isDark
+                      ? "text-gray-600 mt-0.5 flex-shrink-0"
+                      : "text-gray-300 mt-0.5 flex-shrink-0"
+                  }
                   size={11}
                 />
                 <div>
-                  <p className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>
-                    {demande.etablissement_cible}
-                  </p>
-                  <p className={isDark ? "text-gray-500 text-[11px]" : "text-gray-400 text-[11px]"}>
-                    {demande.pays_cible}
+                  <p
+                    className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}
+                  >
+                    {firstFormation?.etablissement || "Non spécifié"}
                   </p>
                 </div>
               </div>
             </div>
             {/* Date de dépôt */}
             <div>
-              <p className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p
+                className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              >
                 Date de dépôt
               </p>
               <p
@@ -830,28 +975,29 @@ const DossierDetail = ({ demande, isDark }) => {
                   className={isDark ? "text-gray-600" : "text-gray-300"}
                   size={11}
                 />
-                {demande.date_depot}
+                {formatDate(demande.submitted_at || demande.created_at)}
               </p>
             </div>
             {/* Statut DGES */}
             <div>
-              <p className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p
+                className={`text-[10px] font-medium uppercase mb-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              >
                 Statut DGES
               </p>
               <StatutBadge statut={demande.statut} />
             </div>
-            {/* Durée */}
+            {/* Durée de traitement */}
             <div>
-              <p className={`text-[10px] font-medium uppercase mb-2 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p
+                className={`text-[10px] font-medium uppercase mb-2 ${isDark ? "text-gray-500" : "text-gray-400"}`}
+              >
                 Durée de traitement
               </p>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
                   <span className={isDark ? "text-gray-500" : "text-gray-400"}>
-                    {demande.jours_ecoules} jours
-                  </span>
-                  <span className={isDark ? "text-gray-500" : "text-gray-400"}>
-                    90 jours max.
+                    {daysElapsed} jours
                   </span>
                 </div>
                 <div
@@ -861,16 +1007,16 @@ const DossierDetail = ({ demande, isDark }) => {
                 >
                   <div
                     className={`h-1.5 rounded-full transition-all duration-700 ${
-                      demande.statut === "Refusé"
+                      displayStatut === "Refusé"
                         ? "bg-red-400"
-                        : demande.statut === "Ajournée"
+                        : displayStatut === "Ajournée"
                           ? "bg-amber-400"
-                          : demande.statut === "Complété"
+                          : displayStatut === "Complété"
                             ? "bg-emerald-400"
                             : "bg-blue-500"
                     }`}
                     style={{
-                      width: `${Math.min(100, (demande.jours_ecoules / 90) * 100)}%`,
+                      width: `${Math.min(100, (daysElapsed / 90) * 100)}%`,
                     }}
                   />
                 </div>
@@ -923,14 +1069,43 @@ export default function DashboardReqView() {
   const [activeDemande, setActiveDemande] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [modalDemande, setModalDemande] = useState(null);
+  const [demandes, setDemandes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  const navigate = useNavigate();
   const { theme } = useContext(ThemeContext);
   const isDark = theme === "dark";
 
-  const hasDemandes = mockDemandes && mockDemandes.length > 0;
-  const currentDemande = hasDemandes ? mockDemandes[activeDemande] : null;
+  // Charger les demandes réelles depuis l'API
+  useEffect(() => {
+    const fetchDemandes = async () => {
+      try {
+        setLoading(true);
+        // Inclure les demandes archivées pour qu'elles ne soient pas masquées
+        const response = await getUserDemandes({}, true);
+        if (response.success && response.data) {
+          setDemandes(response.data);
+        } else {
+          setError("Impossible de charger les demandes");
+          toast.error("Impossible de charger les demandes");
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des demandes:", err);
+        setError("Erreur de connexion au serveur");
+        toast.error("Erreur de connexion au serveur");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const gradesExistants = new Set(mockDemandes.map((d) => d.type_diplome));
+    fetchDemandes();
+  }, []);
+
+  const hasDemandes = demandes && demandes.length > 0;
+  const currentDemande = hasDemandes ? demandes[activeDemande] : null;
+
+  const gradesExistants = new Set(demandes.map((d) => d.type_diplome));
   const gradesDisponibles = GRADES_AUTORISES.filter(
     (g) => !gradesExistants.has(g),
   );
@@ -942,10 +1117,99 @@ export default function DashboardReqView() {
   };
 
   const handleNouvelleDemande = () => {
-    alert(
-      `Grades disponibles pour une nouvelle demande : ${gradesDisponibles.join(", ")}`,
-    );
+    navigate("/dashboard/requerant/creer-demande");
   };
+
+  // État de chargement
+  if (loading) {
+    return (
+      <div
+        className={`min-h-screen p-6 font-sans transition-colors duration-300 flex items-center justify-center ${
+          isDark ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"
+        }`}
+      >
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={isDark ? "dark" : "light"}
+        />
+        <div className="text-center">
+          <FaSpinner className="animate-spin text-4xl text-blue-600 mx-auto mb-4" />
+          <p className={isDark ? "text-gray-400" : "text-gray-600"}>
+            Chargement de vos demandes...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // État d'erreur
+  if (error) {
+    return (
+      <div
+        className={`min-h-screen p-6 font-sans transition-colors duration-300 flex items-center justify-center ${
+          isDark ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"
+        }`}
+      >
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={isDark ? "dark" : "light"}
+        />
+        <div className="text-center max-w-md">
+          <div
+            className={`rounded-2xl p-10 border shadow-sm ${
+              isDark
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-100"
+            }`}
+          >
+            <div
+              className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 ${
+                isDark ? "bg-red-900/40" : "bg-red-50"
+              }`}
+            >
+              <FaExclamationTriangle className="text-red-500 text-2xl" />
+            </div>
+            <h3
+              className={`text-lg font-bold mb-2 ${
+                isDark ? "text-gray-100" : "text-gray-800"
+              }`}
+            >
+              Erreur de chargement
+            </h3>
+            <p
+              className={`text-sm mb-6 ${
+                isDark ? "text-gray-400" : "text-gray-400"
+              }`}
+            >
+              {error}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-colors text-sm"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // --- État vide ---
   if (!hasDemandes) {
@@ -955,11 +1219,29 @@ export default function DashboardReqView() {
           isDark ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"
         }`}
       >
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={isDark ? "dark" : "light"}
+        />
         <div className="mb-8">
-          <h1 className={`text-2xl font-bold mb-1 ${isDark ? "text-gray-100" : "text-gray-800"}`}>
+          <h1
+            className={`text-2xl font-bold mb-1 ${isDark ? "text-gray-100" : "text-gray-800"}`}
+          >
             Mes demandes d'équivalence
           </h1>
-          <p className={isDark ? "text-sm text-gray-500" : "text-sm text-gray-400"}>
+          <p
+            className={
+              isDark ? "text-sm text-gray-500" : "text-sm text-gray-400"
+            }
+          >
             Suivez l'avancement de vos demandes auprès de la DGES
           </p>
         </div>
@@ -1012,6 +1294,18 @@ export default function DashboardReqView() {
         isDark ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"
       }`}
     >
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={isDark ? "dark" : "light"}
+      />
       {/* En-tête */}
       <div className="mb-6">
         <h1
@@ -1021,7 +1315,9 @@ export default function DashboardReqView() {
         >
           Mes demandes d'équivalence
         </h1>
-        <p className={isDark ? "text-sm text-gray-500" : "text-sm text-gray-400"}>
+        <p
+          className={isDark ? "text-sm text-gray-500" : "text-sm text-gray-400"}
+        >
           Suivi en temps réel de vos dossiers auprès de la DGES
         </p>
       </div>
@@ -1034,7 +1330,7 @@ export default function DashboardReqView() {
               isDark ? "text-gray-500" : "text-gray-500"
             }`}
           >
-            Vos dossiers — {mockDemandes.length} / 3
+            Vos dossiers — {demandes.length}
           </h2>
           {showNewDemandButton && (
             <button
@@ -1048,7 +1344,7 @@ export default function DashboardReqView() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {mockDemandes.map((demande, index) => (
+          {demandes.map((demande, index) => (
             <DemandeCard
               key={demande.id}
               demande={demande}
@@ -1078,7 +1374,7 @@ export default function DashboardReqView() {
         <DetailModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          dossier={modalDemande}
+          demande={modalDemande}
           isDark={isDark}
         />
       )}

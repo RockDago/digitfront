@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaBars,
   FaTimes,
-  FaTachometerAlt, // Nouvelle icône pour le tableau de bord
+  FaTachometerAlt,
   FaRegFileAlt,
+  FaListAlt,   // ← nouvelle icône
   FaMoon,
   FaSun,
 } from "react-icons/fa";
@@ -20,7 +21,6 @@ export default function SidebarReq({
   const navigate = useNavigate();
   const { theme, toggleTheme } = useContext(ThemeContext);
 
-  // --- STYLES ---
   const baseItemClass =
     "group flex items-center justify-between px-4 py-3 mx-3 mb-1 rounded-xl transition-all duration-200 cursor-pointer text-sm font-medium";
   const activeClass =
@@ -33,7 +33,6 @@ export default function SidebarReq({
     setIsMobileOpen(false);
   };
 
-  // --- CONFIG MENU ---
   const navItems = [
     {
       to: "/dashboard/requerant",
@@ -45,6 +44,11 @@ export default function SidebarReq({
       icon: FaRegFileAlt,
       label: "Créer demandes",
     },
+    {
+      to: "/dashboard/requerant/mes-demandes",   // ← nouveau
+      icon: FaListAlt,
+      label: "Mes demandes",
+    },
   ];
 
   const isLinkActive = (path) =>
@@ -54,7 +58,6 @@ export default function SidebarReq({
 
   return (
     <>
-      {/* Overlay Mobile */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 lg:hidden"
@@ -68,14 +71,10 @@ export default function SidebarReq({
           border-r border-gray-100 dark:border-gray-800
           shadow-xl lg:shadow-none transition-all duration-300 ease-in-out flex flex-col
           ${isSidebarCollapsed ? "w-20" : "w-72"}
-          ${
-            isMobileOpen
-              ? "translate-x-0"
-              : "-translate-x-full lg:translate-x-0"
-          }
+          ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
-        {/* HEADER: Logo + Toggle */}
+        {/* HEADER */}
         <div className="h-20 flex items-center justify-center px-6 border-b border-gray-50 dark:border-gray-800 mb-4 relative">
           {!isSidebarCollapsed && (
             <div
@@ -87,8 +86,6 @@ export default function SidebarReq({
               </span>
             </div>
           )}
-
-          {/* TOGGLE BUTTON (Desktop only) */}
           <button
             onClick={toggleSidebar}
             className={`p-2 rounded-lg text-gray-400 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors hidden lg:block ${
@@ -98,8 +95,6 @@ export default function SidebarReq({
           >
             <FaBars />
           </button>
-
-          {/* CLOSE BUTTON (Mobile only) */}
           <button
             onClick={() => setIsMobileOpen(false)}
             className="lg:hidden p-2 text-gray-400 hover:text-red-500 absolute right-4"
@@ -118,9 +113,7 @@ export default function SidebarReq({
                 <div
                   key={item.to}
                   onClick={() => goTo(item.to)}
-                  className={`${baseItemClass} ${
-                    active ? activeClass : inactiveClass
-                  }`}
+                  className={`${baseItemClass} ${active ? activeClass : inactiveClass}`}
                   title={isSidebarCollapsed ? item.label : ""}
                 >
                   <div className="flex items-center gap-3">

@@ -156,33 +156,77 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
     return m[user?.role] || "/dashboard/profile";
   };
 
+  // ─── FIX: Fonction isolée pour charger l'image depuis l'API ───────────────
+  const fetchAndCacheProfileImage = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const profileData = await UserService.getMyProfile();
+      if (profileData?.logo) {
+        const imageURL = UserService.buildProfileImageUrl(profileData.logo);
+        setProfileImage(imageURL);
+        // Mettre à jour le cache localStorage
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        localStorage.setItem("user", JSON.stringify({ ...storedUser, profileImage: imageURL }));
+      }
+    } catch (error) {
+      if (error.message !== "Token d'authentification manquant") {
+        console.error("Erreur chargement image profil:", error);
+      }
+    }
+  };
+
+  // ─── FIX: Au montage, toujours appeler l'API pour avoir l'image à jour ────
   useEffect(() => {
-    const loadProfileImage = () => {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = localStorage.getItem("token");
-      if (storedUser.profileImage) {
-        setProfileImage(storedUser.profileImage);
-      } else if (storedUser.id && token) {
-        (async () => {
-          try {
-            const profileData = await UserService.getMyProfile();
-            if (profileData.logo) {
-              const imageURL = UserService.buildProfileImageUrl(profileData.logo);
-              setProfileImage(imageURL);
-              localStorage.setItem("user", JSON.stringify({ ...storedUser, profileImage: imageURL }));
-            }
-          } catch (error) {
-            if (error.message !== "Token d'authentification manquant")
-              console.error("Erreur chargement image profil:", error);
-          }
-        })();
+    // 1. Afficher immédiatement l'image du cache si elle existe (évite le flash)
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    if (storedUser.profileImage) {
+      setProfileImage(storedUser.profileImage);
+    }
+
+    // 2. Toujours re-fetcher depuis l'API pour avoir la vraie image actuelle
+    //    (résout le bug : après login, l'image n'était pas affichée)
+    fetchAndCacheProfileImage();
+
+    // 3. Écouter l'événement custom (changement de photo depuis la page profil)
+    const handleProfileImageUpdated = (e) => {
+      if (e.detail?.profileImage) {
+        setProfileImage(e.detail.profileImage);
       }
     };
-    loadProfileImage();
-    const handler = (e) => { if (e.detail?.profileImage) setProfileImage(e.detail.profileImage); };
-    window.addEventListener("profileImageUpdated", handler);
-    return () => window.removeEventListener("profileImageUpdated", handler);
+    window.addEventListener("profileImageUpdated", handleProfileImageUpdated);
+
+    // 4. Écouter les changements de localStorage (login dans un autre onglet, etc.)
+    const handleStorageChange = (e) => {
+      if (e.key === "user") {
+        try {
+          const updatedUser = JSON.parse(e.newValue || "{}");
+          if (updatedUser.profileImage) {
+            setProfileImage(updatedUser.profileImage);
+          }
+        } catch (_) {}
+      }
+      // Re-fetch si le token vient d'être posé (connexion)
+      if (e.key === "token" && e.newValue) {
+        fetchAndCacheProfileImage();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("profileImageUpdated", handleProfileImageUpdated);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ─── FIX: Re-fetch quand le prop `user` change (ex: après navigation post-login)
+  useEffect(() => {
+    if (user?.id) {
+      fetchAndCacheProfileImage();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -239,9 +283,6 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
     );
   };
 
-  // Hauteur de la navbar selon la taille d'écran
-  const navbarHeight = typeof window !== "undefined" && window.innerWidth < 768 ? 64 : 80;
-
   return (
     <>
       <header
@@ -278,18 +319,17 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
                 className="fixed right-0 bg-white dark:bg-[#242526] shadow-2xl border-l border-gray-200 dark:border-[#3a3b3c] z-50 flex flex-col notif-panel"
                 style={{
                   top: "80px",
-                  bottom: "16px", // ← marge en bas pour ne pas coller au bord
+                  bottom: "16px",
                   width: expanded ? "460px" : "380px",
                   maxWidth: "100vw",
                   boxShadow: "-4px 0 32px rgba(0,0,0,0.18)",
                   transition: "width 0.25s cubic-bezier(0.16,1,0.3,1)",
-                  borderRadius: "0 0 0 12px", // arrondi coin bas-gauche
+                  borderRadius: "0 0 0 12px",
                 }}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-[#e4e6eb]">Notifications</h3>
-                  {/* Dots button with dropdown */}
                   <div className="relative">
                     <button
                       onClick={() => setShowDotsMenu((v) => !v)}
@@ -328,11 +368,8 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
                   ))}
                 </div>
 
-                {/* List — fills remaining height and scrolls */}
-                <div
-                  ref={notifListRef}
-                  className="flex-1 overflow-y-auto pb-2"
-                >
+                {/* List */}
+                <div ref={notifListRef} className="flex-1 overflow-y-auto pb-2">
                   {filteredNotifs.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-[#b0b3b8]">
                       <FaBell className="text-4xl mb-3 opacity-30" />
@@ -392,8 +429,11 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
             >
               <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm overflow-hidden">
                 {profileImage ? (
-                  <img src={profileImage} alt="Profil" className="w-full h-full object-cover"
-                    onError={(e) => { e.target.style.display = "none"; e.target.parentElement.innerHTML = `<span class="font-bold text-xs">${user?.prenom?.[0]?.toUpperCase() || "U"}</span>`; }}
+                  <img
+                    src={profileImage}
+                    alt="Profil"
+                    className="w-full h-full object-cover"
+                    onError={() => setProfileImage(null)}
                   />
                 ) : (
                   <span className="font-bold text-xs">{user?.prenom?.[0]?.toUpperCase() || "U"}</span>
@@ -438,7 +478,7 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
             style={{
               width: "540px",
               maxWidth: "calc(100vw - 32px)",
-              maxHeight: "calc(100vh - 112px)", // espace navbar + marge bas
+              maxHeight: "calc(100vh - 112px)",
               borderRadius: "16px",
               boxShadow: "0 24px 60px rgba(0,0,0,0.28)",
             }}
@@ -459,7 +499,6 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
 
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto">
-              {/* Author / source block */}
               <div className="flex items-center gap-3 px-5 pt-5 pb-4">
                 <div className="relative flex-shrink-0">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-[#3a3b3c] dark:to-[#4e4f50] flex items-center justify-center">
@@ -493,14 +532,12 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
 
               <div className="h-px bg-gray-100 dark:bg-[#3a3b3c] mx-5" />
 
-              {/* Message */}
               <div className="px-5 pt-4 pb-3">
                 <p className="text-sm text-gray-800 dark:text-[#e4e6eb] leading-relaxed">
                   {selectedNotification.message}
                 </p>
               </div>
 
-              {/* Details */}
               {selectedNotification.content && (
                 <div className="px-5 pb-6">
                   <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-[#3a3b3c] bg-gray-50 dark:bg-[#18191a]">

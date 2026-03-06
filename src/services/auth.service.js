@@ -115,7 +115,16 @@ const AuthService = {
   /**
    * Déconnexion utilisateur
    */
-  logout: () => {
+  logout: async () => {
+    try {
+      // Appeler le backend pour enregistrer la déconnexion
+      await API.post("/users/logout");
+    } catch (error) {
+      console.warn("Impossible d'enregistrer la déconnexion au serveur", error);
+      // Continuer même si l'appel échoue
+    }
+
+    // Supprimer les données locales
     localStorage.removeItem("user");
     localStorage.removeItem("rememberMe");
     localStorage.removeItem("userEmail");

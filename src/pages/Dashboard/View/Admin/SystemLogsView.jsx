@@ -1,498 +1,794 @@
-import React, { useState, useMemo, useContext, useRef } from "react";
+// C:\Users\hp\Desktop\Digitalisation\frontend\src\pages\Dashboard\View\Admin\SystemLogsView.jsx
+
+import React, { useState, useMemo, useContext, useRef, useEffect, useCallback } from "react";
 import {
   FaHistory, FaSearch, FaTimes, FaDownload, FaFilePdf, FaFileExcel,
-  FaChevronLeft, FaChevronRight, FaSyncAlt,
-  FaInfoCircle, FaExclamationTriangle, FaBug,
+  FaSyncAlt, FaInfoCircle, FaExclamationTriangle, FaBug,
   FaPlus, FaEye, FaEdit, FaTrashAlt, FaCheckCircle, FaTimesCircle,
+  FaUser, FaRobot, FaSignInAlt, FaSignOutAlt, FaShieldAlt, FaLock, FaKey,
+  FaRegClock, FaTag, FaDatabase, FaAlignLeft,
 } from "react-icons/fa";
+import { HiOutlineChevronLeft, HiOutlineChevronRight, HiChevronDown } from "react-icons/hi2";
 import { ThemeContext } from "../../../../context/ThemeContext";
+import systemLogService from "../../../../services/systemlog.services";
+import UserService from "../../../../services/user.service";
 
-// ─── Données ──────────────────────────────────────────────────────────────────
-const ALL_LOGS = [
-  { id:1,  level:"Info",    action:null,        timestamp:"2024-10-17 00:00:39", message:"Erreur cURL 28 : Délai d'attente dépassé après 20001 ms, 0 octet reçu",             source:"Client HTTP"    },
-  { id:2,  level:"Warning", action:null,        timestamp:"2024-10-16 06:40:41", message:"Le bail WebSub expire le 2024-10-14T04:19:02+00:00 et doit être renouvelé",          source:"WebSub"         },
-  { id:3,  level:"Error",   action:null,        timestamp:"2024-10-16 04:40:05", message:"Erreur cURL 22 : L'URL demandée a retourné l'erreur 403",                            source:"Client HTTP"    },
-  { id:4,  level:"Error",   action:null,        timestamp:"2024-10-15 12:30:22", message:"Le serveur de base de données a rencontré une erreur critique",                      source:"Base de données"},
-  { id:5,  level:"Warning", action:null,        timestamp:"2024-10-15 09:20:15", message:"Limite de l'API dépassée, veuillez réessayer ultérieurement",                        source:"Passerelle API" },
-  { id:6,  level:"Info",    action:null,        timestamp:"2024-10-15 07:10:58", message:"Session utilisateur expirée, veuillez vous reconnecter",                             source:"Authentification"},
-  { id:7,  level:"Error",   action:null,        timestamp:"2024-10-15 05:50:29", message:"Jeton d'authentification invalide fourni",                                           source:"Authentification"},
-  { id:8,  level:"Error",   action:null,        timestamp:"2024-10-15 02:20:11", message:"Le serveur de base de données a rencontré une erreur critique",                      source:"Base de données"},
-  { id:9,  level:"Info",    action:null,        timestamp:"2024-10-14 20:15:10", message:"Sauvegarde du système terminée avec succès",                                         source:"Sauvegarde"     },
-  { id:10, level:"Warning", action:null,        timestamp:"2024-10-14 15:30:00", message:"Utilisation du disque dépassée 85 % sur la partition /var/www",                     source:"Système"        },
-  { id:11, level:"Error",   action:null,        timestamp:"2024-10-14 18:05:55", message:"Échec de connexion au serveur SMTP sur le port 465",                                 source:"Messagerie"     },
-  { id:12, level:"Warning", action:null,        timestamp:"2024-10-13 17:20:05", message:"Le certificat SSL expire dans 14 jours",                                             source:"Sécurité"       },
-  { id:13, level:"Info",    action:null,        timestamp:"2024-10-13 10:10:10", message:"L'administrateur admin@example.com s'est connecté avec succès",                      source:"Authentification"},
-  { id:14, level:"Warning", action:null,        timestamp:"2024-10-12 06:30:00", message:"Le temps de réponse a dépassé le seuil de 3000 ms",                                 source:"Passerelle API" },
-  { id:15, level:"Info",    action:null,        timestamp:"2024-10-11 20:00:00", message:"Cache vidé et reconstruit pour tous les utilisateurs",                               source:"Cache"          },
-  { id:16, level:"Info",    action:"Créer",     timestamp:"2024-10-17 08:15:00", message:"Nouvel utilisateur créé : marie.dupont@example.com (rôle : Éditeur)",                source:"Utilisateurs"   },
-  { id:17, level:"Info",    action:"Créer",     timestamp:"2024-10-16 11:30:22", message:"Nouvelle université ajoutée : Université d'Antananarivo (ID #42)",                   source:"Universités"    },
-  { id:18, level:"Info",    action:"Créer",     timestamp:"2024-10-15 14:05:10", message:"Nouvelle descente planifiée créée pour la région Analamanga (ID #87)",               source:"Descentes"      },
-  { id:19, level:"Info",    action:"Créer",     timestamp:"2024-10-14 09:00:00", message:"Nouveau rôle créé : Inspecteur régional avec 12 permissions",                        source:"Rôles"          },
-  { id:20, level:"Warning", action:"Créer",     timestamp:"2024-10-13 16:45:00", message:"Tentative de création d'un doublon détectée : université déjà existante",            source:"Universités"    },
-  { id:21, level:"Info",    action:"Lire",      timestamp:"2024-10-17 09:00:00", message:"Export de la liste des universités demandé par admin@example.com",                   source:"Universités"    },
-  { id:22, level:"Info",    action:"Lire",      timestamp:"2024-10-16 13:20:00", message:"Consultation du rapport de descente ID #87 par jean.paul@example.com",               source:"Descentes"      },
-  { id:23, level:"Info",    action:"Lire",      timestamp:"2024-10-15 10:10:00", message:"Liste des utilisateurs consultée par admin@example.com (234 entrées)",               source:"Utilisateurs"   },
-  { id:24, level:"Warning", action:"Lire",      timestamp:"2024-10-14 07:55:00", message:"Accès refusé à la consultation du dossier confidentiel par user@example.com",        source:"Sécurité"       },
-  { id:25, level:"Info",    action:"Modifier",  timestamp:"2024-10-17 10:30:00", message:"Profil utilisateur mis à jour : jean.paul@example.com (email modifié)",              source:"Utilisateurs"   },
-  { id:26, level:"Info",    action:"Modifier",  timestamp:"2024-10-16 15:00:00", message:"Statut de la descente ID #87 mis à jour : En cours → Terminée",                      source:"Descentes"      },
-  { id:27, level:"Info",    action:"Modifier",  timestamp:"2024-10-15 11:45:00", message:"Paramètres système mis à jour : timeout API passé de 30s à 60s",                     source:"Système"        },
-  { id:28, level:"Warning", action:"Modifier",  timestamp:"2024-10-14 14:20:00", message:"Modification des permissions du rôle Inspecteur par un compte non autorisé",         source:"Rôles"          },
-  { id:29, level:"Error",   action:"Modifier",  timestamp:"2024-10-13 08:30:00", message:"Échec de la mise à jour de l'université ID #42 : contrainte de clé étrangère",       source:"Universités"    },
-  { id:30, level:"Warning", action:"Supprimer", timestamp:"2024-10-17 12:00:00", message:"Utilisateur supprimé : ancien.utilisateur@example.com par admin@example.com",        source:"Utilisateurs"   },
-  { id:31, level:"Warning", action:"Supprimer", timestamp:"2024-10-16 17:30:00", message:"Descente ID #65 supprimée (annulée) par l'inspecteur chef",                          source:"Descentes"      },
-  { id:32, level:"Error",   action:"Supprimer", timestamp:"2024-10-15 06:10:00", message:"Tentative de suppression de l'université ID #1 échouée : enregistrements liés",     source:"Universités"    },
-  { id:33, level:"Warning", action:"Supprimer", timestamp:"2024-10-14 19:00:00", message:"Rôle Éditeur supprimé — 3 utilisateurs réaffectés au rôle Lecteur",                  source:"Rôles"          },
-  { id:34, level:"Error",   action:"Supprimer", timestamp:"2024-10-13 21:15:00", message:"Suppression en masse refusée : opération non autorisée sur la table universites",   source:"Base de données"},
+// ─── Configuration ────────────────────────────────────────────────────────────
+const PER_PAGE_OPTIONS = [10, 20, 30, 40, 50, 100, 150, 200];
+
+const ROLE_LABELS = {
+  Admin: "Administrateur", admin: "Administrateur",
+  Requerant: "Requérant", Etablissement: "Établissement",
+  SAE: "Service SAE", SICP: "Service SICP", CNH: "Service CNH",
+  Expert: "Expert Évaluateur", Universite: "Université",
+};
+
+const formatRole = (role) => {
+  if (!role) return "";
+  if (ROLE_LABELS[role]) return ROLE_LABELS[role];
+  return role.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim().replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const ACTION_CFG = {
+  Créer:          { bg: "bg-green-100 dark:bg-green-900/30",   text: "text-green-700 dark:text-green-400",   icon: <FaPlus className="text-[10px]" />,       label: "Créer",         group: "crud"     },
+  Lire:           { bg: "bg-blue-100 dark:bg-blue-900/30",     text: "text-blue-700 dark:text-blue-400",     icon: <FaEye className="text-[10px]" />,        label: "Lire",          group: "crud"     },
+  Modifier:       { bg: "bg-amber-100 dark:bg-amber-900/30",   text: "text-amber-700 dark:text-amber-400",   icon: <FaEdit className="text-[10px]" />,       label: "Modifier",      group: "crud"     },
+  Supprimer:      { bg: "bg-red-100 dark:bg-red-900/30",       text: "text-red-700 dark:text-red-400",       icon: <FaTrashAlt className="text-[10px]" />,   label: "Supprimer",     group: "crud"     },
+  Connexion:      { bg: "bg-teal-100 dark:bg-teal-900/30",     text: "text-teal-700 dark:text-teal-400",     icon: <FaSignInAlt className="text-[10px]" />,  label: "Connexion",     group: "auth"     },
+  Déconnexion:    { bg: "bg-indigo-100 dark:bg-indigo-900/30", text: "text-indigo-700 dark:text-indigo-400", icon: <FaSignOutAlt className="text-[10px]" />, label: "Déconnexion",   group: "auth"     },
+  "Mot de passe": { bg: "bg-cyan-100 dark:bg-cyan-900/30",     text: "text-cyan-700 dark:text-cyan-400",     icon: <FaKey className="text-[10px]" />,        label: "Mot de passe",  group: "auth"     },
+  "Accès refusé": { bg: "bg-rose-100 dark:bg-rose-900/30",     text: "text-rose-700 dark:text-rose-400",     icon: <FaLock className="text-[10px]" />,       label: "Accès refusé",  group: "security" },
+  Tentative:      { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-400", icon: <FaShieldAlt className="text-[10px]" />,  label: "Tentative",     group: "security" },
+  Système:        { bg: "bg-gray-200 dark:bg-gray-700",        text: "text-gray-700 dark:text-gray-300",     icon: <FaHistory className="text-[10px]" />,    label: "Système",       group: "system"   },
+};
+
+const STAT_CARDS = [
+  { key: "Créer",         Icon: FaPlus,        color: "#22c55e" },
+  { key: "Lire",          Icon: FaEye,         color: "#3b82f6" },
+  { key: "Modifier",      Icon: FaEdit,        color: "#f59e0b" },
+  { key: "Supprimer",     Icon: FaTrashAlt,    color: "#ef4444" },
+  { key: "Connexion",     Icon: FaSignInAlt,   color: "#14b8a6" },
+  { key: "Déconnexion",   Icon: FaSignOutAlt,  color: "#6366f1" },
+  { key: "Mot de passe",  Icon: FaKey,         color: "#06b6d4" },
+  { key: "Accès refusé",  Icon: FaLock,        color: "#f43f5e" },
+  { key: "Tentative",     Icon: FaShieldAlt,   color: "#f97316" },
 ];
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-const LEVEL_CFG = {
-  Info:    { color:"text-blue-600",   dark:"dark:text-blue-400",   statBg:"bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",     icon:<FaInfoCircle />,          label:"Information"   },
-  Warning: { color:"text-orange-500", dark:"dark:text-orange-400", statBg:"bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800", icon:<FaExclamationTriangle />, label:"Avertissement" },
-  Error:   { color:"text-red-500",    dark:"dark:text-red-400",    statBg:"bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",          icon:<FaBug />,                 label:"Erreur"        },
-};
-const ACTION_CFG = {
-  Créer:     { bg:"bg-green-100 dark:bg-green-900/30",  text:"text-green-700 dark:text-green-400",  icon:<FaPlus     className="text-[10px]" />, label:"Créer"     },
-  Lire:      { bg:"bg-blue-100 dark:bg-blue-900/30",    text:"text-blue-700 dark:text-blue-400",    icon:<FaEye      className="text-[10px]" />, label:"Lire"      },
-  Modifier:  { bg:"bg-amber-100 dark:bg-amber-900/30",  text:"text-amber-700 dark:text-amber-400",  icon:<FaEdit     className="text-[10px]" />, label:"Modifier"  },
-  Supprimer: { bg:"bg-red-100 dark:bg-red-900/30",      text:"text-red-700 dark:text-red-400",      icon:<FaTrashAlt className="text-[10px]" />, label:"Supprimer" },
-};
-const ROWS = 10;
+const LEVEL_CARDS = [
+  { key: "Info",    Icon: FaInfoCircle,         color: "#3b82f6", label: "Info"          },
+  { key: "Warning", Icon: FaExclamationTriangle, color: "#f97316", label: "Avertissement" },
+  { key: "Error",   Icon: FaBug,                color: "#ef4444", label: "Erreur"        },
+];
 
-const formatDate = (ts) => {
-  const [d, t] = ts.split(" ");
-  const [y, m, dd] = d.split("-");
-  return `${dd}-${m}-${y} ${t}`;
+const GROUP_LABELS = {
+  crud: "CRUD", auth: "Authentification", security: "Sécurité", system: "Système",
 };
+
+// ─── Format date 24h ──────────────────────────────────────────────────────────
+// Forcer le parsing via new Date() pour normaliser TOUT format entrant
+// (y compris les formats AM/PM renvoyés par certains back-ends).
+const formatDate = (ts) => {
+  if (!ts) return "";
+  try {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return String(ts);
+    const pad = (n) => String(n).padStart(2, "0");
+    return (
+      pad(d.getDate()) + "-" + pad(d.getMonth() + 1) + "-" + d.getFullYear() +
+      " " +
+      pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds())
+    );
+  } catch { return String(ts); }
+};
+
+// ─── Recherche plein-texte sur toutes les colonnes ────────────────────────────
+const logMatchesSearch = (log, query, userInfoMap) => {
+  if (!query) return true;
+  const q = query.toLowerCase().trim();
+  const userInfo = userInfoMap[log.user_id];
+  const userName = userInfo
+    ? [userInfo.prenom, userInfo.nom, userInfo.role ? formatRole(userInfo.role) : ""].join(" ")
+    : String(log.user_id || "");
+
+  return [
+    log.level   || "",
+    log.action  || "",
+    formatDate(log.timestamp_formatted || log.timestamp),
+    userName,
+    log.source  || "",
+    log.message || "",
+  ].some((f) => f.toLowerCase().includes(q));
+};
+
+// ─── Cache utilisateurs ───────────────────────────────────────────────────────
+const userCache = {};
+
+function useUserInfo(userId, embedded) {
+  const [info, setInfo] = useState(embedded ? { ...embedded } : null);
+  useEffect(() => {
+    if (embedded) { setInfo({ ...embedded }); return; }
+    if (!userId || userId === 0) { setInfo(null); return; }
+    if (userCache[userId]) { setInfo(userCache[userId]); return; }
+    try {
+      const s = JSON.parse(localStorage.getItem("user") || "{}");
+      if (s.id === userId) {
+        const i = { prenom: s.prenom, nom: s.nom, role: s.role };
+        userCache[userId] = i; setInfo(i); return;
+      }
+    } catch { /**/ }
+    (async () => {
+      try {
+        const d = await UserService.getUserById(userId);
+        const i = { prenom: d.prenom || "", nom: d.nom || "", role: d.role || null };
+        userCache[userId] = i; setInfo(i);
+      } catch {
+        const f = { prenom: "", nom: "", role: null };
+        userCache[userId] = f; setInfo(f);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+  return info;
+}
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
 const LevelBadge = ({ level }) => {
-  const c = LEVEL_CFG[level];
-  return <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${c.color} ${c.dark}`}><span className="text-xs">◆</span>{level}</span>;
-};
-const ActionBadge = ({ action }) => {
-  if (!action) return <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>;
-  const c = ACTION_CFG[action];
-  return <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${c.bg} ${c.text}`}>{c.icon}{c.label}</span>;
-};
-
-// ─── Filtre select réutilisable ───────────────────────────────────────────────
-const FilterSelect = ({ label, value, onChange, options }) => (
-  <div className="flex flex-col gap-1">
-    <label className="text-xs text-gray-400 dark:text-gray-500 font-medium">{label}</label>
-    <select value={value} onChange={(e) => onChange(e.target.value)}
-      className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-      {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-    </select>
-  </div>
-);
-
-// ─── Toast notification ───────────────────────────────────────────────────────
-const Toast = ({ message, type, onClose }) => {
-  React.useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  const config = {
-    success: { bg: "bg-green-50 dark:bg-green-900/30", border: "border-green-500", icon: <FaCheckCircle className="text-green-500" />, text: "text-green-800 dark:text-green-300" },
-    error:   { bg: "bg-red-50 dark:bg-red-900/30",     border: "border-red-500",   icon: <FaTimesCircle className="text-red-500" />,     text: "text-red-800 dark:text-red-300" },
+  const MAP = {
+    Info:    { color: "#3b82f6", bg: "rgba(59,130,246,0.10)",  border: "rgba(59,130,246,0.3)"  },
+    Warning: { color: "#f97316", bg: "rgba(249,115,22,0.10)",  border: "rgba(249,115,22,0.3)"  },
+    Error:   { color: "#ef4444", bg: "rgba(239,68,68,0.10)",   border: "rgba(239,68,68,0.3)"   },
   };
-  const c = config[type];
-
+  const c = MAP[level] || MAP.Info;
   return (
-    <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 ${c.bg} ${c.border} shadow-lg animate-slide-in-right`}>
-      <span className="text-xl">{c.icon}</span>
-      <p className={`text-sm font-medium ${c.text}`}>{message}</p>
-      <button onClick={onClose} className={`ml-2 ${c.text} hover:opacity-70`}><FaTimes /></button>
+    <span style={{ color: c.color, background: c.bg, border: "1px solid " + c.border, borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 700, display: "inline-block", whiteSpace: "nowrap" }}>
+      {level}
+    </span>
+  );
+};
+
+const ActionBadge = ({ action }) => {
+  const key = action || "Système";
+  const c = ACTION_CFG[key];
+  return c ? (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${c.bg} ${c.text}`}>
+      {c.icon} {c.label}
+    </span>
+  ) : <span className="text-gray-400 text-xs">—</span>;
+};
+
+const UserBadge = ({ log, isDark }) => {
+  const userId   = log?.user_id;
+  const embedded = (log?.user_prenom || log?.user_nom || log?.user_role)
+    ? { prenom: log.user_prenom || "", nom: log.user_nom || "", role: log.user_role || null }
+    : null;
+  const userInfo = useUserInfo(userId, embedded);
+  const borderC  = isDark ? "#334155" : "#e2e8f0";
+
+  if (!userId || userId === 0) return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, background: isDark ? "#1e293b" : "#f1f5f9", color: isDark ? "#64748b" : "#94a3b8", fontSize: 11, fontWeight: 600, border: "1px solid " + borderC, whiteSpace: "nowrap" }}>
+      <FaRobot style={{ fontSize: 9 }} /> Système
+    </span>
+  );
+  if (!userInfo) return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 8px", borderRadius: 6, background: "rgba(59,130,246,0.08)", color: "#60a5fa", fontSize: 11, fontWeight: 600, border: "1px solid rgba(59,130,246,0.2)" }}>
+      <FaUser style={{ fontSize: 9 }} /> …
+    </span>
+  );
+  const fullName  = [userInfo.prenom, userInfo.nom].filter(Boolean).join(" ");
+  const roleLabel = userInfo.role ? formatRole(userInfo.role) : null;
+  return (
+    <span title={[fullName, roleLabel].filter(Boolean).join(" — ")} style={{ display: "inline-flex", flexDirection: "column", gap: 0, padding: "3px 8px", borderRadius: 6, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", minWidth: 100, maxWidth: 160 }}>
+      {fullName && <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: isDark ? "#93c5fd" : "#1d4ed8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><FaUser style={{ fontSize: 9, flexShrink: 0 }} /> {fullName}</span>}
+      {roleLabel && <span style={{ fontSize: 10, color: isDark ? "#60a5fa" : "#3b82f6", paddingLeft: fullName ? 13 : 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{roleLabel}</span>}
+      {!fullName && !roleLabel && <span style={{ fontSize: 11, color: "#60a5fa" }}>#{userId}</span>}
+    </span>
+  );
+};
+
+// ─── Bloc méta réutilisable dans la modal ─────────────────────────────────────
+const MetaBlock = ({ icon, label, children, isDark, fullWidth }) => {
+  const borderC = isDark ? "#334155" : "#e2e8f0";
+  const bgDeep  = isDark ? "#0f172a" : "#f8fafc";
+  const subC    = isDark ? "#94a3b8" : "#64748b";
+  return (
+    <div style={{ gridColumn: fullWidth ? "1 / -1" : undefined, padding: "10px 12px", borderRadius: 10, border: "1px solid " + borderC, background: bgDeep, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 5, color: subC }}>
+        {icon}
+        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</span>
+      </div>
+      <div>{children}</div>
     </div>
   );
 };
 
-// ─── Modal de confirmation ────────────────────────────────────────────────────
-const ConfirmModal = ({ title, message, onConfirm, onCancel }) => (
-  <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 max-w-md w-full mx-4 animate-scale-in">
-      <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-3">{title}</h3>
-      <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{message}</p>
-      <div className="flex gap-3 justify-end">
-        <button onClick={onCancel}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition">
-          Annuler
-        </button>
-        <button onClick={onConfirm}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">
-          Confirmer
-        </button>
+// ─── Modal détail message ─────────────────────────────────────────────────────
+const MessageDetailModal = ({ log, isDark, onClose }) => {
+  const bgCard  = isDark ? "#1e293b" : "#ffffff";
+  const bgDeep  = isDark ? "#0f172a" : "#f8fafc";
+  const borderC = isDark ? "#334155" : "#e2e8f0";
+  const textC   = isDark ? "#e2e8f0" : "#1e293b";
+  const subC    = isDark ? "#94a3b8" : "#64748b";
+  const monoC   = isDark ? "#7dd3fc" : "#0369a1";
+
+  const levelMap = {
+    Info:    { color: "#3b82f6", bg: "rgba(59,130,246,0.10)", border: "rgba(59,130,246,0.3)" },
+    Warning: { color: "#f97316", bg: "rgba(249,115,22,0.10)", border: "rgba(249,115,22,0.3)" },
+    Error:   { color: "#ef4444", bg: "rgba(239,68,68,0.10)",  border: "rgba(239,68,68,0.3)"  },
+  };
+  const lvl = levelMap[log.level] || levelMap.Info;
+
+  useEffect(() => {
+    const h = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", h);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  const LevelIcon = () => {
+    if (log.level === "Warning") return <FaExclamationTriangle style={{ color: lvl.color, fontSize: 14 }} />;
+    if (log.level === "Error")   return <FaBug                 style={{ color: lvl.color, fontSize: 14 }} />;
+    return                              <FaInfoCircle          style={{ color: lvl.color, fontSize: 15 }} />;
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", padding: 16, animation: "fadeInOverlay 0.18s ease-out" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: bgCard, border: "1px solid " + borderC, borderRadius: 20, width: "100%", maxWidth: 640, maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,0.35)", animation: "slideUpModal 0.22s cubic-bezier(0.16,1,0.3,1)", overflow: "hidden" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px 14px", borderBottom: "1px solid " + borderC, background: isDark ? "#0f172a" : "#f8fafc", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: lvl.bg, border: "1px solid " + lvl.border, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <LevelIcon />
+            </div>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 800, color: textC, lineHeight: 1.2 }}>Détail du log</p>
+              <p style={{ fontSize: 11, color: subC, marginTop: 2 }}>ID #{log.id}</p>
+            </div>
+          </div>
+          <button onClick={onClose}
+            style={{ width: 34, height: 34, borderRadius: 8, border: "1px solid " + borderC, background: isDark ? "#1e293b" : "#ffffff", color: subC, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? "#334155" : "#f1f5f9"; e.currentTarget.style.color = textC; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = isDark ? "#1e293b" : "#ffffff"; e.currentTarget.style.color = subC; }}
+          >
+            <FaTimes size={13} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ overflowY: "auto", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
+
+          {/* Grille 2×2 métadonnées */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <MetaBlock icon={<FaBug size={11} />}      label="Niveau"      isDark={isDark}><LevelBadge level={log.level} /></MetaBlock>
+            <MetaBlock icon={<FaTag size={11} />}      label="Action"      isDark={isDark}><ActionBadge action={log.action} /></MetaBlock>
+            <MetaBlock icon={<FaRegClock size={11} />} label="Horodatage"  isDark={isDark}>
+              <span style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 700, color: monoC }}>
+                {formatDate(log.timestamp_formatted || log.timestamp)}
+              </span>
+            </MetaBlock>
+            <MetaBlock icon={<FaDatabase size={11} />} label="Source"      isDark={isDark}>
+              <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 6, background: isDark ? "#0f172a" : "#e2e8f0", color: isDark ? "#94a3b8" : "#475569", fontSize: 11, fontWeight: 600, border: "1px solid " + borderC }}>
+                {log.source || "—"}
+              </span>
+            </MetaBlock>
+          </div>
+
+          {/* Utilisateur pleine largeur */}
+          <MetaBlock icon={<FaUser size={11} />} label="Utilisateur" isDark={isDark} fullWidth>
+            <UserBadge log={log} isDark={isDark} />
+          </MetaBlock>
+
+          {/* Message complet */}
+          <div style={{ borderRadius: 12, border: "1px solid " + borderC, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: isDark ? "#0f172a" : "#f1f5f9", borderBottom: "1px solid " + borderC }}>
+              <FaAlignLeft size={11} style={{ color: subC }} />
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: subC }}>Message complet</span>
+            </div>
+            <div style={{ padding: "14px 16px", background: bgDeep, fontSize: 13, lineHeight: 1.75, color: textC, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 300, overflowY: "auto", fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace" }}>
+              {log.message || <span style={{ color: subC, fontStyle: "italic" }}>Aucun message</span>}
+            </div>
+          </div>
+
+          {/* Données supplémentaires si présentes */}
+          {(log.extra_data || log.data) && (
+            <div style={{ borderRadius: 12, border: "1px solid " + borderC, overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: isDark ? "#0f172a" : "#f1f5f9", borderBottom: "1px solid " + borderC }}>
+                <FaDatabase size={11} style={{ color: subC }} />
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: subC }}>Données supplémentaires</span>
+              </div>
+              <div style={{ padding: "14px 16px", background: bgDeep, fontSize: 12, lineHeight: 1.6, color: monoC, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflowY: "auto", fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace" }}>
+                {(() => {
+                  try {
+                    const raw = log.extra_data || log.data;
+                    return typeof raw === "string"
+                      ? JSON.stringify(JSON.parse(raw), null, 2)
+                      : JSON.stringify(raw, null, 2);
+                  } catch { return String(log.extra_data || log.data); }
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "14px 22px", borderTop: "1px solid " + borderC, display: "flex", justifyContent: "flex-end", background: isDark ? "#0f172a" : "#f8fafc", flexShrink: 0 }}>
+          <button onClick={onClose}
+            style={{ padding: "8px 22px", borderRadius: 10, border: "1px solid " + borderC, background: isDark ? "#1e293b" : "#ffffff", color: textC, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? "#334155" : "#f1f5f9"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = isDark ? "#1e293b" : "#ffffff"; }}
+          >
+            Fermer
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
-
-// ─── Export helpers ───────────────────────────────────────────────────────────
-const exportToCSV = (rows) => {
-  try {
-    const header = ["ID", "Niveau", "Action CRUD", "Horodatage", "Source", "Message"];
-    const lines  = rows.map((l) => [l.id, l.level, l.action || "Système", formatDate(l.timestamp), l.source, `"${l.message.replace(/"/g, '""')}"`]);
-    const csv    = [header, ...lines].map((r) => r.join(";")).join("\n");
-    const blob   = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url    = URL.createObjectURL(blob);
-    const a      = document.createElement("a");
-    a.href = url;
-    a.download = `logs_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    return { success: true };
-  } catch (err) {
-    console.error("Erreur export CSV:", err);
-    return { success: false, error: err.message };
-  }
+  );
 };
 
-const exportToPDF = (rows) => {
-  try {
-    const tableRows = rows.map((l) => `
-      <tr>
-        <td style="padding:7px 10px;border-bottom:1px solid #f3f4f6;font-size:11px">${l.id}</td>
-        <td style="padding:7px 10px;border-bottom:1px solid #f3f4f6;color:${l.level==="Error"?"#ef4444":l.level==="Warning"?"#f97316":"#3b82f6"};font-weight:600;font-size:11px">${l.level}</td>
-        <td style="padding:7px 10px;border-bottom:1px solid #f3f4f6;font-size:11px">${l.action || "—"}</td>
-        <td style="padding:7px 10px;border-bottom:1px solid #f3f4f6;font-family:monospace;font-size:11px">${formatDate(l.timestamp)}</td>
-        <td style="padding:7px 10px;border-bottom:1px solid #f3f4f6;font-size:11px"><span style="background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:10px">${l.source}</span></td>
-        <td style="padding:7px 10px;border-bottom:1px solid #f3f4f6;max-width:320px;font-size:11px">${l.message}</td>
-      </tr>`).join("");
+// ─── Modal confirmation ───────────────────────────────────────────────────────
+const ConfirmModal = ({ title, message, onConfirm, onCancel, isDark }) => {
+  const bg = isDark ? "#1e293b" : "#ffffff";
+  const bd = isDark ? "#334155" : "#e2e8f0";
+  const tc = isDark ? "#e2e8f0" : "#334155";
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}>
+      <div style={{ background: bg, border: "1px solid " + bd, borderRadius: 16, padding: 24, maxWidth: 420, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: tc, marginBottom: 12 }}>{title}</h3>
+        <p  style={{ fontSize: 14, color: isDark ? "#94a3b8" : "#64748b", marginBottom: 24 }}>{message}</p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+          <button onClick={onCancel}  style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid " + bd, background: "transparent", color: tc, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Annuler</button>
+          <button onClick={onConfirm} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Confirmer</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-    const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Logs système - ${new Date().toLocaleDateString("fr-FR")}</title>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:Arial,sans-serif; padding:20px; }
-    h1 { color:#1e40af; font-size:20px; margin-bottom:6px; }
-    p { color:#6b7280; font-size:12px; margin-bottom:18px; }
-    table { width:100%; border-collapse:collapse; }
-    th { background:#eff6ff; color:#2563eb; font-size:11px; text-transform:uppercase; padding:10px 10px; text-align:left; border-bottom:2px solid #bfdbfe; font-weight:600; }
-    tr:nth-child(even) td { background:#f9fafb; }
-    @page { margin: 1.5cm; }
-  </style>
-</head>
-<body>
-  <h1>📋 Logs du système</h1>
-  <p>${rows.length} entrée(s) · Exporté le ${new Date().toLocaleString("fr-FR")}</p>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Niveau</th>
-        <th>Action</th>
-        <th>Horodatage</th>
-        <th>Source</th>
-        <th>Message</th>
-      </tr>
-    </thead>
-    <tbody>${tableRows}</tbody>
-  </table>
-</body>
-</html>`;
+// ─── Export Menu ──────────────────────────────────────────────────────────────
+function ExportMenu({ isDark, onExport }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const bg = isDark ? "#1e293b" : "#ffffff";
+  const bd = isDark ? "#334155" : "#e2e8f0";
+  const txt = isDark ? "#e2e8f0" : "#334155";
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen(!open)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 12, border: "1px solid " + bd, background: bg, color: txt, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+        <FaDownload size={12} /> Exporter
+        <HiChevronDown size={15} style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "none" }} />
+      </button>
+      {open && (
+        <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", width: 160, background: bg, border: "1px solid " + bd, borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,0.18)", overflow: "hidden", zIndex: 100 }}>
+          <button onClick={() => { onExport("csv"); setOpen(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: "transparent", border: "none", cursor: "pointer", color: txt, fontSize: 13 }} onMouseEnter={(e) => e.currentTarget.style.background = isDark ? "rgba(34,197,94,0.1)" : "#f0fdf4"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+            <FaFileExcel style={{ color: "#16a34a" }} size={14} /> Excel (.csv)
+          </button>
+          <div style={{ borderTop: "1px solid " + bd }} />
+          <button onClick={() => { onExport("pdf"); setOpen(false); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: "transparent", border: "none", cursor: "pointer", color: txt, fontSize: 13 }} onMouseEnter={(e) => e.currentTarget.style.background = isDark ? "rgba(239,68,68,0.1)" : "#fff1f2"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+            <FaFilePdf style={{ color: "#dc2626" }} size={14} /> PDF
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
-    const blob = new Blob([htmlContent], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    document.body.appendChild(iframe);
-    iframe.src = url;
-
-    iframe.onload = () => {
-      setTimeout(() => {
-        iframe.contentWindow.print();
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          URL.revokeObjectURL(url);
-        }, 100);
-      }, 250);
-    };
-
-    return { success: true };
-  } catch (err) {
-    console.error("Erreur export PDF:", err);
-    return { success: false, error: err.message };
-  }
+// ─── Toast ────────────────────────────────────────────────────────────────────
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
+  return (
+    <div className="fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl" style={{ background: type === "error" ? "#ef4444" : "#22c55e", color: "#fff" }}>
+      {type === "error" ? <FaTimesCircle size={18} /> : <FaCheckCircle size={18} />}
+      <span className="text-sm font-medium">{message}</span>
+      <button onClick={onClose} className="ml-1 opacity-70 hover:opacity-100"><FaTimes size={12} /></button>
+    </div>
+  );
 };
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function SystemLogsView() {
   const { theme } = useContext(ThemeContext);
+  const isDark = theme === "dark";
+
+  const borderC  = isDark ? "#334155" : "#e2e8f0";
+  const headerBg = isDark ? "#0f172a" : "#f8fafc";
+  const headerC  = isDark ? "#64748b" : "#94a3b8";
+  const textC    = isDark ? "#e2e8f0" : "#334155";
+  const subC     = isDark ? "#475569" : "#94a3b8";
+  const bgCard   = isDark ? "#1e293b" : "#ffffff";
+  const rowHover = isDark ? "rgba(59,130,246,0.06)" : "#f8faff";
+
   const [search,       setSearch]       = useState("");
-  const [actionFilter, setActionFilter] = useState("All");
-  const [sourceFilter, setSourceFilter] = useState("All");
+  const [actionFilter, setActionFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
   const [dateFrom,     setDateFrom]     = useState("");
   const [dateTo,       setDateTo]       = useState("");
-  const [currentPage,  setCurrentPage]  = useState(1);
-  const [exportOpen,   setExportOpen]   = useState(false);
-  const [confirmModal, setConfirmModal] = useState(null);
+  const [page,         setPage]         = useState(1);
+  const [perPage,      setPerPage]      = useState(10);
   const [toast,        setToast]        = useState(null);
-  const exportRef = useRef(null);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [logs,         setLogs]         = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [totalLogs,    setTotalLogs]    = useState(0);
+  const [totalPages,   setTotalPages]   = useState(1);
+  const [allSources,   setAllSources]   = useState([]);
+  const [actionStats,  setActionStats]  = useState({});
+  const [levelStats,   setLevelStats]   = useState({ Info: 0, Warning: 0, Error: 0 });
+  const [detailLog,    setDetailLog]    = useState(null);  // modal détail
+  const [userInfoMap,  setUserInfoMap]  = useState({});    // cache pour recherche
 
-  const allSources = useMemo(() => ["All", ...Array.from(new Set(ALL_LOGS.map((l) => l.source)))], []);
+  const showToast = useCallback((type, message) => {
+    let msg = message;
+    if (msg && typeof msg === "object") { try { msg = JSON.stringify(msg); } catch { msg = String(msg); } }
+    setToast({ type, message: msg });
+  }, []);
 
-  const filtered = useMemo(() => ALL_LOGS.filter((log) => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || [log.message, log.source, log.level, log.action || ""].some((v) => v.toLowerCase().includes(q));
-    const matchAction = actionFilter === "All" ? true : actionFilter === "Système" ? log.action === null : log.action === actionFilter;
-    const matchSource = sourceFilter === "All" || log.source === sourceFilter;
-    const logDate     = new Date(log.timestamp);
-    return matchSearch && matchAction && matchSource
-      && (!dateFrom || logDate >= new Date(dateFrom))
-      && (!dateTo   || logDate <= new Date(dateTo + "T23:59:59"));
-  }), [search, actionFilter, sourceFilter, dateFrom, dateTo]);
+  const fetchLogs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const r = await systemLogService.getLogs({
+        page, per_page: perPage,
+        action:    actionFilter || null,
+        source:    sourceFilter || null,
+        date_from: dateFrom     || null,
+        date_to:   dateTo       || null,
+        search:    search       || null,
+      });
+      setLogs(r.logs || []);
+      setTotalLogs(r.total || 0);
+      setTotalPages(r.total_pages || 1);
+    } catch (e) {
+      showToast("error", e.message || "Erreur chargement logs");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, perPage, actionFilter, sourceFilter, dateFrom, dateTo, search, showToast]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ROWS));
-  const paginated  = filtered.slice((currentPage - 1) * ROWS, currentPage * ROWS);
-  const hasFilter  = search || actionFilter !== "All" || sourceFilter !== "All" || dateFrom || dateTo;
+  const fetchStatistics = useCallback(async () => {
+    try {
+      const s = await systemLogService.getStatistics();
+      setLevelStats(s.by_level   || { Info: 0, Warning: 0, Error: 0 });
+      setActionStats(s.by_action || {});
+    } catch { /**/ }
+  }, []);
 
-  const resetFilters = () => { setSearch(""); setActionFilter("All"); setSourceFilter("All"); setDateFrom(""); setDateTo(""); setCurrentPage(1); };
+  const fetchSources = useCallback(async () => {
+    try {
+      const sources = (await systemLogService.getSources()) || [];
+      setAllSources(sources.filter((s) =>
+        !s.includes("Module") && !s.includes("Contact") &&
+        !s.includes("Actualités") && !s.includes("FAQ") && !s.includes("À propos")
+      ));
+    } catch { /**/ }
+  }, []);
 
-  const pageNumbers = useMemo(() => {
-    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    const pages = [1];
-    if (currentPage > 3) pages.push("...");
-    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
-    if (currentPage < totalPages - 2) pages.push("...");
-    pages.push(totalPages);
-    return pages;
-  }, [totalPages, currentPage]);
+  useEffect(() => { fetchStatistics(); fetchSources(); }, [fetchStatistics, fetchSources]);
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
-  const stats     = useMemo(() => Object.fromEntries(["Info","Warning","Error"].map((l) => [l, ALL_LOGS.filter((x) => x.level === l).length])), []);
-  const crudStats = useMemo(() => Object.fromEntries(Object.keys(ACTION_CFG).map((a) => [a, ALL_LOGS.filter((x) => x.action === a).length])), []);
+  // Met à jour le cache userInfoMap dès que les logs changent
+  useEffect(() => {
+    const map = {};
+    logs.forEach((log) => {
+      const uid = log.user_id;
+      if (!uid) return;
+      if (log.user_prenom || log.user_nom || log.user_role) {
+        map[uid] = { prenom: log.user_prenom || "", nom: log.user_nom || "", role: log.user_role || null };
+      } else if (userCache[uid]) {
+        map[uid] = userCache[uid];
+      }
+    });
+    setUserInfoMap(map);
+  }, [logs]);
 
-  const handleBlur = () => setTimeout(() => setExportOpen(false), 150);
+  // Filtrage plein-texte côté client (double filet : couvre les champs non indexés)
+  const filteredLogs = useMemo(() => {
+    if (!search) return logs;
+    return logs.filter((log) => logMatchesSearch(log, search, userInfoMap));
+  }, [logs, search, userInfoMap]);
+
+  const handleRefresh = () => {
+    fetchLogs(); fetchStatistics(); fetchSources();
+    showToast("success", "Données actualisées avec succès");
+  };
 
   const handleExport = (type) => {
-    setExportOpen(false);
     setConfirmModal({
       title: type === "csv" ? "Exporter en Excel" : "Exporter en PDF",
-      message: `Voulez-vous exporter ${filtered.length} log(s) au format ${type === "csv" ? "Excel (.csv)" : "PDF"} ?`,
+      message: `Voulez-vous exporter ${logs.length} log(s) au format ${type === "csv" ? "Excel (.csv)" : "PDF"} ?`,
       onConfirm: () => {
         setConfirmModal(null);
-        const result = type === "csv" ? exportToCSV(filtered) : exportToPDF(filtered);
-        if (result.success) {
-          setToast({ type: "success", message: `Export ${type.toUpperCase()} réussi ! (${filtered.length} entrées)` });
-        } else {
-          setToast({ type: "error", message: `Erreur lors de l'export : ${result.error}` });
-        }
+        try {
+          if (type === "csv") {
+            const blob = systemLogService.exportToCSV(logs);
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement("a");
+            a.href = url; a.download = "logs_" + new Date().toISOString().split("T")[0] + ".csv"; a.click();
+            URL.revokeObjectURL(url);
+          } else {
+            const html   = systemLogService.generatePDFHtml(logs);
+            const blob   = new Blob([html], { type: "text/html" });
+            const url    = URL.createObjectURL(blob);
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none"; document.body.appendChild(iframe);
+            iframe.src = url;
+            iframe.onload = () => setTimeout(() => {
+              iframe.contentWindow.print();
+              setTimeout(() => { document.body.removeChild(iframe); URL.revokeObjectURL(url); }, 100);
+            }, 250);
+          }
+          showToast("success", `Export ${type.toUpperCase()} réussi ! (${logs.length} entrées)`);
+        } catch (e) { showToast("error", "Erreur export : " + e.message); }
       },
       onCancel: () => setConfirmModal(null),
     });
   };
 
+  const resetFilters = () => { setSearch(""); setActionFilter(""); setSourceFilter(""); setDateFrom(""); setDateTo(""); setPage(1); };
+  const hasFilter = search || actionFilter || sourceFilter || dateFrom || dateTo;
+  const handlePerPageChange = (v) => { setPerPage(Number(v)); setPage(1); };
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [1];
+    if (page > 3) pages.push("...");
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+    if (page < totalPages - 2) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  }, [totalPages, page]);
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div className="space-y-4 font-sans relative">
+      {toast        && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {confirmModal && <ConfirmModal {...confirmModal} isDark={isDark} />}
+      {detailLog    && <MessageDetailModal log={detailLog} isDark={isDark} onClose={() => setDetailLog(null)} />}
 
-      {/* Toast */}
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
-      {/* Modal confirmation */}
-      {confirmModal && <ConfirmModal {...confirmModal} />}
-
-      {/* ── En-tête ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <FaHistory className="text-2xl text-blue-600 dark:text-blue-400" />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white leading-tight">Logs du système</h1>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{ALL_LOGS.length} entrées au total</p>
-          </div>
+      {/* En-tête */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black tracking-tight" style={{ color: isDark ? "#f1f5f9" : "#0f172a" }}>Logs du système</h1>
+          <p className="text-xs mt-0.5" style={{ color: subC }}>{totalLogs} entrées au total</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium transition">
-          <FaSyncAlt className="text-xs" /> Actualiser
+        <button onClick={handleRefresh} disabled={loading} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 12, border: "1px solid " + borderC, background: bgCard, color: textC, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+          <FaSyncAlt className={loading ? "animate-spin" : ""} size={12} />
+          {loading ? "Chargement..." : "Actualiser"}
         </button>
       </div>
 
-      {/* ── Stats niveaux ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-        {["Info","Warning","Error"].map((level) => {
-          const c = LEVEL_CFG[level];
-          return (
-            <div key={level} className={`flex items-center gap-4 p-4 rounded-xl border cursor-default transition hover:shadow-md ${c.statBg}`}>
-              <span className={`text-2xl ${c.color} ${c.dark}`}>{c.icon}</span>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">{c.label}</p>
-                <p className={`text-2xl font-extrabold ${c.color} ${c.dark}`}>{stats[level]}</p>
-              </div>
+      {/* Cards niveaux */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+        {LEVEL_CARDS.map(({ key, Icon, color, label }) => (
+          <div key={key} style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff", border: "1px solid " + (isDark ? "#404855" : "#e5e7eb"), borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.04)" }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: `${color}18`, border: `1px solid ${color}30`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon style={{ color, fontSize: 16 }} />
             </div>
-          );
-        })}
-      </div>
-
-      {/* ── Stats CRUD ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        {Object.entries(ACTION_CFG).map(([action, cfg]) => (
-          <div key={action}
-            onClick={() => { setActionFilter(action === actionFilter ? "All" : action); setCurrentPage(1); }}
-            className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition hover:shadow-md bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 ${actionFilter === action ? "ring-2 ring-offset-1 ring-blue-400" : ""}`}>
-            <span className={`text-xl ${cfg.text}`}>{React.cloneElement(cfg.icon, { className: "text-xl" })}</span>
             <div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wide">{cfg.label}</p>
-              <p className={`text-2xl font-extrabold ${cfg.text}`}>{crudStats[action]}</p>
+              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: isDark ? "#9ca3af" : "#6b7280", marginBottom: 4 }}>{label}</p>
+              <p style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1, letterSpacing: "-0.5px" }}>{levelStats[key] ?? 0}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ── Carte principale ── */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-
-        {/* Barre du haut */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-white">Historique des événements</h2>
-
-          {/* Bouton Export avec dropdown */}
-          <div className="relative" ref={exportRef}>
-            <button
-              onClick={() => setExportOpen((o) => !o)}
-              onBlur={handleBlur}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium transition">
-              <FaDownload className="text-xs" /> Exporter <span className="text-xs opacity-60">▾</span>
-            </button>
-            {exportOpen && (
-              <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 overflow-hidden">
-                <button
-                  onMouseDown={() => handleExport("csv")}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition font-medium">
-                  <FaFileExcel className="text-base" /> Excel (.csv)
-                </button>
-                <div className="border-t border-gray-100 dark:border-gray-700" />
-                <button
-                  onMouseDown={() => handleExport("pdf")}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition font-medium">
-                  <FaFilePdf className="text-base" /> PDF
-                </button>
-              </div>
-            )}
+      {/* Cards actions */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+        {STAT_CARDS.map(({ key, Icon, color }) => (
+          <div key={key} onClick={() => { setActionFilter(actionFilter === key ? "" : key); setPage(1); }}
+            style={{ background: actionFilter === key ? (isDark ? `${color}18` : `${color}0f`) : (isDark ? "rgba(255,255,255,0.03)" : "#ffffff"), border: actionFilter === key ? `2px solid ${color}` : "1px solid " + (isDark ? "#404855" : "#e5e7eb"), borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", transition: "all 0.18s ease", transform: actionFilter === key ? "scale(1.02)" : "scale(1)", boxShadow: actionFilter === key ? `0 0 0 3px ${color}20` : (isDark ? "none" : "0 1px 3px rgba(0,0,0,0.04)") }}>
+            <div style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, background: `${color}18`, border: `1px solid ${color}30`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon style={{ color, fontSize: 13 }} />
+            </div>
+            <div style={{ overflow: "hidden", flex: 1 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: actionFilter === key ? color : (isDark ? "#9ca3af" : "#6b7280"), marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {ACTION_CFG[key]?.label || key}
+              </p>
+              <p style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1, letterSpacing: "-0.5px" }}>{actionStats[key] ?? 0}</p>
+            </div>
           </div>
-        </div>
+        ))}
+      </div>
+
+      {/* Tableau */}
+      <div style={{ background: bgCard, border: "1px solid " + borderC, borderRadius: 16, overflow: "hidden", boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.4)" : "0 1px 6px rgba(0,0,0,0.06)" }}>
 
         {/* Filtres */}
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-3 items-end bg-gray-50/60 dark:bg-gray-800/60">
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid " + borderC, background: isDark ? "#0f172a" : "#f8fafc", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
 
-          {/* Recherche */}
-          <div className="relative flex-1 min-w-[200px]">
-            <label className="block text-xs text-gray-400 dark:text-gray-500 font-medium mb-1">Recherche</label>
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-              <input type="text" placeholder="Rechercher dans les logs..." value={search}
-                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-              {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><FaTimes className="text-xs" /></button>
-              )}
+          {/* Recherche plein-texte */}
+          <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
+            <FaSearch style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: 12 }} />
+            <input
+              type="text"
+              placeholder="Rechercher dans toutes les colonnes…"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              style={{ width: "100%", paddingLeft: 32, paddingRight: search ? 30 : 12, paddingTop: 8, paddingBottom: 8, borderRadius: 10, border: "1px solid " + (search ? "#3b82f6" : borderC), background: isDark ? "#1e293b" : "#ffffff", color: textC, fontSize: 13, outline: "none", boxSizing: "border-box", boxShadow: search ? "0 0 0 2px rgba(59,130,246,0.15)" : "none", transition: "border-color 0.15s, box-shadow 0.15s" }}
+            />
+            {search && (
+              <button onClick={() => { setSearch(""); setPage(1); }} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}>
+                <FaTimes size={10} />
+              </button>
+            )}
+          </div>
+
+          {/* Action */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: subC, letterSpacing: "0.06em" }}>Action</label>
+            <select value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(1); }} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid " + borderC, background: isDark ? "#1e293b" : "#ffffff", color: textC, fontSize: 13, outline: "none", minWidth: 165, cursor: "pointer" }}>
+              <option value="">Toutes les actions</option>
+              {Object.entries(GROUP_LABELS).map(([g, gl]) => (
+                <optgroup key={g} label={"-- " + gl}>
+                  {Object.entries(ACTION_CFG).filter(([, v]) => v.group === g).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
+          {/* Source */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: subC, letterSpacing: "0.06em" }}>Source</label>
+            <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid " + borderC, background: isDark ? "#1e293b" : "#ffffff", color: textC, fontSize: 13, outline: "none", minWidth: 150, cursor: "pointer" }}>
+              <option value="">Toutes les sources</option>
+              {allSources.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          {/* Dates */}
+          {[["Du", dateFrom, setDateFrom], ["Au", dateTo, setDateTo]].map(([lbl, val, setter]) => (
+            <div key={lbl} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderRadius: 10, background: isDark ? "#1e293b" : "#ffffff", border: "1px solid " + borderC }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: subC }}>{lbl}</span>
+              <input type="date" value={val} onChange={(e) => { setter(e.target.value); setPage(1); }} style={{ background: "transparent", border: "none", outline: "none", color: textC, fontSize: 13, cursor: "pointer" }} />
             </div>
-          </div>
-
-          <FilterSelect label="Action CRUD" value={actionFilter} onChange={(v) => { setActionFilter(v); setCurrentPage(1); }}
-            options={[["All","Toutes les actions"],["Système","Système (sans CRUD)"],["Créer","Créer"],["Lire","Lire"],["Modifier","Modifier"],["Supprimer","Supprimer"]]} />
-
-          <FilterSelect label="Source" value={sourceFilter} onChange={(v) => { setSourceFilter(v); setCurrentPage(1); }}
-            options={allSources.map((s) => [s, s === "All" ? "Toutes les sources" : s])} />
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-400 dark:text-gray-500 font-medium">Du</label>
-            <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-400 dark:text-gray-500 font-medium">Au</label>
-            <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
-              className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-          </div>
+          ))}
 
           {hasFilter && (
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-transparent select-none">_</label>
-              <button onClick={resetFilters}
-                className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm transition">
-                <FaTimes className="text-xs" /> Réinitialiser
-              </button>
-            </div>
+            <button onClick={resetFilters} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 10, border: "1px solid " + borderC, background: isDark ? "#1e293b" : "#ffffff", color: textC, fontSize: 13, cursor: "pointer" }}>
+              <FaTimes size={10} /> Réinitialiser
+            </button>
+          )}
+          <div style={{ marginLeft: "auto" }}><ExportMenu isDark={isDark} onExport={handleExport} /></div>
+        </div>
+
+        {/* Per-page + compteur résultats */}
+        <div style={{ padding: "10px 20px", borderBottom: "1px solid " + borderC, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: subC }}>Afficher</span>
+          <select value={perPage} onChange={(e) => handlePerPageChange(e.target.value)} style={{ padding: "3px 8px", borderRadius: 7, border: "1px solid " + borderC, background: isDark ? "#0f172a" : "#f8fafc", color: textC, fontSize: 12, outline: "none", cursor: "pointer" }}>
+            {PER_PAGE_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+          <span style={{ fontSize: 12, color: subC }}>entrées</span>
+          {search && filteredLogs.length !== logs.length && (
+            <span style={{ fontSize: 11, color: "#3b82f6", fontWeight: 600, marginLeft: 8, background: "rgba(59,130,246,0.08)", padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(59,130,246,0.2)" }}>
+              {filteredLogs.length} résultat{filteredLogs.length > 1 ? "s" : ""} sur {logs.length}
+            </span>
           )}
         </div>
 
-        {/* Tableau */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+        {/* Table */}
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 920 }}>
             <thead>
-              <tr className="border-b-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/80">
-                {["Niveau","Action CRUD","Horodatage","Source","Message"].map((h) => (
-                  <th key={h} className="text-left py-3 px-5 text-sm font-semibold text-blue-500 dark:text-blue-400 whitespace-nowrap border-r last:border-r-0 border-gray-200 dark:border-gray-600">{h}</th>
+              <tr style={{ background: headerBg, borderBottom: "2px solid " + borderC }}>
+                {["Niveau", "Action", "Horodatage", "Utilisateur", "Source", "Message", ""].map((h, i) => (
+                  <th key={i} style={{ padding: "12px 16px", textAlign: i === 6 ? "center" : "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: headerC, whiteSpace: "nowrap", borderRight: i < 6 ? "1px solid " + borderC : "none", width: i === 6 ? 52 : undefined }}>
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {paginated.length > 0 ? paginated.map((log) => (
-                <tr key={log.id} className="hover:bg-blue-50/40 dark:hover:bg-gray-700/30 transition-colors">
-                  <td className="py-3 px-5 whitespace-nowrap border-r border-gray-100 dark:border-gray-700"><LevelBadge level={log.level} /></td>
-                  <td className="py-3 px-5 whitespace-nowrap border-r border-gray-100 dark:border-gray-700"><ActionBadge action={log.action} /></td>
-                  <td className="py-3 px-5 text-sm font-mono text-blue-400 dark:text-blue-500 whitespace-nowrap border-r border-gray-100 dark:border-gray-700">{formatDate(log.timestamp)}</td>
-                  <td className="py-3 px-5 whitespace-nowrap border-r border-gray-100 dark:border-gray-700">
-                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs font-medium">{log.source}</span>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: "60px 20px", textAlign: "center", color: subC }}>
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid transparent", borderBottom: "2px solid #3b82f6", animation: "spin 0.8s linear infinite" }} />
+                      <span style={{ fontSize: 13 }}>Chargement des logs...</span>
+                    </div>
                   </td>
-                  <td className="py-3 px-5 text-sm text-gray-700 dark:text-gray-300 max-w-xl">{log.message}</td>
                 </tr>
-              )) : (
-                <tr><td colSpan={5} className="py-16 text-center text-gray-400 dark:text-gray-500 text-sm">
-                  <FaSearch className="mx-auto mb-2 text-2xl opacity-30" />
-                  Aucun log trouvé pour ces critères.
-                </td></tr>
+              ) : filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: "60px 20px", textAlign: "center", color: subC }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: 0.5 }}>
+                      <FaSearch size={22} />
+                      <span style={{ fontSize: 13 }}>Aucun log trouvé.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredLogs.map((log) => (
+                  <tr key={log.id}
+                    style={{ borderBottom: "1px solid " + borderC, transition: "background 0.12s", cursor: "default" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = rowHover}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  >
+                    <td style={{ padding: "11px 16px", borderRight: "1px solid " + borderC, whiteSpace: "nowrap" }}>
+                      <LevelBadge level={log.level} />
+                    </td>
+                    <td style={{ padding: "11px 16px", borderRight: "1px solid " + borderC, whiteSpace: "nowrap" }}>
+                      <ActionBadge action={log.action} />
+                    </td>
+                    {/* Horodatage 24h */}
+                    <td style={{ padding: "11px 16px", borderRight: "1px solid " + borderC, whiteSpace: "nowrap", fontFamily: "monospace", fontSize: 12, color: "#3b82f6" }}>
+                      {formatDate(log.timestamp_formatted || log.timestamp)}
+                    </td>
+                    <td style={{ padding: "11px 16px", borderRight: "1px solid " + borderC }}>
+                      <UserBadge log={log} isDark={isDark} />
+                    </td>
+                    <td style={{ padding: "11px 16px", borderRight: "1px solid " + borderC, whiteSpace: "nowrap" }}>
+                      <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 6, background: isDark ? "#0f172a" : "#f1f5f9", color: isDark ? "#94a3b8" : "#64748b", fontSize: 11, fontWeight: 600, border: "1px solid " + borderC }}>
+                        {log.source}
+                      </span>
+                    </td>
+                    {/* Message tronqué */}
+                    <td style={{ padding: "11px 16px", fontSize: 13, color: textC, maxWidth: 320, borderRight: "1px solid " + borderC }}>
+                      <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.message}>
+                        {log.message}
+                      </span>
+                    </td>
+                    {/* Bouton œil */}
+                    <td style={{ padding: "8px 10px", textAlign: "center", width: 52 }}>
+                      <button
+                        onClick={() => setDetailLog(log)}
+                        title="Voir le détail du message"
+                        style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid " + borderC, background: isDark ? "#1e293b" : "#f8fafc", color: isDark ? "#60a5fa" : "#3b82f6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#3b82f6"; e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "#3b82f6"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(59,130,246,0.35)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = isDark ? "#1e293b" : "#f8fafc"; e.currentTarget.style.color = isDark ? "#60a5fa" : "#3b82f6"; e.currentTarget.style.borderColor = borderC; e.currentTarget.style.boxShadow = "none"; }}
+                      >
+                        <FaEye size={12} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-400 dark:text-gray-500">{filtered.length} résultat(s) · Page {currentPage} sur {totalPages}</p>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}
-              className="w-9 h-9 flex items-center justify-center border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition">
-              <FaChevronLeft className="text-xs" />
-            </button>
-            {pageNumbers.map((p, i) =>
-              p === "..." ? (
-                <span key={`e-${i}`} className="px-1 text-gray-400 dark:text-gray-500 text-sm select-none">…</span>
-              ) : (
-                <button key={p} onClick={() => setCurrentPage(p)}
-                  className={`w-9 h-9 rounded-lg text-sm font-medium transition ${currentPage === p ? "bg-blue-600 text-white shadow-sm" : "border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}>
-                  {p}
-                </button>
-              )
-            )}
-            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-              className="w-9 h-9 flex items-center justify-center border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition">
-              <FaChevronRight className="text-xs" />
-            </button>
+        {!loading && filteredLogs.length > 0 && (
+          <div style={{ padding: "14px 20px", borderTop: "1px solid " + borderC, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <span style={{ fontSize: 12, color: subC }}>
+              {totalLogs > 0 ? `Affichage de ${(page - 1) * perPage + 1} à ${Math.min(page * perPage, totalLogs)} sur ${totalLogs} entrées` : "Aucune entrée"}
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + borderC, background: bgCard, color: isDark ? "#94a3b8" : "#64748b", display: "flex", alignItems: "center", justifyContent: "center", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.3 : 1 }}>
+                <HiOutlineChevronLeft size={16} />
+              </button>
+              {pageNumbers.map((p, i) =>
+                p === "..." ? (
+                  <span key={"e-" + i} style={{ fontSize: 13, color: subC, padding: "0 4px" }}>…</span>
+                ) : (
+                  <button key={p} onClick={() => setPage(p)} style={{ width: 32, height: 32, borderRadius: 8, border: page === p ? "1px solid #3b82f6" : "1px solid " + borderC, background: page === p ? "#3b82f6" : bgCard, color: page === p ? "#fff" : (isDark ? "#94a3b8" : "#64748b"), fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    {p}
+                  </button>
+                )
+              )}
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid " + borderC, background: bgCard, color: isDark ? "#94a3b8" : "#64748b", display: "flex", alignItems: "center", justifyContent: "center", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.3 : 1 }}>
+                <HiOutlineChevronRight size={16} />
+              </button>
+            </div>
           </div>
-        </div>
-
+        )}
       </div>
 
-      {/* Animations CSS */}
       <style jsx>{`
-        @keyframes slide-in-right {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
+        @keyframes spin          { to { transform: rotate(360deg); } }
+        @keyframes pulse         { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUpModal  {
+          from { opacity: 0; transform: translateY(24px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0)    scale(1);    }
         }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scale-in {
-          from { transform: scale(0.95); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        .animate-slide-in-right { animation: slide-in-right 0.3s ease-out; }
-        .animate-fade-in { animation: fade-in 0.2s ease-out; }
-        .animate-scale-in { animation: scale-in 0.2s ease-out; }
+        .animate-spin  { animation: spin  0.8s linear     infinite; }
+        .animate-pulse { animation: pulse 1.5s ease-in-out infinite; }
       `}</style>
     </div>
   );

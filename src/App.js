@@ -25,8 +25,6 @@ import Login from "./pages/Login/Login";
 import VerifyEmail from "./pages/Login/VerifyEmail";
 import ForgotPassword from "./pages/Login/ForgotPassword";
 
-
-
 // Dashboards (Layouts)
 import DashboardAdmin from "./pages/Dashboard/DashboardAdmin";
 import DashboardSicp from "./pages/Dashboard/DashboardSicp";
@@ -51,7 +49,6 @@ import RolesPermissionsView from "./pages/Dashboard/View/Admin/RolesPermissionsV
 import SystemLogsView from "./pages/Dashboard/View/Admin/SystemLogsView";
 import DiffusionMessages from "./pages/Dashboard/View/Admin/DiffusionMessages";
 
-
 // VUES SAE
 import DashboardSaeView from "./pages/Dashboard/View/Sae/DashboardSaeView";
 import AccreditationView from "./pages/Dashboard/View/Sae/AccreditationView";
@@ -62,6 +59,7 @@ import ArchiveEquivalenceView from "./pages/Dashboard/View/Sae/ArchiveEquivalenc
 // VUES REQUERANT
 import DashboardReqView from "./pages/Dashboard/View/Requerant/DashboardReqView";
 import CreerDemandeView from "./pages/Dashboard/View/Requerant/CreerDemandeView";
+import MesDemandesView from "./pages/Dashboard/View/Requerant/MesDemandesView";
 
 // VUES ETABLISSEMENT
 import DashboardEtabView from "./pages/Dashboard/View/Etab/DashboardEtabView";
@@ -69,6 +67,8 @@ import MesInformationsHabilitation from "./pages/Dashboard/View/Etab/Habilitatio
 import CreerDemandeHabilitation from "./pages/Dashboard/View/Etab/Habilitation/CreerDemandeHabilitation";
 import RenouvellementCanevas from "./pages/Dashboard/View/Etab/Habilitation/RenouvellementCanevas";
 import RenouvellementForm from "./pages/Dashboard/View/Etab/Habilitation/RenouvellementForm";
+// ✅ SÉPARATION : canevas (lecture) et formulaire (évaluation) en deux pages liées
+import AutoEvaluationCanevas from "./pages/Dashboard/View/Etab/Accreditation/Autoevaluationcanevas";
 import AutoEvaluationAccreditation from "./pages/Dashboard/View/Etab/Accreditation/AutoEvaluationAccreditation";
 import CreerDemandeAccreditation from "./pages/Dashboard/View/Etab/Accreditation/CreerDemandeAccreditation";
 
@@ -234,12 +234,39 @@ function App() {
           <Router>
             <RecaptchaBadgeController />
             <Routes>
-
               {/* ========== ROUTES PUBLIQUES ========== */}
-              <Route path="/" element={<Navbar><Home /></Navbar>} />
-              <Route path="/actualites" element={<Navbar><AllActu /></Navbar>} />
-              <Route path="/actualites/:slug" element={<Navbar><AllActu /></Navbar>} />
-              <Route path="/apropos" element={<Navbar><APropos /></Navbar>} />
+              <Route
+                path="/"
+                element={
+                  <Navbar>
+                    <Home />
+                  </Navbar>
+                }
+              />
+              <Route
+                path="/actualites"
+                element={
+                  <Navbar>
+                    <AllActu />
+                  </Navbar>
+                }
+              />
+              <Route
+                path="/actualites/:slug"
+                element={
+                  <Navbar>
+                    <AllActu />
+                  </Navbar>
+                }
+              />
+              <Route
+                path="/apropos"
+                element={
+                  <Navbar>
+                    <APropos />
+                  </Navbar>
+                }
+              />
               <Route
                 path="/renouvellement-form"
                 element={
@@ -249,10 +276,16 @@ function App() {
                   />
                 }
               />
-              <Route path="/login" element={<AuthRedirect><Login /></AuthRedirect>} />
+              <Route
+                path="/login"
+                element={
+                  <AuthRedirect>
+                    <Login />
+                  </AuthRedirect>
+                }
+              />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-
 
               {/* ========== DASHBOARD ADMIN ========== */}
               <Route
@@ -269,45 +302,102 @@ function App() {
 
                 {/* --- MODULE CNH (Accès Admin) --- */}
                 <Route path="cnh" element={<DashboardCnhView />} />
-                <Route path="cnh/demandes-habilitations" element={<ListesDemandesHabilitationsCnhView />} />
-                <Route path="cnh/archives" element={<ArchivesDemandesCnhView />} />
+                <Route
+                  path="cnh/demandes-habilitations"
+                  element={<ListesDemandesHabilitationsCnhView />}
+                />
+                <Route
+                  path="cnh/archives"
+                  element={<ArchivesDemandesCnhView />}
+                />
 
                 {/* --- MODULE EXPERT (Accès Admin) --- */}
                 <Route path="expert" element={<DahsboardExpView />} />
-                <Route path="expert/gestion-dossiers" element={<GestionDossiersExpView />} />
-                <Route path="expert/transmission" element={<TransmissionCNHExpView />} />
+                <Route
+                  path="expert/gestion-dossiers"
+                  element={<GestionDossiersExpView />}
+                />
+                <Route
+                  path="expert/transmission"
+                  element={<TransmissionCNHExpView />}
+                />
 
                 {/* --- MODULE SAE --- */}
                 <Route path="sae" element={<DashboardSaeView />} />
-                <Route path="sae/accreditation" element={<AccreditationView />} />
-                <Route path="sae/archive-accreditation" element={<ArchiveAccreditationView />} />
+                <Route
+                  path="sae/accreditation"
+                  element={<AccreditationView />}
+                />
+                <Route
+                  path="sae/archive-accreditation"
+                  element={<ArchiveAccreditationView />}
+                />
                 <Route path="sae/equivalence" element={<EquivalenceView />} />
-                <Route path="sae/archive-equivalence" element={<ArchiveEquivalenceView />} />
+                <Route
+                  path="sae/archive-equivalence"
+                  element={<ArchiveEquivalenceView />}
+                />
 
                 {/* --- MODULE SICP --- */}
                 <Route path="sicp" element={<DashboardSicpView />} />
-                <Route path="sicp/planification" element={<PlanificationDescente />} />
-                <Route path="sicp/geolocalisation" element={<GeolocalisationUniversites />} />
-                <Route path="sicp/inspection-performance" element={<InspectionControleIES />} />
-                <Route path="sicp/suivi-qualite" element={<FormulaireSuiviIES />} />
+                <Route
+                  path="sicp/planification"
+                  element={<PlanificationDescente />}
+                />
+                <Route
+                  path="sicp/geolocalisation"
+                  element={<GeolocalisationUniversites />}
+                />
+                <Route
+                  path="sicp/inspection-performance"
+                  element={<InspectionControleIES />}
+                />
+                <Route
+                  path="sicp/suivi-qualite"
+                  element={<FormulaireSuiviIES />}
+                />
                 <Route path="sicp/classement" element={<ClassementView />} />
 
                 {/* --- MODULE GESTION HABILITATION --- */}
-                <Route path="gestion-habilitation" element={<DashboardGestHView />} />
-                <Route path="gestion-habilitation/demandes" element={<DemandesHabilitation />} />
-                <Route path="gestion-habilitation/renouvellements" element={<DemandesRenouvellement />} />
-                <Route path="gestion-habilitation/universites" element={<UniversitesHabilitees />} />
-                <Route path="gestion-habilitation/dossiers-expert" element={<AssignerExpert />} />
+                <Route
+                  path="gestion-habilitation"
+                  element={<DashboardGestHView />}
+                />
+                <Route
+                  path="gestion-habilitation/demandes"
+                  element={<DemandesHabilitation />}
+                />
+                <Route
+                  path="gestion-habilitation/renouvellements"
+                  element={<DemandesRenouvellement />}
+                />
+                <Route
+                  path="gestion-habilitation/universites"
+                  element={<UniversitesHabilitees />}
+                />
+                <Route
+                  path="gestion-habilitation/dossiers-expert"
+                  element={<AssignerExpert />}
+                />
 
                 {/* --- MODULE UNIVERSITÉ --- */}
                 <Route path="universite" element={<DashboardUniView />} />
-                <Route path="universite/classement" element={<ClassementView />} />
+                <Route
+                  path="universite/classement"
+                  element={<ClassementView />}
+                />
 
                 {/* --- ADMINISTRATION ET SYSTÈME --- */}
                 <Route path="gerer-utilisateurs" element={<UserView />} />
-                <Route path="habilitation/roles" element={<RolesPermissionsView />} />
+                <Route
+                  path="habilitation/roles"
+                  element={<RolesPermissionsView />}
+                />
                 <Route path="parametre3" element={<ContactParam />} />
-                <Route path="parametre-actualite" element={<ActualiteParam />} />
+                <Route
+                  path="parametre-actualite"
+                  element={<ActualiteParam />}
+                />
                 <Route path="parametre-faq" element={<FaqParam />} />
                 <Route path="parametre-apropos" element={<AProposParam />} />
                 <Route path="etat-systeme" element={<SystemStatusView />} />
@@ -327,6 +417,7 @@ function App() {
               >
                 <Route index element={<DashboardReqView />} />
                 <Route path="creer-demande" element={<CreerDemandeView />} />
+                <Route path="mes-demandes" element={<MesDemandesView />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="*" element={<Navigate to="" replace />} />
               </Route>
@@ -341,15 +432,49 @@ function App() {
                 }
               >
                 <Route index element={<DashboardEtabView />} />
-                <Route path="habilitation/mes-informations" element={<MesInformationsHabilitation />} />
-                <Route path="habilitation/creer-demande" element={<CreerDemandeHabilitation />} />
-                <Route path="habilitation/formulaire/licence" element={<FormLicence />} />
-                <Route path="habilitation/formulaire/master" element={<FormMaster />} />
-                <Route path="habilitation/formulaire/doctorat" element={<FormDoctorat />} />
-                <Route path="habilitation/renouvellement" element={<RenouvellementCanevas />} />
-                <Route path="habilitation/renouvellement/form" element={<RenouvellementForm />} />
-                <Route path="accreditation/auto-evaluation" element={<AutoEvaluationAccreditation />} />
-                <Route path="accreditation/creer-demande" element={<CreerDemandeAccreditation />} />
+                <Route
+                  path="habilitation/mes-informations"
+                  element={<MesInformationsHabilitation />}
+                />
+                <Route
+                  path="habilitation/creer-demande"
+                  element={<CreerDemandeHabilitation />}
+                />
+                <Route
+                  path="habilitation/formulaire/licence"
+                  element={<FormLicence />}
+                />
+                <Route
+                  path="habilitation/formulaire/master"
+                  element={<FormMaster />}
+                />
+                <Route
+                  path="habilitation/formulaire/doctorat"
+                  element={<FormDoctorat />}
+                />
+                <Route
+                  path="habilitation/renouvellement"
+                  element={<RenouvellementCanevas />}
+                />
+                <Route
+                  path="habilitation/renouvellement/form"
+                  element={<RenouvellementForm />}
+                />
+
+                {/* ✅ AUTO-ÉVALUATION : formulaire affiché en premier, puis canevas */}
+                <Route
+                  path="accreditation/auto-evaluation"
+                  element={<AutoEvaluationAccreditation />}
+                />
+                <Route
+                  path="accreditation/auto-evaluation/canevas"
+                  element={<AutoEvaluationCanevas />}
+                />
+
+                <Route
+                  path="accreditation/creer-demande"
+                  element={<CreerDemandeAccreditation />}
+                />
                 <Route path="profile" element={<Profile />} />
                 <Route path="*" element={<Navigate to="" replace />} />
               </Route>
@@ -365,12 +490,24 @@ function App() {
               >
                 <Route path="tableau-de-bord" element={<DashboardSaeView />} />
                 <Route path="accreditation" element={<AccreditationView />} />
-                <Route path="archive-accreditation" element={<ArchiveAccreditationView />} />
+                <Route
+                  path="archive-accreditation"
+                  element={<ArchiveAccreditationView />}
+                />
                 <Route path="equivalence" element={<EquivalenceView />} />
-                <Route path="archive-equivalence" element={<ArchiveEquivalenceView />} />
+                <Route
+                  path="archive-equivalence"
+                  element={<ArchiveEquivalenceView />}
+                />
                 <Route path="profile" element={<Profile />} />
-                <Route index element={<Navigate to="tableau-de-bord" replace />} />
-                <Route path="*" element={<Navigate to="tableau-de-bord" replace />} />
+                <Route
+                  index
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
+                <Route
+                  path="*"
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
               </Route>
 
               {/* ========== DASHBOARD SICP ========== */}
@@ -383,14 +520,32 @@ function App() {
                 }
               >
                 <Route path="tableau-de-bord" element={<DashboardSicpView />} />
-                <Route path="planification-descente" element={<PlanificationDescente />} />
-                <Route path="inspection-controle" element={<InspectionControleIES />} />
-                <Route path="formulaire-suivi" element={<FormulaireSuiviIES />} />
-                <Route path="geolocalisation" element={<GeolocalisationUniversites />} />
+                <Route
+                  path="planification-descente"
+                  element={<PlanificationDescente />}
+                />
+                <Route
+                  path="inspection-controle"
+                  element={<InspectionControleIES />}
+                />
+                <Route
+                  path="formulaire-suivi"
+                  element={<FormulaireSuiviIES />}
+                />
+                <Route
+                  path="geolocalisation"
+                  element={<GeolocalisationUniversites />}
+                />
                 <Route path="classement" element={<ClassementView />} />
                 <Route path="profile" element={<Profile />} />
-                <Route index element={<Navigate to="tableau-de-bord" replace />} />
-                <Route path="*" element={<Navigate to="tableau-de-bord" replace />} />
+                <Route
+                  index
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
+                <Route
+                  path="*"
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
               </Route>
 
               {/* ========== DASHBOARD CNH ========== */}
@@ -407,10 +562,19 @@ function App() {
                   path="listes-demandes-habilitations"
                   element={<ListesDemandesHabilitationsCnhView />}
                 />
-                <Route path="archives-demandes" element={<ArchivesDemandesCnhView />} />
+                <Route
+                  path="archives-demandes"
+                  element={<ArchivesDemandesCnhView />}
+                />
                 <Route path="profile" element={<Profile />} />
-                <Route index element={<Navigate to="tableau-de-bord" replace />} />
-                <Route path="*" element={<Navigate to="tableau-de-bord" replace />} />
+                <Route
+                  index
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
+                <Route
+                  path="*"
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
               </Route>
 
               {/* ========== DASHBOARD EXPERT ========== */}
@@ -423,11 +587,23 @@ function App() {
                 }
               >
                 <Route path="tableau-de-bord" element={<DahsboardExpView />} />
-                <Route path="gestion-dossiers" element={<GestionDossiersExpView />} />
-                <Route path="transmission-cnh" element={<TransmissionCNHExpView />} />
+                <Route
+                  path="gestion-dossiers"
+                  element={<GestionDossiersExpView />}
+                />
+                <Route
+                  path="transmission-cnh"
+                  element={<TransmissionCNHExpView />}
+                />
                 <Route path="profile" element={<Profile />} />
-                <Route index element={<Navigate to="tableau-de-bord" replace />} />
-                <Route path="*" element={<Navigate to="tableau-de-bord" replace />} />
+                <Route
+                  index
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
+                <Route
+                  path="*"
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
               </Route>
 
               {/* ========== DASHBOARD UNIVERSITE ========== */}
@@ -442,8 +618,14 @@ function App() {
                 <Route path="tableau-de-bord" element={<DashboardUniView />} />
                 <Route path="classement" element={<ClassementView />} />
                 <Route path="profile" element={<Profile />} />
-                <Route index element={<Navigate to="tableau-de-bord" replace />} />
-                <Route path="*" element={<Navigate to="tableau-de-bord" replace />} />
+                <Route
+                  index
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
+                <Route
+                  path="*"
+                  element={<Navigate to="tableau-de-bord" replace />}
+                />
               </Route>
 
               {/* ========== DASHBOARD GESTIONNAIRE HABILITATION ========== */}
@@ -456,9 +638,18 @@ function App() {
                 }
               >
                 <Route index element={<DashboardGestHView />} />
-                <Route path="demandes-habilitation" element={<DemandesHabilitation />} />
-                <Route path="demandes-renouvellement" element={<DemandesRenouvellement />} />
-                <Route path="universites-habilitees" element={<UniversitesHabilitees />} />
+                <Route
+                  path="demandes-habilitation"
+                  element={<DemandesHabilitation />}
+                />
+                <Route
+                  path="demandes-renouvellement"
+                  element={<DemandesRenouvellement />}
+                />
+                <Route
+                  path="universites-habilitees"
+                  element={<UniversitesHabilitees />}
+                />
                 <Route path="assigner-expert" element={<AssignerExpert />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="*" element={<Navigate to="" replace />} />
@@ -476,7 +667,6 @@ function App() {
 
               {/* ========== PAGE 404 ========== */}
               <Route path="*" element={<NotFound />} />
-
             </Routes>
           </Router>
         </GoogleReCaptchaProvider>

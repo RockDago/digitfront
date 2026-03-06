@@ -1,1112 +1,1808 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import {
   FaArchive,
   FaRedo,
   FaEye,
   FaSearch,
-  FaAngleLeft,
-  FaAngleRight,
-  FaSort,
-  FaUserCircle,
-  FaGraduationCap,
-  FaUniversity,
-  FaCalendarAlt,
-  FaInfoCircle,
   FaTimes,
   FaArrowLeft,
+  FaUserCircle,
+  FaGraduationCap,
+  FaCalendarAlt,
+  FaInfoCircle,
+  FaEnvelope,
+  FaPhone,
+  FaMapMarkerAlt,
+  FaUniversity,
+  FaTag,
+  FaFileAlt,
+  FaChevronDown,
+  FaChevronUp,
+  FaDownload,
+  FaFilePdf,
+  FaFileExcel,
+  FaSpinner,
 } from "react-icons/fa";
+import { HiChevronDown, HiOutlineChevronLeft, HiOutlineChevronRight } from "react-icons/hi2";
+import { ThemeContext } from "../../../../context/ThemeContext";
+import { getArchivesDemandes, restoreDemande, downloadDocument } from "../../../../services/equivalence.services";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-// Réutilisation des mêmes statuts et couleurs pour la cohérence
-const statusHierarchy = [
-  { id: "SAE", label: "SAE" },
-  { id: "CNE", label: "CNE" },
-  { id: "SG", label: "SG" },
-  { id: "Ministre", label: "Ministre" },
-  { id: "PM", label: "PM" },
-  // Octroyé a été retiré des niveaux
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+};
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const mapStatutToDisplay = (statut) => {
+  const mapping = {
+    brouillon: "Brouillon",
+    soumise: "En cours",
+    en_cours: "En cours",
+    complet: "Complété",
+    rejete: "Rejeté",
+    accorde: "Accepté",
+  };
+  return mapping[statut] || statut;
+};
+
+const getSubStatusStyle = (statut, isDark) => {
+  const displayStatut = mapStatutToDisplay(statut);
+  const MAP = {
+    "En cours": {
+      color: "#2563eb",
+      bg: isDark ? "rgba(37,99,235,0.15)" : "#eff6ff",
+      border: isDark ? "rgba(37,99,235,0.4)" : "#bfdbfe",
+      label: "En cours",
+    },
+    Accepté: {
+      color: "#16a34a",
+      bg: isDark ? "rgba(34,197,94,0.15)" : "rgba(34,197,94,0.1)",
+      border: isDark ? "rgba(34,197,94,0.4)" : "rgba(22,163,74,0.3)",
+      label: "Accepté",
+    },
+    Ajourné: {
+      color: "#d97706",
+      bg: isDark ? "rgba(245,158,11,0.15)" : "rgba(245,158,11,0.1)",
+      border: isDark ? "rgba(245,158,11,0.4)" : "rgba(217,119,6,0.3)",
+      label: "Ajourné",
+    },
+    Rejeté: {
+      color: "#dc2626",
+      bg: isDark ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.1)",
+      border: isDark ? "rgba(239,68,68,0.4)" : "rgba(220,38,38,0.3)",
+      label: "Rejeté",
+    },
+    Brouillon: {
+      color: "#64748b",
+      bg: isDark ? "rgba(100,116,139,0.15)" : "rgba(100,116,139,0.1)",
+      border: isDark ? "rgba(100,116,139,0.4)" : "rgba(100,116,139,0.3)",
+      label: "Brouillon",
+    },
+    Complété: {
+      color: "#6b7280",
+      bg: isDark ? "rgba(107,114,128,0.15)" : "rgba(107,114,128,0.1)",
+      border: isDark ? "rgba(107,114,128,0.4)" : "rgba(107,114,128,0.3)",
+      label: "Complété",
+    },
+  };
+  return MAP[displayStatut] || {
+    color: "#64748b",
+    bg: isDark ? "rgba(100,116,139,0.15)" : "rgba(100,116,139,0.1)",
+    border: isDark ? "rgba(100,116,139,0.4)" : "rgba(100,116,139,0.3)",
+    label: statut,
+  };
+};
+
+const subStatusOptions = [
+  { id: "accepte", label: "Accepté", color: "#16a34a" },
+  { id: "ajourne", label: "Ajourné", color: "#d97706" },
+  { id: "rejete", label: "Rejeté", color: "#dc2626" },
+  { id: "complet", label: "Complété", color: "#6b7280" },
 ];
 
-// Fonctions de couleur réutilisées
-const getStatusColor = (status) => {
-  switch (status) {
-    case "SAE": return "bg-gray-100 text-gray-800 border border-gray-200";
-    case "CNE": return "bg-blue-50 text-blue-700 border border-blue-100";
-    case "SG": return "bg-purple-50 text-purple-700 border border-purple-100";
-    case "Ministre": return "bg-yellow-50 text-yellow-700 border border-yellow-100";
-    case "PM": return "bg-green-50 text-green-700 border border-green-100";
-    default: return "bg-gray-100 text-gray-800 border border-gray-200";
-  }
+// ─── Sous-composants ───────────────────────────────────────────────────────────
+const Section = ({ title, icon, expanded, onToggle, isDark, bgCard, borderC, textC, children }) => {
+  const bgDeep = isDark ? "#0f172a" : "#f8fafc";
+  const subC = isDark ? "#475569" : "#94a3b8";
+  return (
+    <div
+      style={{
+        background: bgCard,
+        border: "1px solid " + borderC,
+        borderRadius: 16,
+        overflow: "hidden",
+        boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.4)" : "0 1px 6px rgba(0,0,0,0.06)",
+      }}
+    >
+      <button
+        onClick={onToggle}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "13px 18px",
+          background: bgDeep,
+          border: "none",
+          cursor: "pointer",
+          borderBottom: expanded ? "1px solid " + borderC : "none",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: "#3b82f6", fontSize: 14 }}>{icon}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: textC }}>{title}</span>
+        </div>
+        {expanded ? (
+          <FaChevronUp style={{ color: subC, fontSize: 12 }} />
+        ) : (
+          <FaChevronDown style={{ color: subC, fontSize: 12 }} />
+        )}
+      </button>
+      {expanded && <div style={{ padding: "14px 18px" }}>{children}</div>}
+    </div>
+  );
 };
 
-const getSubStatusColor = (subStatus) => {
-  if (subStatus === "terminé") return "bg-blue-100 text-blue-800 border-blue-200";
-  if (subStatus === "accepte") return "bg-green-100 text-green-800 border-green-200";
-  if (subStatus === "ajourne") return "bg-yellow-100 text-yellow-800 border-yellow-200";
-  if (subStatus === "rejete") return "bg-red-100 text-red-800 border-red-200";
-  return "bg-gray-100 text-gray-800 border-gray-200";
+const ActionBtn = ({ title, color, isDark, borderC, onClick, children }) => (
+  <button
+    title={title}
+    onClick={onClick}
+    style={{
+      width: 30,
+      height: 30,
+      borderRadius: 8,
+      border: "1px solid " + borderC,
+      background: isDark ? "#1e293b" : "#f8fafc",
+      color,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      transition: "all 0.15s",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = color;
+      e.currentTarget.style.color = "#fff";
+      e.currentTarget.style.borderColor = color;
+      e.currentTarget.style.boxShadow = `0 2px 8px ${color}55`;
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = isDark ? "#1e293b" : "#f8fafc";
+      e.currentTarget.style.color = color;
+      e.currentTarget.style.borderColor = borderC;
+      e.currentTarget.style.boxShadow = "none";
+    }}
+  >
+    {children}
+  </button>
+);
+
+const DocumentItem = ({ filePath, fileName }) => {
+  const handleDownload = async () => {
+    try {
+      const blob = await downloadDocument(filePath);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName || filePath.split("/").pop();
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast.error("Erreur lors du téléchargement du document");
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
+        {fileName || filePath.split("/").pop()}
+      </span>
+      <button
+        onClick={handleDownload}
+        className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+        title="Télécharger"
+      >
+        <FaDownload size={14} />
+      </button>
+    </div>
+  );
 };
 
-const getSubStatusLabel = (subStatus) => {
-  if (subStatus === "terminé") return "Terminé";
-  if (subStatus === "accepte") return "Accepté";
-  if (subStatus === "ajourne") return "Ajourné";
-  if (subStatus === "rejete") return "Rejeté";
-  return "En cours";
-};
+// ─── ExportMenu ────────────────────────────────────────────────────────────────
+function ExportMenu({ isDark, borderC, onExport }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const bg = isDark ? "#1e293b" : "#ffffff";
+  const txt = isDark ? "#e2e8f0" : "#334155";
 
+  useEffect(() => {
+    const h = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 16px",
+          borderRadius: 12,
+          border: "1px solid " + borderC,
+          background: bg,
+          color: txt,
+          fontSize: 13,
+          fontWeight: 500,
+          cursor: "pointer",
+        }}
+      >
+        <FaDownload size={12} /> Exporter
+        <HiChevronDown
+          size={15}
+          style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+        />
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "calc(100% + 8px)",
+            width: 170,
+            background: bg,
+            border: "1px solid " + borderC,
+            borderRadius: 12,
+            boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
+            overflow: "hidden",
+            zIndex: 100,
+          }}
+        >
+          <button
+            onClick={() => {
+              onExport("csv");
+              setOpen(false);
+            }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "11px 16px",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: txt,
+              fontSize: 13,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? "rgba(34,197,94,0.1)" : "#f0fdf4")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <FaFileExcel style={{ color: "#16a34a" }} size={14} /> Excel (.csv)
+          </button>
+          <div style={{ borderTop: "1px solid " + borderC }} />
+          <button
+            onClick={() => {
+              onExport("pdf");
+              setOpen(false);
+            }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "11px 16px",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: txt,
+              fontSize: 13,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? "rgba(239,68,68,0.1)" : "#fff1f2")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <FaFilePdf style={{ color: "#dc2626" }} size={14} /> PDF
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Composant principal ───────────────────────────────────────────────────────
 const ArchiveEquivalenceView = () => {
-  // État pour les dossiers archivés
-  const [archivedEquivalences, setArchivedEquivalences] = useState([
-    {
-      id: 3,
-      dossierNumber: "DOS-2023-003",
-      applicant: "Pierre Bernard",
-      qualification: "Doctorat",
-      status: "PM", // Changé de "Octroyé" à "PM"
-      subStatus: "terminé",
-      submittedDate: "2023-03-15",
-      archivedDate: "2023-04-02",
-      archivedBy: "Administrateur",
-      email: "pierre.bernard@email.com",
-      phone: "+33 6 34 56 78 90",
-      address: "789 Boulevard Maritime, 13000 Marseille, France",
-      institution: "École Technique Supérieure",
-      country: "France",
-      year: "2020",
-      notes: "Dossier octroyé avec succès (Archivé)",
-      documents: ["Diplôme technique", "Certificat de travail", "Attestation"],
-      history: [
-        { date: "2023-03-15", action: "Soumission", user: "Système", status: "SAE", subStatus: "accepte" },
-        { date: "2023-03-18", action: "Validation SAE", user: "Agent SAE", status: "SAE", subStatus: "accepte" },
-        { date: "2023-03-20", action: "Validation CNE", user: "Expert CNE", status: "CNE", subStatus: "accepte" },
-        { date: "2023-03-22", action: "Validation SG", user: "Secrétaire Général", status: "SG", subStatus: "accepte" },
-        { date: "2023-03-25", action: "Validation Ministre", user: "Ministre", status: "Ministre", subStatus: "accepte" },
-        { date: "2023-03-28", action: "Validation PM", user: "Premier Ministre", status: "PM", subStatus: "accepte" },
-        { date: "2023-03-30", action: "Dossier octroyé", user: "Système", status: "PM", subStatus: "terminé" },
-        { date: "2023-04-02", action: "Dossier archivé", user: "Administrateur", status: "PM", subStatus: "terminé" },
-      ],
-      motif: "recherche",
-      type_diplome: "Doctorat",
-      nom: "Bernard",
-      prenoms: "Pierre",
-      code_postal: "13000 Marseille",
-      recapitulatif_formation: [
-        {
-          annee_obtention: "2020",
-          diplome: "Doctorat en Physique",
-          mention: "Très Bien",
-          parcours_option_specialite: "Physique Quantique",
-          etablissement: "École Technique Supérieure",
-        },
-      ],
-      destinataire: "Madame/Monsieur le Ministre de l'Enseignement Supérieur",
-      isArchived: true,
-      archiveReason: "Octroyé", // Octroyé reste ici comme raison d'archivage
-    },
-    {
-      id: 5,
-      dossierNumber: "DOS-2023-005",
-      applicant: "Isabelle Moreau",
-      qualification: "Master",
-      status: "CNE",
-      subStatus: "rejete",
-      submittedDate: "2023-04-10",
-      archivedDate: "2023-05-15",
-      archivedBy: "Superviseur CNE",
-      email: "isabelle.moreau@email.com",
-      phone: "+33 6 45 67 89 01",
-      address: "321 Rue de la République, 44000 Nantes, France",
-      institution: "Université de Nantes",
-      country: "France",
-      year: "2022",
-      notes: "Dossier rejeté - Diplôme non conforme (Archivé)",
-      documents: ["Diplôme", "Relevé de notes", "Pièce d'identité"],
-      history: [
-        { date: "2023-04-10", action: "Soumission", user: "Système", status: "SAE", subStatus: "accepte" },
-        { date: "2023-04-12", action: "Pré-évaluation", user: "Agent SAE", status: "SAE", subStatus: "accepte" },
-        { date: "2023-04-15", action: "Transmis à CNE", user: "Superviseur", status: "CNE", subStatus: "accepte" },
-        { date: "2023-04-20", action: "Évaluation CNE", user: "Expert CNE", status: "CNE", subStatus: "rejete" },
-        { date: "2023-05-15", action: "Dossier archivé", user: "Superviseur CNE", status: "CNE", subStatus: "rejete" },
-      ],
-      motif: "ecole_doctorale",
-      type_diplome: "Master",
-      nom: "Moreau",
-      prenoms: "Isabelle",
-      code_postal: "44000 Nantes",
-      recapitulatif_formation: [
-        {
-          annee_obtention: "2022",
-          diplome: "Master en Droit",
-          mention: "Passable",
-          parcours_option_specialite: "Droit des Affaires",
-          etablissement: "Université de Nantes",
-        },
-      ],
-      destinataire: "Madame/Monsieur le Ministre de l'Enseignement Supérieur",
-      isArchived: true,
-      archiveReason: "Rejeté",
-    },
-    {
-      id: 7,
-      dossierNumber: "DOS-2023-007",
-      applicant: "Thomas Petit",
-      qualification: "Licence",
-      status: "SAE",
-      subStatus: "ajourne",
-      submittedDate: "2023-06-05",
-      archivedDate: "2023-07-20",
-      archivedBy: "Agent SAE",
-      email: "thomas.petit@email.com",
-      phone: "+33 6 56 78 90 12",
-      address: "159 Avenue de la Liberté, 59000 Lille, France",
-      institution: "Université de Lille",
-      country: "France",
-      year: "2021",
-      notes: "Dossier ajourné - Documents incomplets (Archivé)",
-      documents: ["Diplôme", "Relevé de notes", "Pièce d'identité"],
-      history: [
-        { date: "2023-06-05", action: "Soumission", user: "Système", status: "SAE", subStatus: "accepte" },
-        { date: "2023-06-08", action: "Vérification", user: "Agent SAE", status: "SAE", subStatus: "ajourne" },
-        { date: "2023-06-20", action: "Relance", user: "Agent SAE", status: "SAE", subStatus: "ajourne" },
-        { date: "2023-07-20", action: "Dossier archivé", user: "Agent SAE", status: "SAE", subStatus: "ajourne" },
-      ],
-      motif: "inscription",
-      type_diplome: "Licence",
-      nom: "Petit",
-      prenoms: "Thomas",
-      code_postal: "59000 Lille",
-      recapitulatif_formation: [
-        {
-          annee_obtention: "2021",
-          diplome: "Licence en Lettres",
-          mention: "Assez Bien",
-          parcours_option_specialite: "Littérature Française",
-          etablissement: "Université de Lille",
-        },
-      ],
-      destinataire: "Madame/Monsieur le Ministre de l'Enseignement Supérieur",
-      isArchived: true,
-      archiveReason: "Ajourné",
-    },
-  ]);
+  const { theme } = useContext(ThemeContext);
+  const isDark = theme === "dark";
 
-  // États pour la vue principale
+  const borderC = isDark ? "#334155" : "#e2e8f0";
+  const headerBg = isDark ? "#0f172a" : "#f8fafc";
+  const headerC = isDark ? "#64748b" : "#94a3b8";
+  const textC = isDark ? "#e2e8f0" : "#334155";
+  const subC = isDark ? "#475569" : "#94a3b8";
+  const bgCard = isDark ? "#1e293b" : "#ffffff";
+  const bgPage = isDark ? "#0f172a" : "#ffffff";
+  const bgDeep = isDark ? "#0f172a" : "#f8fafc";
+  const inputBg = isDark ? "#1e293b" : "#ffffff";
+  const rowHover = isDark ? "rgba(59,130,246,0.06)" : "#f8faff";
+
+  const [archives, setArchives] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState("list");
+  const [selectedDetail, setSelectedDetail] = useState(null);
+  const [selectedDossier, setSelectedDossier] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [archiveReasonFilter, setArchiveReasonFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [sortBy, setSortBy] = useState("archivedDate");
+  const [sortBy, setSortBy] = useState("archived_at");
   const [sortDirection, setSortDirection] = useState("desc");
-  
-  // États pour la vue détail et modals
-  const [viewMode, setViewMode] = useState("list");
-  const [selectedDetail, setSelectedDetail] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
-  const [selectedDossier, setSelectedDossier] = useState(null);
-
-  // Options pour le filtre de raison d'archivage (décision)
-  const archiveReasonOptions = [
-    "Octroyé",
-    "Rejeté",
-    "Ajourné",
-  ];
-
-  // Filtrer les données
-  const filteredArchives = archivedEquivalences.filter((eq) => {
-    const matchesSearch = searchQuery
-      ? eq.dossierNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        eq.applicant.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        eq.qualification.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        eq.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (eq.archiveReason && eq.archiveReason.toLowerCase().includes(searchQuery.toLowerCase()))
-      : true;
-
-    const archivedDate = new Date(eq.archivedDate);
-    const startDate = startDateFilter ? new Date(startDateFilter) : null;
-    const endDate = endDateFilter ? new Date(endDateFilter) : null;
-
-    const matchesDateRange =
-      (!startDate || archivedDate >= startDate) &&
-      (!endDate || archivedDate <= endDate);
-
-    const matchesStatus = statusFilter ? eq.status === statusFilter : true;
-    const matchesArchiveReason = archiveReasonFilter ? eq.archiveReason === archiveReasonFilter : true;
-
-    return matchesSearch && matchesDateRange && matchesStatus && matchesArchiveReason;
+  const [expandedSections, setExpandedSections] = useState({
+    personalInfo: true,
+    formations: true,
+    documents: true,
+    metadata: true,
   });
 
-  // Trier les données
-  const sortedArchives = [...filteredArchives].sort((a, b) => {
-    let comparison = 0;
+  const itemsPerPage = 10;
 
-    if (sortBy === "id") {
-      comparison = a.id - b.id;
-    } else if (sortBy === "archivedDate") {
-      const dateA = new Date(a.archivedDate);
-      const dateB = new Date(b.archivedDate);
-      comparison = dateA - dateB;
-    } else if (sortBy === "dossier") {
-      comparison = a.dossierNumber.localeCompare(b.dossierNumber);
-    } else if (sortBy === "demandeur") {
-      comparison = a.applicant.localeCompare(b.applicant);
+  // Charger les archives
+  const loadArchives = async () => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (statusFilter) params.statut = statusFilter;
+      if (typeFilter) params.type_diplome = typeFilter;
+      if (searchQuery) params.search = searchQuery;
+
+      const response = await getArchivesDemandes(params);
+      if (response.success) {
+        setArchives(response.data || []);
+      } else {
+        toast.error("Erreur lors du chargement des archives");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error("Erreur de connexion au serveur");
+    } finally {
+      setLoading(false);
     }
-
-    return sortDirection === "asc" ? comparison : -comparison;
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(sortedArchives.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedArchives = sortedArchives.slice(startIndex, startIndex + pageSize);
-
-  // Réinitialiser tous les filtres
-  const resetAllFilters = () => {
-    setSearchQuery("");
-    setStartDateFilter("");
-    setEndDateFilter("");
-    setStatusFilter("");
-    setArchiveReasonFilter("");
-    setCurrentPage(1);
   };
 
-  // Ouvrir vue détail
-  const openDetailView = (dossier) => {
-    setSelectedDetail(dossier);
-    setViewMode("detail");
+  useEffect(() => {
+    loadArchives();
+  }, [statusFilter, typeFilter, searchQuery]);
+
+  // Filtrage et tri
+  const filtered = archives
+    .filter((eq) => {
+      if (startDateFilter && new Date(eq.archived_at) < new Date(startDateFilter)) return false;
+      if (endDateFilter && new Date(eq.archived_at) > new Date(endDateFilter)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      let vA, vB;
+      if (sortBy === "archived_at") {
+        vA = new Date(a.archived_at || a.created_at);
+        vB = new Date(b.archived_at || b.created_at);
+      } else if (sortBy === "nom") {
+        vA = `${a.nom} ${a.prenoms}`.toLowerCase();
+        vB = `${b.nom} ${b.prenoms}`.toLowerCase();
+      } else if (sortBy === "id") {
+        vA = a.id;
+        vB = b.id;
+      } else {
+        vA = a[sortBy];
+        vB = b[sortBy];
+      }
+      if (vA < vB) return sortDirection === "asc" ? -1 : 1;
+      if (vA > vB) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleSortClick = (col) => {
+    if (sortBy === col) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(col);
+      setSortDirection("asc");
+    }
   };
 
-  // Retour à la liste
-  const backToList = () => {
-    setViewMode("list");
-    setSelectedDetail(null);
-  };
-
-  // Restaurer un dossier
-  const restoreDossier = (dossier) => {
-    setSelectedDossier(dossier);
+  // Restauration
+  const handleOpenRestore = (eq) => {
+    setSelectedDossier(eq);
     setShowRestoreModal(true);
   };
 
-  // Confirmer la restauration
-  const confirmRestore = () => {
-    if (selectedDossier) {
-      const updatedArchives = archivedEquivalences.filter(
-        (eq) => eq.id !== selectedDossier.id
-      );
-      setArchivedEquivalences(updatedArchives);
-      
-      if (selectedDetail && selectedDetail.id === selectedDossier.id) {
-        setViewMode("list");
-        setSelectedDetail(null);
+  const handleConfirmRestore = async () => {
+    try {
+      const response = await restoreDemande(selectedDossier.id);
+      if (response.success) {
+        toast.success(`Dossier ${selectedDossier.id} restauré avec succès`);
+        await loadArchives();
+        if (currentView === "detail") setCurrentView("list");
+        setShowRestoreModal(false);
+      } else {
+        toast.error("Erreur lors de la restauration");
       }
-      
-      setShowRestoreModal(false);
-      setSelectedDossier(null);
-      
-      alert(`Le dossier ${selectedDossier.dossierNumber} a été restauré avec succès.`);
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error(error.response?.data?.detail || "Erreur lors de la restauration");
     }
   };
 
-  // Gérer le tri
-  const handleSortClick = (key) => {
-    if (sortBy === key) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(key);
-      setSortDirection("asc");
+  // Export
+  const handleExport = (type) => {
+    try {
+      const dataToExport = filtered;
+
+      if (type === "csv") {
+        const headers = ["ID", "Nom", "Prénom", "Email", "Téléphone", "Type diplôme", "Statut", "Date archivage"];
+        const rows = dataToExport.map((eq) => [
+          eq.id,
+          eq.nom,
+          eq.prenoms,
+          eq.email,
+          eq.telephone,
+          eq.type_diplome,
+          mapStatutToDisplay(eq.statut),
+          formatDate(eq.archived_at || eq.created_at),
+        ]);
+        const csv = [headers, ...rows]
+          .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))
+          .join("\n");
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `archives_equivalences_${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(`Export Excel réussi (${dataToExport.length} entrées)`);
+      } else {
+        const rows = dataToExport
+          .map((eq) => {
+            const s = getSubStatusStyle(eq.statut, false);
+            return `<tr>
+              <td>${eq.id}</td>
+              <td>${eq.nom} ${eq.prenoms}</td>
+              <td>${eq.type_diplome}</td>
+              <td>${formatDate(eq.archived_at || eq.created_at)}</td>
+              <td style="color:${s.color};font-weight:600">${s.label}</td>
+            </tr>`;
+          })
+          .join("");
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Archives équivalences</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; color: #334155; }
+    h1 { font-size: 16px; margin-bottom: 16px; color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; font-weight: 700; color: #64748b; text-transform: uppercase; }
+    td { border: 1px solid #e2e8f0; padding: 8px 12px; }
+    tr:nth-child(even) { background: #f8fafc; }
+    @media print { body { padding: 10px; } }
+  </style>
+</head>
+<body>
+  <h1>Archives des demandes d'équivalence de diplômes</h1>
+  <p style="font-size:11px;color:#94a3b8;margin-bottom:12px">
+    Exporté le ${new Date().toLocaleDateString("fr-FR")} — ${dataToExport.length} dossier(s)
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nom complet</th>
+        <th>Type diplôme</th>
+        <th>Date archivage</th>
+        <th>Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows}
+    </tbody>
+  </table>
+</body>
+</html>`;
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+        iframe.src = url;
+        iframe.onload = () => {
+          setTimeout(() => {
+            iframe.contentWindow.print();
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              URL.revokeObjectURL(url);
+            }, 100);
+          }, 250);
+        };
+        toast.success(`Export PDF lancé (${dataToExport.length} entrées)`);
+      }
+    } catch (e) {
+      toast.error("Erreur export : " + e.message);
     }
-    setCurrentPage(1);
   };
 
-  // Composant icône de tri
-  const SortIcon = ({ isSorted, isAsc }) => {
-    if (!isSorted) return <FaSort className="w-3 h-3 text-gray-400" />;
-    return (
-      <FaSort
-        className={`w-3 h-3 transition-transform ${isAsc ? "rotate-180" : ""}`}
-      />
-    );
+  const toggleSection = (s) => {
+    setExpandedSections((p) => ({ ...p, [s]: !p[s] }));
   };
 
-  // Vue détail d'un dossier archivé
-  if (viewMode === "detail" && selectedDetail) {
+  // PAGE DÉTAIL
+  if (currentView === "detail" && selectedDetail) {
+    const ss = getSubStatusStyle(selectedDetail.statut, isDark);
+    const formations = selectedDetail.recapitulatif_formation || [];
+
     return (
-      <div className="min-h-screen bg-white p-2 md:p-4 lg:p-6">
-        {/* Header de la vue détail */}
-        <div className="mb-4 md:mb-6">
-          <button
-            onClick={backToList}
-            className="flex items-center gap-1 md:gap-2 text-blue-600 hover:text-blue-800 mb-2 md:mb-4 text-xs md:text-sm"
+      <div style={{ minHeight: "100vh", background: bgPage, padding: "16px 20px", fontFamily: "sans-serif" }}>
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={isDark ? "dark" : "light"}
+        />
+
+        {showRestoreModal && selectedDossier && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0,0,0,0.5)",
+              backdropFilter: "blur(6px)",
+              padding: 16,
+            }}
           >
-            <FaArrowLeft size={12} className="md:size-4" />
-            <span>Retour aux archives</span>
-          </button>
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between">
-            <div>
-              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
-                Archives des demandes d'équivalence de diplômes
-              </h1>
-              <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1 md:mt-2">
-                <span className="font-mono text-xs md:text-sm bg-gray-100 px-2 py-0.5 md:px-3 md:py-1 rounded">
-                  {selectedDetail.dossierNumber}
-                </span>
-                <span className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs font-medium ${getStatusColor(selectedDetail.status)}`}>
-                  {selectedDetail.status}
-                </span>
-                <span className={`px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs font-medium ${getSubStatusColor(selectedDetail.subStatus)}`}>
-                  {getSubStatusLabel(selectedDetail.subStatus)}
-                </span>
-                <span className="bg-gray-200 text-gray-800 px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs font-medium">
-                  Archivé
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-1 md:gap-2 mt-2 md:mt-4 lg:mt-0">
-              <button
-                onClick={() => restoreDossier(selectedDetail)}
-                className="flex items-center gap-1 md:gap-2 bg-green-600 text-white px-2 py-1.5 md:px-4 md:py-2 rounded-lg hover:bg-green-700 text-xs md:text-sm transition-all duration-200"
-              >
-                <FaRedo size={10} className="md:size-3" />
-                <span className="hidden sm:inline">Restaurer le dossier</span>
-                <span className="sm:hidden">Restaurer</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Informations d'archivage */}
-        <div className="mb-4 md:mb-6">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 md:p-4">
-            <div className="flex items-start gap-2 md:gap-3">
-              <FaInfoCircle className="text-amber-600 mt-0.5 flex-shrink-0" size={16} />
-              <div>
-                <h3 className="text-sm md:text-base font-semibold text-amber-800 mb-1">
-                  Informations d'archivage
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm">
-                  <div>
-                    <span className="text-amber-700">Date d'archivage :</span>
-                    <span className="ml-1 font-medium text-amber-900">{selectedDetail.archivedDate}</span>
-                  </div>
-                  <div>
-                    <span className="text-amber-700">Archivé par :</span>
-                    <span className="ml-1 font-medium text-amber-900">{selectedDetail.archivedBy || "Administrateur"}</span>
-                  </div>
-                  <div>
-                    <span className="text-amber-700">Raison :</span>
-                    <span className="ml-1 font-medium text-amber-900">{selectedDetail.archiveReason || "Archivage système"}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Contenu détail */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
-          {/* Colonne gauche */}
-          <div className="lg:col-span-2 space-y-3 md:space-y-4 lg:space-y-6">
-            {/* Informations personnelles */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 md:p-4 lg:p-6">
-              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                <FaUserCircle className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-                <h2 className="text-base md:text-lg font-semibold text-gray-800">
-                  Informations personnelles
-                </h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                <div className="space-y-2 md:space-y-3">
-                  <div>
-                    <label className="text-xs text-gray-500 block">Nom complet</label>
-                    <p className="font-medium text-sm md:text-base">{selectedDetail.nom} {selectedDetail.prenoms}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 block">Email</label>
-                    <p className="font-medium text-sm md:text-base">{selectedDetail.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 block">Téléphone</label>
-                    <p className="font-medium text-sm md:text-base">{selectedDetail.phone}</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2 md:space-y-3">
-                  <div>
-                    <label className="text-xs text-gray-500 block">Adresse</label>
-                    <p className="font-medium text-sm md:text-base">{selectedDetail.address}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 block">Date de soumission</label>
-                    <p className="font-medium text-sm md:text-base">{selectedDetail.submittedDate}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Informations académiques */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 md:p-4 lg:p-6">
-              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                <FaGraduationCap className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-                <h2 className="text-base md:text-lg font-semibold text-gray-800">
-                  Informations académiques
-                </h2>
-              </div>
-              
-              <div className="mb-3 md:mb-4">
-                <label className="text-xs text-gray-500 block">Type de diplôme</label>
-                <div className="flex items-center gap-1 md:gap-2 mt-1">
-                  <span className="px-2 py-0.5 md:px-2 md:py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                    {selectedDetail.type_diplome}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3 md:space-y-4">
-                {selectedDetail.recapitulatif_formation && selectedDetail.recapitulatif_formation.map((formation, index) => (
-                  <div key={index} className="border-l-2 border-blue-500 pl-2 md:pl-3 py-2 md:py-3 bg-blue-50/30 rounded-r">
-                    <p className="font-medium text-gray-800 text-sm md:text-base mb-1 md:mb-2">Formation {index + 1}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-2 text-xs md:text-sm">
-                      <div>
-                        <span className="text-gray-600">Diplôme :</span> {formation.diplome}
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Année :</span> {formation.annee_obtention}
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Établissement :</span> {formation.etablissement}
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Mention :</span> {formation.mention}
-                      </div>
-                      <div className="md:col-span-2">
-                        <span className="text-gray-600">Spécialité :</span> {formation.parcours_option_specialite}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Historique */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 md:p-4 lg:p-6">
-              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                <FaCalendarAlt className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-                <h2 className="text-base md:text-lg font-semibold text-gray-800">
-                  Historique complet du dossier
-                </h2>
-              </div>
-              
-              <div className="space-y-3 md:space-y-4">
-                {selectedDetail.history.map((item, index) => (
-                  <div key={index} className="flex items-start gap-2 md:gap-3 pb-3 md:pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                    <div className="flex-shrink-0 w-1.5 h-1.5 md:w-2 md:h-2 bg-blue-500 rounded-full mt-1.5 md:mt-2"></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 md:gap-2">
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-800 text-sm md:text-base truncate">{item.action}</p>
-                          <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-0.5 md:mt-1">
-                            <span className={`px-1.5 py-0.5 rounded text-xs ${getStatusColor(item.status)}`}>
-                              {item.status}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded text-xs ${getSubStatusColor(item.subStatus)}`}>
-                              {getSubStatusLabel(item.subStatus)}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-xs text-gray-500 whitespace-nowrap">{item.date}</span>
-                      </div>
-                      <p className="text-xs text-gray-600 mt-0.5 md:mt-1 truncate">Effectué par: {item.user}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Colonne droite */}
-          <div className="space-y-3 md:space-y-4 lg:space-y-6">
-            {/* Documents */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 md:p-4 lg:p-6">
-              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                <FaArchive className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
-                <h2 className="text-base md:text-lg font-semibold text-gray-800">
-                  Documents attachés
-                </h2>
-              </div>
-              
-              <div className="space-y-2 md:space-y-3">
-                {selectedDetail.documents.map((doc, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 md:gap-3 min-w-0">
-                      <div className="h-6 w-6 md:h-8 md:w-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FaArchive className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
-                      </div>
-                      <span className="font-medium text-xs md:text-sm truncate">{doc}</span>
-                    </div>
-                    <button className="text-blue-600 hover:text-blue-800 text-xs md:text-sm font-medium flex items-center gap-0.5 md:gap-1 flex-shrink-0">
-                      <FaEye size={10} className="md:size-3" />
-                      <span className="hidden sm:inline">Voir</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Métadonnées */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 md:p-4 lg:p-6">
-              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                <FaInfoCircle className="h-5 w-5 md:h-6 md:w-6 text-purple-600" />
-                <h2 className="text-base md:text-lg font-semibold text-gray-800">
-                  Métadonnées
-                </h2>
-              </div>
-              
-              <div className="space-y-2 md:space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-xs md:text-sm text-gray-600">ID interne</span>
-                  <span className="font-medium text-xs md:text-sm">{selectedDetail.id}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs md:text-sm text-gray-600">Date d'archivage</span>
-                  <span className="font-medium text-xs md:text-sm">{selectedDetail.archivedDate}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs md:text-sm text-gray-600">Archivé par</span>
-                  <span className="font-medium text-xs md:text-sm">{selectedDetail.archivedBy || "Administrateur"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs md:text-sm text-gray-600">Raison d'archivage</span>
-                  <span className="font-medium text-xs md:text-sm">{selectedDetail.archiveReason || "Non spécifiée"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs md:text-sm text-gray-600">Dernière mise à jour</span>
-                  <span className="font-medium text-xs md:text-sm">{selectedDetail.history[selectedDetail.history.length - 1]?.date}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-3 md:p-4 lg:p-6">
-              <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                <FaInfoCircle className="h-5 w-5 md:h-6 md:w-6 text-yellow-600" />
-                <h2 className="text-base md:text-lg font-semibold text-gray-800">
-                  Notes
-                </h2>
-              </div>
-              
-              <div className="space-y-3 md:space-y-4">
-                <div>
-                  <label className="text-xs text-gray-500 block">Commentaires</label>
-                  <p className="mt-1 text-xs md:text-sm text-gray-700 p-2 md:p-3 bg-gray-50 rounded-lg">
-                    {selectedDetail.notes}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Vue liste des archives
-  return (
-    <div className="min-h-screen bg-white p-2 md:p-4 lg:p-6">
-      {/* En-tête principal */}
-      <header className="mb-4 md:mb-6">
-        <div className="mb-1 md:mb-2">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
-            Archives des demandes d'équivalence de diplômes
-          </h1>
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 md:gap-4">
-          <p className="text-gray-600 text-xs md:text-sm">
-            Consultation et gestion des dossiers archivés
-          </p>
-          <div className="text-xs md:text-sm bg-gray-100 px-3 py-1.5 rounded-lg">
-            <span className="font-medium">{archivedEquivalences.length}</span> dossier(s) archivé(s)
-          </div>
-        </div>
-      </header>
-
-      {/* FILTRES - Affichage permanent */}
-      <div className="mb-4 md:mb-6 bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div className="p-3 md:p-4">
-          {/* Barre de recherche */}
-          <div className="mb-3 md:mb-4">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Recherche globale
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full pl-8 md:pl-10 pr-3 md:pr-4 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
-                placeholder="Rechercher par numéro, demandeur, diplôme, niveau, décision..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-              <div className="absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2">
-                <FaSearch className="w-3 h-3 md:w-4 md:h-4 text-gray-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4">
-            {/* Filtre par date d'archivage - Début */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Date archivage (début)
-              </label>
-              <input
-                type="date"
-                className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
-                value={startDateFilter}
-                onChange={(e) => {
-                  setStartDateFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-
-            {/* Filtre par date d'archivage - Fin */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Date archivage (fin)
-              </label>
-              <input
-                type="date"
-                className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
-                value={endDateFilter}
-                onChange={(e) => {
-                  setEndDateFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              />
-            </div>
-
-            {/* Filtre par niveau (anciennement statut) */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Niveau
-              </label>
-              <select
-                className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="">Tous les niveaux</option>
-                {statusHierarchy.map((status) => (
-                  <option key={status.id} value={status.id}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Filtre par décision (Ajourné/Rejeté/Octroyé) */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Décision
-              </label>
-              <select
-                className="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm"
-                value={archiveReasonFilter}
-                onChange={(e) => {
-                  setArchiveReasonFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="">Toutes les décisions</option>
-                {archiveReasonOptions.map((reason) => (
-                  <option key={reason} value={reason}>
-                    {reason}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Bouton de réinitialisation des filtres */}
-          {(searchQuery || startDateFilter || endDateFilter || statusFilter || archiveReasonFilter) && (
-            <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={resetAllFilters}
-                className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
-              >
-                <FaTimes className="w-3 h-3" />
-                Réinitialiser tous les filtres
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Tableau des archives */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden flex flex-col">
-        {/* Header table */}
-        <div className="px-2 md:px-4 py-2 md:py-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 md:gap-3 bg-white">
-          <div className="flex items-center gap-1 md:gap-2">
-            <h3 className="font-bold text-gray-800 text-sm md:text-base">
-              Liste des dossiers archivés
-            </h3>
-            {(searchQuery || statusFilter || startDateFilter || endDateFilter || archiveReasonFilter) && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 md:px-2 md:py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-100">
-                Filtre actif
-                <button
-                  type="button"
-                  onClick={resetAllFilters}
-                  className="ml-0.5 p-0.5 hover:bg-amber-100 rounded-full"
-                >
-                  <FaTimes className="w-2 h-2 md:w-3 md:h-3" />
-                </button>
-              </span>
-            )}
-          </div>
-
-          {/* Sélecteur de lignes */}
-          <div className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
-            <span className="text-gray-500 text-xs hidden sm:inline">Lignes :</span>
-            <select
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(1);
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: bgCard,
+                border: "1px solid " + borderC,
+                borderRadius: 20,
+                width: "100%",
+                maxWidth: 420,
+                boxShadow: "0 32px 80px rgba(0,0,0,0.35)",
+                overflow: "hidden",
               }}
-              className="form-select text-xs border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 py-0.5 md:py-1 px-1 md:px-2 bg-gray-50"
             >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={30}>30</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Content table */}
-        <div className="w-full overflow-x-auto -mx-2 md:mx-0">
-          <table className="w-full min-w-full divide-y divide-gray-100 text-xs">
-            <thead className="bg-gray-50/50">
-              <tr>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <button
-                    onClick={() => handleSortClick("id")}
-                    className="flex items-center justify-center gap-1 hover:text-blue-600 transition-colors w-full"
-                  >
-                    <span>ID</span>
-                    <SortIcon
-                      isSorted={sortBy === "id"}
-                      isAsc={sortDirection === "asc"}
-                    />
-                  </button>
-                </th>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <button
-                    onClick={() => handleSortClick("dossier")}
-                    className="flex items-center justify-center gap-1 hover:text-blue-600 transition-colors w-full"
-                  >
-                    <span>N° DOSSIER</span>
-                    <SortIcon
-                      isSorted={sortBy === "dossier"}
-                      isAsc={sortDirection === "asc"}
-                    />
-                  </button>
-                </th>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <button
-                    onClick={() => handleSortClick("demandeur")}
-                    className="flex items-center justify-center gap-1 hover:text-blue-600 transition-colors w-full"
-                  >
-                    <span>DEMANDEUR</span>
-                    <SortIcon
-                      isSorted={sortBy === "demandeur"}
-                      isAsc={sortDirection === "asc"}
-                    />
-                  </button>
-                </th>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  DIPLÔME
-                </th>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  NIVEAUX
-                </th>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  DÉCISION
-                </th>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                  RAISON ARCHIVAGE
-                </th>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <button
-                    onClick={() => handleSortClick("archivedDate")}
-                    className="flex items-center justify-center gap-1 hover:text-blue-600 transition-colors w-full"
-                  >
-                    <span>DATE ARCHIVE</span>
-                    <SortIcon
-                      isSorted={sortBy === "archivedDate"}
-                      isAsc={sortDirection === "asc"}
-                    />
-                  </button>
-                </th>
-                <th className="px-2 md:px-4 py-1.5 md:py-2 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  ACTIONS
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {paginatedArchives.length === 0 ? (
-                <tr>
-                  <td colSpan="9" className="px-2 md:px-4 py-4 md:py-8 text-center">
-                    <div className="flex flex-col items-center justify-center text-gray-400">
-                      <div className="h-8 w-8 md:h-12 md:w-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 md:mb-3">
-                        <FaArchive className="h-4 w-4 md:h-6 md:w-6 text-gray-400" />
-                      </div>
-                      <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">
-                        Aucun dossier archivé trouvé
-                      </p>
-                      <p className="text-xs text-gray-400 mb-3 md:mb-4">
-                        Aucun résultat ne correspond à vos critères de recherche.
-                      </p>
-                      {(searchQuery || statusFilter || startDateFilter || endDateFilter || archiveReasonFilter) && (
-                        <button
-                          onClick={resetAllFilters}
-                          className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                        >
-                          Réinitialiser les filtres
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginatedArchives.map((eq) => (
-                  <tr
-                    key={eq.id}
-                    className="hover:bg-amber-50/30 transition-colors group cursor-default text-center"
-                  >
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap">
-                      <div className="font-mono text-xs bg-gray-100 px-1.5 md:px-3 py-0.5 md:py-1 rounded inline-block">
-                        {eq.id}
-                      </div>
-                    </td>
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap">
-                      <div className="font-mono text-xs bg-gray-100 px-1.5 md:px-3 py-0.5 md:py-1 rounded inline-block">
-                        {eq.dossierNumber}
-                      </div>
-                    </td>
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap">
-                      <div className="flex items-center justify-center min-w-0">
-                        <FaUserCircle className="h-4 w-4 md:h-5 md:w-5 text-gray-400 mr-1 md:mr-3 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <div className="font-medium text-gray-800 text-xs truncate">
-                            {eq.applicant}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap">
-                      <span className="px-1.5 py-0.5 md:px-2 md:py-1 rounded text-xs inline-block bg-gray-100 text-gray-800">
-                        {eq.qualification}
-                      </span>
-                    </td>
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap">
-                      <span className={`px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-xs font-medium ${getStatusColor(eq.status)}`}>
-                        {eq.status}
-                      </span>
-                    </td>
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap">
-                      <span className={`px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-xs font-medium ${getSubStatusColor(eq.subStatus)}`}>
-                        {getSubStatusLabel(eq.subStatus)}
-                      </span>
-                    </td>
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap hidden lg:table-cell">
-                      <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700 max-w-[150px] truncate inline-block">
-                        {eq.archiveReason || "Archivage système"}
-                      </span>
-                    </td>
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap text-gray-600 text-xs">
-                      {eq.archivedDate}
-                    </td>
-                    <td className="px-2 md:px-4 py-1.5 md:py-3 whitespace-nowrap">
-                      <div className="flex gap-1 md:gap-2 justify-center">
-                        <button
-                          className="p-1 md:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Consulter le dossier"
-                          onClick={() => openDetailView(eq)}
-                        >
-                          <FaEye size={12} className="md:size-4" />
-                        </button>
-                        <button
-                          className="p-1 md:p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="Restaurer le dossier"
-                          onClick={() => restoreDossier(eq)}
-                        >
-                          <FaRedo size={12} className="md:size-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer pagination */}
-        <div className="bg-white px-2 md:px-4 py-2 md:py-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 md:gap-3">
-          <div className="text-xs text-gray-600">
-            Affichage de {startIndex + 1} à {Math.min(startIndex + pageSize, sortedArchives.length)} sur {sortedArchives.length} dossiers archivés
-          </div>
-          
-          <div className="flex items-center gap-0.5 md:gap-1">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="p-1 md:p-1.5 border rounded disabled:opacity-50 hover:bg-gray-50"
-            >
-              <FaAngleLeft className="w-2 h-2 md:w-3 md:h-3" />
-            </button>
-
-            <div className="flex items-center gap-0.5 md:gap-1 mx-1 md:mx-2">
-              {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                let pageNum;
-                if (totalPages <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 2) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 1) {
-                  pageNum = totalPages - 2 + i;
-                } else {
-                  pageNum = currentPage - 1 + i;
-                }
-
-                return pageNum <= totalPages ? (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`px-1.5 md:px-2.5 py-0.5 md:py-1 text-xs border rounded ${
-                      currentPage === pageNum
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white hover:bg-gray-50 border-gray-300"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                ) : null;
-              })}
-            </div>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="p-1 md:p-1.5 border rounded disabled:opacity-50 hover:bg-gray-50"
-            >
-              <FaAngleRight className="w-2 h-2 md:w-3 md:h-3" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal de confirmation de restauration */}
-      {showRestoreModal && selectedDossier && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-2 md:mx-0">
-            <div className="p-4 md:p-6">
-              <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-full mx-auto mb-3 md:mb-4">
-                <FaRedo className="text-green-600 text-lg md:text-xl" />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "18px 22px 14px",
+                  borderBottom: "1px solid " + borderC,
+                  background: bgDeep,
+                }}
+              >
+                <p style={{ fontSize: 15, fontWeight: 800, color: textC, margin: 0 }}>Restaurer le dossier</p>
+                <button
+                  onClick={() => setShowRestoreModal(false)}
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    border: "1px solid " + borderC,
+                    background: bgCard,
+                    color: subC,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <FaTimes size={13} />
+                </button>
               </div>
-              
-              <h3 className="text-base md:text-lg font-semibold text-gray-800 text-center mb-4 md:mb-6">
-                Restaurer le dossier
-              </h3>
-
-              <div className="text-center mb-4 md:mb-6">
-                <p className="text-sm text-gray-600 mb-3 md:mb-4">
+              <div style={{ padding: "20px 22px" }}>
+                <p style={{ fontSize: 14, color: subC, marginBottom: 16, lineHeight: 1.6 }}>
                   Voulez-vous vraiment restaurer ce dossier depuis les archives ?
                 </p>
-                
-                <div className="bg-gray-50 p-3 md:p-4 rounded-lg mb-3 md:mb-4">
-                  <p className="text-xs md:text-sm text-gray-500 mb-1 md:mb-2">Dossier sélectionné :</p>
-                  <p className="font-semibold text-base md:text-lg text-gray-800">{selectedDossier.dossierNumber}</p>
-                  <p className="text-sm text-gray-600">{selectedDossier.applicant}</p>
-                  
-                  <div className="grid grid-cols-2 gap-2 md:gap-4 mt-2 md:mt-4">
-                    <div>
-                      <p className="text-xs text-gray-500">Niveau</p>
-                      <span className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded text-xs font-medium ${getStatusColor(selectedDossier.status)}`}>
-                        {selectedDossier.status}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Décision</p>
-                      <span className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded text-xs font-medium ${getSubStatusColor(selectedDossier.subStatus)}`}>
-                        {getSubStatusLabel(selectedDossier.subStatus)}
-                      </span>
-                    </div>
+                <div
+                  style={{
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    background: bgDeep,
+                    border: "1px solid " + borderC,
+                    marginBottom: 14,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: subC }}>ID</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: textC }}>{selectedDossier.id}</span>
                   </div>
-                  
-                  <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-gray-200">
-                    <p className="text-xs text-gray-500">Date d'archivage</p>
-                    <p className="text-sm font-medium text-gray-800">{selectedDossier.archivedDate}</p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: subC }}>Demandeur</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: textC }}>
+                      {selectedDossier.nom} {selectedDossier.prenoms}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: subC }}>Statut</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: ss.color,
+                        background: ss.bg,
+                        padding: "2px 10px",
+                        borderRadius: 999,
+                        border: "1px solid " + ss.border,
+                      }}
+                    >
+                      {ss.label}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: subC }}>Date archivage</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: textC }}>
+                      {formatDate(selectedDossier.archived_at)}
+                    </span>
                   </div>
                 </div>
-
-                <div className="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-100">
-                  <div className="flex items-start gap-2 md:gap-3">
-                    <FaInfoCircle className="text-blue-600 mt-0.5 flex-shrink-0 text-sm md:text-base" />
-                    <div className="text-left">
-                      <p className="text-xs md:text-sm font-medium text-blue-800 mb-1 md:mb-2">Important à savoir</p>
-                      <ul className="text-xs text-blue-700 space-y-0.5 md:space-y-1">
-                        <li className="flex items-start gap-1">
-                          <span className="text-blue-500 mt-0.5">•</span>
-                          <span>Le dossier sera retiré des archives</span>
-                        </li>
-                        <li className="flex items-start gap-1">
-                          <span className="text-blue-500 mt-0.5">•</span>
-                          <span>Il sera de nouveau visible dans la liste principale</span>
-                        </li>
-                        <li className="flex items-start gap-1">
-                          <span className="text-blue-500 mt-0.5">•</span>
-                          <span>L'historique complet du dossier sera conservé</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    background: isDark ? "rgba(59,130,246,0.1)" : "#eff6ff",
+                    border: "1px solid " + (isDark ? "rgba(59,130,246,0.3)" : "#bfdbfe"),
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <FaInfoCircle style={{ color: "#3b82f6", flexShrink: 0, marginTop: 1 }} size={13} />
+                  <ul
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      listStyle: "none",
+                      fontSize: 12,
+                      color: isDark ? "#93c5fd" : "#1d4ed8",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 3,
+                    }}
+                  >
+                    <li>• Le dossier sera retiré des archives</li>
+                    <li>• Il sera visible dans la liste de traitement</li>
+                    <li>• L'historique complet sera conservé</li>
+                  </ul>
                 </div>
               </div>
-
-              <div className="flex justify-end gap-2 md:gap-3">
+              <div
+                style={{
+                  padding: "14px 22px",
+                  borderTop: "1px solid " + borderC,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  background: bgDeep,
+                }}
+              >
                 <button
-                  className="px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-                  onClick={() => {
-                    setShowRestoreModal(false);
-                    setSelectedDossier(null);
+                  onClick={() => setShowRestoreModal(false)}
+                  style={{
+                    padding: "8px 20px",
+                    borderRadius: 10,
+                    border: "1px solid " + borderC,
+                    background: bgCard,
+                    color: textC,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: "pointer",
                   }}
                 >
                   Annuler
                 </button>
                 <button
-                  className="px-3 py-1.5 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                  onClick={confirmRestore}
+                  onClick={handleConfirmRestore}
+                  style={{
+                    padding: "8px 20px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "#16a34a",
+                    color: "#fff",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
                 >
                   Restaurer
                 </button>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Header détail */}
+        <div
+          style={{
+            background: bgCard,
+            border: "1px solid " + borderC,
+            borderRadius: 16,
+            padding: "14px 20px",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 10,
+            boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.4)" : "0 1px 6px rgba(0,0,0,0.06)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={() => setCurrentView("list")}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 9,
+                border: "1px solid " + borderC,
+                background: bgCard,
+                color: textC,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <FaArrowLeft size={13} />
+            </button>
+            <div>
+              <h1 style={{ fontSize: 16, fontWeight: 800, color: textC, margin: 0 }}>Dossier archivé</h1>
+              <p style={{ fontSize: 12, color: subC, margin: 0 }}>
+                ID : {selectedDetail.id} | Référence : EQ-{selectedDetail.id.toString().padStart(4, "0")}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                display: "inline-block",
+                padding: "4px 12px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 700,
+                color: ss.color,
+                background: ss.bg,
+                border: "1px solid " + ss.border,
+              }}
+            >
+              {ss.label}
+            </span>
+            <span
+              style={{
+                display: "inline-block",
+                padding: "4px 12px",
+                borderRadius: 999,
+                fontSize: 11,
+                fontWeight: 600,
+                color: isDark ? "#94a3b8" : "#64748b",
+                background: isDark ? "rgba(100,116,139,0.15)" : "#f1f5f9",
+                border: "1px solid " + borderC,
+              }}
+            >
+              <FaArchive style={{ display: "inline", marginRight: 5, fontSize: 10 }} />
+              Archivé
+            </span>
+            <button
+              onClick={() => handleOpenRestore(selectedDetail)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 10,
+                border: "none",
+                background: "#16a34a",
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <FaRedo size={11} /> Restaurer
+            </button>
+          </div>
+        </div>
+
+        {/* Bannière archivage */}
+        <div
+          style={{
+            background: isDark ? "rgba(245,158,11,0.12)" : "#fffbeb",
+            border: "1px solid " + (isDark ? "rgba(245,158,11,0.3)" : "#fde68a"),
+            borderRadius: 12,
+            padding: "12px 18px",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+          }}
+        >
+          <FaInfoCircle style={{ color: "#d97706", flexShrink: 0, marginTop: 2 }} size={15} />
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: isDark ? "#fbbf24" : "#92400e", margin: "0 0 6px" }}>
+              Informations d'archivage
+            </p>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px 24px",
+                fontSize: 12,
+                color: isDark ? "#fde68a" : "#78350f",
+              }}
+            >
+              <span>
+                Date d'archivage : <strong>{formatDateTime(selectedDetail.archived_at)}</strong>
+              </span>
+              <span>
+                Archivé par : <strong>{selectedDetail.archived_by || "Administrateur"}</strong>
+              </span>
+              {selectedDetail.archive_reason && (
+                <span>
+                  Raison : <strong>{selectedDetail.archive_reason}</strong>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Corps 2 colonnes */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Infos personnelles */}
+            <Section
+              title="Informations personnelles"
+              icon={<FaUserCircle />}
+              expanded={expandedSections.personalInfo}
+              onToggle={() => toggleSection("personalInfo")}
+              isDark={isDark}
+              bgCard={bgCard}
+              borderC={borderC}
+              textC={textC}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {[
+                  { icon: <FaUserCircle />, label: "Nom complet", val: `${selectedDetail.nom} ${selectedDetail.prenoms}` },
+                  { icon: <FaEnvelope />, label: "Email", val: selectedDetail.email },
+                  { icon: <FaPhone />, label: "Téléphone", val: selectedDetail.telephone },
+                  { icon: <FaMapMarkerAlt />, label: "Adresse", val: selectedDetail.code_postal },
+                  { icon: <FaCalendarAlt />, label: "Date de soumission", val: formatDate(selectedDetail.submitted_at || selectedDetail.created_at) },
+                  { icon: <FaTag />, label: "Motif", val: selectedDetail.motif },
+                ].map(({ icon, label, val }, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ color: "#3b82f6", marginTop: 2, flexShrink: 0, fontSize: 13 }}>{icon}</span>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: 10,
+                          color: subC,
+                          margin: 0,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {label}
+                      </p>
+                      <p style={{ fontSize: 13, color: textC, margin: 0 }}>{val || "-"}</p>
+                    </div>
+                  </div>
+                ))}
+                <div style={{ gridColumn: "1/-1", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{ color: "#3b82f6", marginTop: 2, flexShrink: 0, fontSize: 13 }}>
+                    <FaUniversity />
+                  </span>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: 10,
+                        color: subC,
+                        margin: 0,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Destinataire
+                    </p>
+                    <p style={{ fontSize: 13, color: textC, margin: 0 }}>{selectedDetail.destinataire}</p>
+                  </div>
+                </div>
+              </div>
+            </Section>
+
+            {/* Formations */}
+            <Section
+              title="Formations"
+              icon={<FaGraduationCap />}
+              expanded={expandedSections.formations}
+              onToggle={() => toggleSection("formations")}
+              isDark={isDark}
+              bgCard={bgCard}
+              borderC={borderC}
+              textC={textC}
+            >
+              {formations.map((f, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    background: bgDeep,
+                    border: "1px solid " + borderC,
+                    marginBottom: 8,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 10,
+                      color: subC,
+                      margin: "0 0 4px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Formation {i + 1}
+                  </p>
+                  <p style={{ fontSize: 13, color: textC, margin: 0, fontWeight: 600 }}>{f.diplome || "-"}</p>
+                  <p style={{ fontSize: 12, color: subC, margin: 0 }}>
+                    {f.etablissement || "-"} — {f.annee_obtention || "-"}
+                  </p>
+                  {f.mention && <p style={{ fontSize: 11, color: subC, margin: "2px 0 0" }}>Mention: {f.mention}</p>}
+                  {f.parcours_option_specialite && (
+                    <p style={{ fontSize: 11, color: subC, margin: "2px 0 0" }}>Spécialité: {f.parcours_option_specialite}</p>
+                  )}
+                </div>
+              ))}
+            </Section>
+          </div>
+
+          {/* Colonne droite */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div
+              style={{
+                background: bgCard,
+                border: "1px solid " + borderC,
+                borderRadius: 16,
+                padding: "14px 16px",
+                boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.4)" : "0 1px 6px rgba(0,0,0,0.06)",
+              }}
+            >
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                <FaInfoCircle style={{ color: "#3b82f6", fontSize: 14 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: textC }}>Notes</span>
+              </div>
+              <p style={{ fontSize: 13, color: subC, margin: 0, lineHeight: 1.6 }}>
+                {selectedDetail.commentaire_admin || "Aucune note."}
+              </p>
+            </div>
+
+            <div
+              style={{
+                background: bgCard,
+                border: "1px solid " + borderC,
+                borderRadius: 16,
+                padding: "14px 16px",
+                boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.4)" : "0 1px 6px rgba(0,0,0,0.06)",
+              }}
+            >
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+                <FaFileAlt style={{ color: "#3b82f6", fontSize: 14 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: textC }}>Documents</span>
+              </div>
+              {selectedDetail.documents && Object.keys(selectedDetail.documents).length > 0 ? (
+                Object.entries(selectedDetail.documents).map(([key, path]) => (
+                  <div key={key} style={{ marginBottom: 8 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: subC, margin: "0 0 4px" }}>
+                      {key.replace(/_/g, " ")}
+                    </p>
+                    <DocumentItem filePath={path} fileName={path.split("/").pop()} />
+                  </div>
+                ))
+              ) : (
+                <p style={{ fontSize: 12, color: subC, fontStyle: "italic" }}>Aucun document</p>
+              )}
+            </div>
+
+            <div
+              style={{
+                background: bgCard,
+                border: "1px solid " + borderC,
+                borderRadius: 16,
+                padding: "14px 16px",
+                boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.4)" : "0 1px 6px rgba(0,0,0,0.06)",
+              }}
+            >
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+                <FaInfoCircle style={{ color: "#6d28d9", fontSize: 14 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: textC }}>Métadonnées</span>
+              </div>
+              {[
+                ["ID interne", selectedDetail.id],
+                ["Date création", formatDateTime(selectedDetail.created_at)],
+                ["Date soumission", formatDateTime(selectedDetail.submitted_at)],
+                ["Date archivage", formatDateTime(selectedDetail.archived_at)],
+                ["Archivé par", selectedDetail.archived_by || "Administrateur"],
+                ["Statut", ss.label],
+              ].map(([label, val], i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "6px 0",
+                    borderBottom: i < 5 ? "1px solid " + borderC : "none",
+                  }}
+                >
+                  <span style={{ fontSize: 12, color: subC }}>{label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: textC }}>{val || "-"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // PAGE LISTE
+  return (
+    <div style={{ minHeight: "100vh", background: bgPage, padding: "16px 20px", fontFamily: "sans-serif" }}>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={isDark ? "dark" : "light"}
+      />
+
+      {showRestoreModal && selectedDossier && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(6px)",
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: bgCard,
+              border: "1px solid " + borderC,
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 420,
+              boxShadow: "0 32px 80px rgba(0,0,0,0.35)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "18px 22px 14px",
+                borderBottom: "1px solid " + borderC,
+                background: bgDeep,
+              }}
+            >
+              <p style={{ fontSize: 15, fontWeight: 800, color: textC, margin: 0 }}>Restaurer le dossier</p>
+              <button
+                onClick={() => setShowRestoreModal(false)}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  border: "1px solid " + borderC,
+                  background: bgCard,
+                  color: subC,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <FaTimes size={13} />
+              </button>
+            </div>
+            <div style={{ padding: "20px 22px" }}>
+              <p style={{ fontSize: 14, color: subC, marginBottom: 16, lineHeight: 1.6 }}>
+                Voulez-vous vraiment restaurer ce dossier depuis les archives ?
+              </p>
+              <div
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  background: bgDeep,
+                  border: "1px solid " + borderC,
+                  marginBottom: 14,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: subC }}>ID</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: textC }}>{selectedDossier.id}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: subC }}>Demandeur</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: textC }}>
+                    {selectedDossier.nom} {selectedDossier.prenoms}
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: subC }}>Statut</span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: getSubStatusStyle(selectedDossier.statut, isDark).color,
+                      background: getSubStatusStyle(selectedDossier.statut, isDark).bg,
+                      padding: "2px 10px",
+                      borderRadius: 999,
+                      border: "1px solid " + getSubStatusStyle(selectedDossier.statut, isDark).border,
+                    }}
+                  >
+                    {getSubStatusStyle(selectedDossier.statut, isDark).label}
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: subC }}>Date archivage</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: textC }}>
+                    {formatDate(selectedDossier.archived_at)}
+                  </span>
+                </div>
+              </div>
+              <div
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  background: isDark ? "rgba(59,130,246,0.1)" : "#eff6ff",
+                  border: "1px solid " + (isDark ? "rgba(59,130,246,0.3)" : "#bfdbfe"),
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "flex-start",
+                }}
+              >
+                <FaInfoCircle style={{ color: "#3b82f6", flexShrink: 0, marginTop: 1 }} size={13} />
+                <ul
+                  style={{
+                    margin: 0,
+                    padding: 0,
+                    listStyle: "none",
+                    fontSize: 12,
+                    color: isDark ? "#93c5fd" : "#1d4ed8",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 3,
+                  }}
+                >
+                  <li>• Le dossier sera retiré des archives</li>
+                  <li>• Il sera visible dans la liste de traitement</li>
+                  <li>• L'historique complet sera conservé</li>
+                </ul>
+              </div>
+            </div>
+            <div
+              style={{
+                padding: "14px 22px",
+                borderTop: "1px solid " + borderC,
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+                background: bgDeep,
+              }}
+            >
+              <button
+                onClick={() => setShowRestoreModal(false)}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 10,
+                  border: "1px solid " + borderC,
+                  background: bgCard,
+                  color: textC,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmRestore}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: "#16a34a",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Restaurer
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* En-tête */}
+      <div style={{ marginBottom: 16 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 900, color: textC, margin: 0, letterSpacing: "-0.5px" }}>
+          Archives des demandes d'équivalence
+        </h1>
+        <p style={{ fontSize: 12, color: subC, margin: "4px 0 0" }}>
+          Consultation des dossiers traités et archivés — restauration possible
+        </p>
+      </div>
+
+      {/* Tableau */}
+      <div
+        style={{
+          background: bgCard,
+          border: "1px solid " + borderC,
+          borderRadius: 16,
+          overflow: "hidden",
+          boxShadow: isDark ? "0 1px 6px rgba(0,0,0,0.4)" : "0 1px 6px rgba(0,0,0,0.06)",
+        }}
+      >
+        {/* Barre de filtres */}
+        <div
+          style={{
+            padding: "14px 20px",
+            borderBottom: "1px solid " + borderC,
+            background: bgDeep,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 10,
+            alignItems: "center",
+          }}
+        >
+          {/* Recherche */}
+          <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
+            <FaSearch
+              style={{
+                position: "absolute",
+                left: 11,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#94a3b8",
+                fontSize: 12,
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Rechercher (nom, prénom, email...)"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{
+                width: "100%",
+                paddingLeft: 32,
+                paddingRight: searchQuery ? 30 : 12,
+                paddingTop: 8,
+                paddingBottom: 8,
+                borderRadius: 10,
+                border: "1px solid " + (searchQuery ? "#3b82f6" : borderC),
+                background: inputBg,
+                color: textC,
+                fontSize: 13,
+                outline: "none",
+                boxSizing: "border-box",
+                boxShadow: searchQuery ? "0 0 0 2px rgba(59,130,246,0.15)" : "none",
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setCurrentPage(1);
+                }}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                }}
+              >
+                <FaTimes size={10} />
+              </button>
+            )}
+          </div>
+
+          {/* Filtre statut */}
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid " + borderC,
+              background: inputBg,
+              color: statusFilter ? textC : subC,
+              fontSize: 13,
+              outline: "none",
+              minWidth: 160,
+              cursor: "pointer",
+            }}
+          >
+            <option value="">Tous les statuts</option>
+            {subStatusOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Filtre type diplôme */}
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid " + borderC,
+              background: inputBg,
+              color: typeFilter ? textC : subC,
+              fontSize: 13,
+              outline: "none",
+              minWidth: 160,
+              cursor: "pointer",
+            }}
+          >
+            <option value="">Tous les types</option>
+            <option value="Licence">Licence</option>
+            <option value="Master">Master</option>
+            <option value="Doctorat">Doctorat</option>
+          </select>
+
+          {/* Dates */}
+          {[
+            ["Du", startDateFilter, setStartDateFilter],
+            ["Au", endDateFilter, setEndDateFilter],
+          ].map(([lbl, val, setter]) => (
+            <div
+              key={lbl}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 12px",
+                borderRadius: 10,
+                background: inputBg,
+                border: "1px solid " + borderC,
+              }}
+            >
+              <span style={{ fontSize: 11, fontWeight: 700, color: subC }}>{lbl}</span>
+              <input
+                type="date"
+                value={val}
+                onChange={(e) => {
+                  setter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: textC,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              />
+            </div>
+          ))}
+
+          {(searchQuery || statusFilter || typeFilter || startDateFilter || endDateFilter) && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("");
+                setTypeFilter("");
+                setStartDateFilter("");
+                setEndDateFilter("");
+                setCurrentPage(1);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid " + borderC,
+                background: inputBg,
+                color: textC,
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              <FaTimes size={10} /> Réinitialiser
+            </button>
+          )}
+
+          <div style={{ marginLeft: "auto" }}>
+            <ExportMenu isDark={isDark} borderC={borderC} onExport={handleExport} />
+          </div>
+        </div>
+
+        {/* Compteur */}
+        <div style={{ padding: "8px 20px", borderBottom: "1px solid " + borderC }}>
+          <span style={{ fontSize: 12, color: subC }}>
+            {loading ? "Chargement..." : `${filtered.length} dossier(s) archivé(s)`}
+          </span>
+        </div>
+
+        {/* Table */}
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+            <thead>
+              <tr style={{ background: headerBg, borderBottom: "2px solid " + borderC }}>
+                {[
+                  { key: "id", label: "ID" },
+                  { key: "nom", label: "DEMANDEUR" },
+                  { key: null, label: "TYPE" },
+                  { key: null, label: "DATE SOUMISSION" },
+                  { key: null, label: "STATUT" },
+                  { key: "archived_at", label: "DATE ARCHIVAGE" },
+                  { key: null, label: "ACTIONS" },
+                ].map(({ key, label }, i) => (
+                  <th
+                    key={i}
+                    style={{
+                      padding: "12px 16px",
+                      textAlign: "center",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                      color: headerC,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {key ? (
+                      <button
+                        onClick={() => handleSortClick(key)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 5,
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: headerC,
+                          fontWeight: 700,
+                          fontSize: 11,
+                          letterSpacing: "0.07em",
+                          padding: 0,
+                        }}
+                      >
+                        {label}
+                        {sortBy === key && (
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            {sortDirection === "asc" ? (
+                              <path d="M12 5v14M8 9l4-4 4 4" />
+                            ) : (
+                              <path d="M12 19V5M8 15l4 4 4-4" />
+                            )}
+                          </svg>
+                        )}
+                      </button>
+                    ) : (
+                      label
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: "60px 20px", textAlign: "center", color: subC }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                      <FaSpinner className="animate-spin" size={22} />
+                      <span style={{ fontSize: 13 }}>Chargement des archives...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: "60px 20px", textAlign: "center", color: subC }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: 0.5 }}>
+                      <FaArchive size={22} />
+                      <span style={{ fontSize: 13 }}>Aucun dossier archivé trouvé.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((eq) => {
+                  const ss = getSubStatusStyle(eq.statut, isDark);
+                  return (
+                    <tr
+                      key={eq.id}
+                      style={{
+                        borderBottom: "1px solid " + borderC,
+                        transition: "background 0.12s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = rowHover)}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      {/* ID */}
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            background: isDark ? "#0f172a" : "#f1f5f9",
+                            color: isDark ? "#94a3b8" : "#64748b",
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {eq.id}
+                        </div>
+                      </td>
+
+                      {/* Demandeur */}
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: textC }}>
+                          {eq.nom} {eq.prenoms}
+                        </div>
+                        <div style={{ fontSize: 11, color: subC }}>{eq.email}</div>
+                      </td>
+
+                      {/* Type diplôme */}
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "2px 10px",
+                            borderRadius: 6,
+                            background: isDark ? "#0f172a" : "#f1f5f9",
+                            color: isDark ? "#94a3b8" : "#64748b",
+                            fontSize: 11,
+                            fontWeight: 500,
+                            border: "1px solid " + borderC,
+                          }}
+                        >
+                          {eq.type_diplome}
+                        </span>
+                      </td>
+
+                      {/* Date soumission */}
+                      <td style={{ padding: "12px 16px", textAlign: "center", fontSize: 13, color: subC }}>
+                        {formatDate(eq.submitted_at || eq.created_at)}
+                      </td>
+
+                      {/* Statut */}
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "3px 12px",
+                            borderRadius: 999,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: ss.color,
+                            background: ss.bg,
+                            border: "1px solid " + ss.border,
+                          }}
+                        >
+                          {ss.label}
+                        </span>
+                      </td>
+
+                      {/* Date archivage */}
+                      <td style={{ padding: "12px 16px", textAlign: "center", fontSize: 13, color: subC }}>
+                        {formatDate(eq.archived_at || eq.created_at)}
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <ActionBtn
+                            title="Voir le dossier"
+                            color="#3b82f6"
+                            isDark={isDark}
+                            borderC={borderC}
+                            onClick={() => {
+                              setSelectedDetail(eq);
+                              setCurrentView("detail");
+                            }}
+                          >
+                            <FaEye size={14} />
+                          </ActionBtn>
+                          <ActionBtn
+                            title="Restaurer le dossier"
+                            color="#16a34a"
+                            isDark={isDark}
+                            borderC={borderC}
+                            onClick={() => handleOpenRestore(eq)}
+                          >
+                            <FaRedo size={13} />
+                          </ActionBtn>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div
+            style={{
+              padding: "14px 20px",
+              borderTop: "1px solid " + borderC,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 12,
+            }}
+          >
+            <span style={{ fontSize: 12, color: subC }}>
+              Affichage de {(currentPage - 1) * itemsPerPage + 1} à{" "}
+              {Math.min(currentPage * itemsPerPage, filtered.length)} sur {filtered.length} dossiers
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: "1px solid " + borderC,
+                  background: bgCard,
+                  color: isDark ? "#94a3b8" : "#64748b",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  opacity: currentPage === 1 ? 0.3 : 1,
+                }}
+              >
+                <HiOutlineChevronLeft size={16} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                .map((p, idx, arr) => (
+                  <React.Fragment key={p}>
+                    {idx > 0 && arr[idx - 1] !== p - 1 && (
+                      <span style={{ fontSize: 13, color: subC, padding: "0 2px" }}>…</span>
+                    )}
+                    <button
+                      onClick={() => setCurrentPage(p)}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        border: currentPage === p ? "1px solid #3b82f6" : "1px solid " + borderC,
+                        background: currentPage === p ? "#3b82f6" : bgCard,
+                        color: currentPage === p ? "#fff" : isDark ? "#94a3b8" : "#64748b",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {p}
+                    </button>
+                  </React.Fragment>
+                ))}
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: "1px solid " + borderC,
+                  background: bgCard,
+                  color: isDark ? "#94a3b8" : "#64748b",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                  opacity: currentPage === totalPages ? 0.3 : 1,
+                }}
+              >
+                <HiOutlineChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+          animation: spin 0.8s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };
