@@ -39,8 +39,8 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           port: 22
           script: |
-            sudo chown -R zakael:zakael /var/www/html
-            sudo chmod -R 755 /var/www/html
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chown -R qualite:qualite /var/www/html
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chmod -R 755 /var/www/html
