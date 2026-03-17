@@ -23,10 +23,10 @@ const {
 // ── Couleur dynamique par ratio score/max ─────────────────────────────────────
 const getPolicyColorConfig = (score, max) => {
   const ratio = max > 0 ? score / max : 0;
-  if (ratio >= 0.90) return { bar: "bg-green-500",  badgeText: "text-green-700",  badgeBg: "bg-green-50",  border: "border-green-200",  dot: "bg-green-500"  };
-  if (ratio >= 0.75) return { bar: "bg-blue-500",   badgeText: "text-blue-700",   badgeBg: "bg-blue-50",   border: "border-blue-200",   dot: "bg-blue-500"   };
-  if (ratio >= 0.50) return { bar: "bg-yellow-500", badgeText: "text-yellow-700", badgeBg: "bg-yellow-50", border: "border-yellow-200", dot: "bg-yellow-500" };
-  if (ratio >= 0.25) return { bar: "bg-orange-500", badgeText: "text-orange-700", badgeBg: "bg-orange-50", border: "border-orange-200", dot: "bg-orange-500" };
+  if (ratio >= 0.80) return { bar: "bg-green-500",  badgeText: "text-green-700",  badgeBg: "bg-green-50",  border: "border-green-200",  dot: "bg-green-500"  };
+  if (ratio >= 0.60) return { bar: "bg-blue-500",   badgeText: "text-blue-700",   badgeBg: "bg-blue-50",   border: "border-blue-200",   dot: "bg-blue-500"   };
+  if (ratio >= 0.40) return { bar: "bg-yellow-500", badgeText: "text-yellow-700", badgeBg: "bg-yellow-50", border: "border-yellow-200", dot: "bg-yellow-500" };
+  if (ratio >= 0.20) return { bar: "bg-orange-500", badgeText: "text-orange-700", badgeBg: "bg-orange-50", border: "border-orange-200", dot: "bg-orange-500" };
   return               { bar: "bg-red-500",    badgeText: "text-red-700",    badgeBg: "bg-red-50",    border: "border-red-200",    dot: "bg-red-500"    };
 };
 
@@ -36,6 +36,208 @@ const STATUTS_BLOQUANTS = [
   STATUT_DEMANDE.EN_COURS,
   STATUT_DEMANDE.ACCREDITE,
 ];
+
+const PROVINCE_REGIONS = {
+  "Antananarivo": ["Analamanga", "Bongolava", "Itasy", "Vakinankaratra"],
+  "Antsiranana":  ["Diana", "Sava"],
+  "Fianarantsoa": ["Amoron'i Mania", "Atsimo-Atsinanana", "Fitovinany", "Haute Matsiatra", "Ihorombe", "Vatovavy"],
+  "Mahajanga":    ["Betsiboka", "Boeny", "Melaky", "Sofia"],
+  "Toamasina":    ["Ambatosoa", "Alaotra-Mangoro", "Analanjirofo", "Atsinanana"],
+  "Toliara":      ["Androy", "Anôsy", "Atsimo-Andrefana", "Menabe"],
+};
+
+const PROVINCES = Object.keys(PROVINCE_REGIONS);
+
+// ── Classes communes ──────────────────────────────────────────────────────────
+const fieldBase = "block px-4 pb-2.5 pt-4 w-full text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:ring-offset-0 peer transition-colors";
+const labelBase = "absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1 pointer-events-none";
+
+const FInput = ({ name, label, type = "text", min, formData, onChange }) => (
+  <div className="relative group">
+    <input
+      id={`fi-${name}`}
+      type={type}
+      name={name}
+      value={formData[name] ?? ""}
+      onChange={onChange}
+      placeholder=" "
+      required
+      min={min}
+      className={fieldBase}
+    />
+    <label htmlFor={`fi-${name}`} className={labelBase}>
+      {label.replace(/ \*$/, "")} <span className="text-red-500">*</span>
+    </label>
+  </div>
+);
+
+const FSelect = ({ name, label, children, formData, onChange }) => (
+  <div className="relative group">
+    <select
+      id={`fs-${name}`}
+      name={name}
+      value={formData[name] ?? ""}
+      onChange={onChange}
+      required
+      className={fieldBase}
+    >
+      {children}
+    </select>
+    <label htmlFor={`fs-${name}`}
+      className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-400 left-1 pointer-events-none">
+      {label.replace(/ \*$/, "")} <span className="text-red-500">*</span>
+    </label>
+  </div>
+);
+
+const FTextarea = ({ name, label, formData, onChange }) => (
+  <div className="relative group">
+    <textarea
+      id={`ft-${name}`}
+      name={name}
+      value={formData[name] ?? ""}
+      onChange={onChange}
+      rows={5}
+      placeholder=" "
+      required
+      style={{ minHeight: "120px", resize: "vertical" }}
+      className={`${fieldBase} pt-6 leading-relaxed`}
+    />
+    <label htmlFor={`ft-${name}`}
+      className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-6 peer-placeholder-shown:top-6 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1 pointer-events-none">
+      {label.replace(/ \*$/, "")} <span className="text-red-500">*</span>
+    </label>
+  </div>
+);
+
+const SectionTitle = ({ children }) => (
+  <div className="md:col-span-2 flex items-center gap-3 pt-2">
+    <span className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 whitespace-nowrap">{children}</span>
+    <div className="flex-1 h-px bg-blue-100 dark:bg-blue-900" />
+  </div>
+);
+
+const EtablissementFormFields = ({ formData, onChange, gradeOptions }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-5 md:gap-x-6 md:gap-y-6">
+    <SectionTitle>Identification de l'établissement</SectionTitle>
+    <div className="md:col-span-2">
+      <FInput name="responsable" label="Nom du responsable *" formData={formData} onChange={onChange} />
+    </div>
+    <FSelect name="typeetablissement" label="Type d'établissement *" formData={formData} onChange={onChange}>
+      <option value="">-- Sélectionnez --</option>
+      <option value={TYPE_ETABLISSEMENT.PRIVEE}>Établissement Privé</option>
+      <option value={TYPE_ETABLISSEMENT.PUBLIQUE}>Établissement Public</option>
+    </FSelect>
+    {formData.typeetablissement === TYPE_ETABLISSEMENT.PRIVEE ? (
+      <FInput name="institution" label="Institution *" formData={formData} onChange={onChange} />
+    ) : formData.typeetablissement === TYPE_ETABLISSEMENT.PUBLIQUE ? (
+      <FInput name="etablissement" label="Établissement *" formData={formData} onChange={onChange} />
+    ) : <div />}
+    <FInput name="siteweb" label="Site web *" type="url" formData={formData} onChange={onChange} />
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">
+        Habilitation <span className="text-red-500">*</span>
+      </p>
+      <div className="flex items-center gap-6">
+        <label className="flex items-center gap-2.5 cursor-pointer group">
+          <input type="radio" name="habilitation" value="oui" checked={formData.habilitation === "oui"} onChange={onChange}
+            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Habilité</span>
+        </label>
+        <label className="flex items-center gap-2.5 cursor-pointer group">
+          <input type="radio" name="habilitation" value="non" checked={formData.habilitation === "non"} onChange={onChange}
+            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Non habilité</span>
+        </label>
+      </div>
+    </div>
+    {formData.habilitation === "oui" && (
+      <div className="md:col-span-2">
+        <FInput name="arrete_habilitation" label="Arrêté d'habilitation *" formData={formData} onChange={onChange} />
+      </div>
+    )}
+    <FSelect name="province" label="Province *" formData={formData} onChange={onChange}>
+      <option value="">-- Sélectionnez une province --</option>
+      {PROVINCES.map((p) => (<option key={p} value={p}>{p}</option>))}
+    </FSelect>
+    <div className="relative group">
+      <select
+        id="fs-region"
+        name="region"
+        value={formData.region || ""}
+        onChange={onChange}
+        disabled={!formData.province}
+        className={`${fieldBase} ${!formData.province ? "opacity-60 cursor-not-allowed" : ""}`}
+        required
+      >
+        <option value="">{formData.province ? "-- Sélectionnez une région --" : "-- Choisissez d'abord une province --"}</option>
+        {(PROVINCE_REGIONS[formData.province] || []).map((r) => (<option key={r} value={r}>{r}</option>))}
+      </select>
+      <label htmlFor="fs-region"
+        className="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-400 left-1 pointer-events-none">
+        Région <span className="text-red-500">*</span>
+      </label>
+    </div>
+    <div className="md:col-span-2">
+      <FInput name="adresse" label="Adresse complète *" formData={formData} onChange={onChange} />
+    </div>
+    <div className="md:col-span-2">
+      <FTextarea name="description" label="Description *" formData={formData} onChange={onChange} />
+    </div>
+    <SectionTitle>Contact de l'établissement</SectionTitle>
+    <FInput name="email" label="E-mail *" type="email" formData={formData} onChange={onChange} />
+    <FInput name="telephone" label="Téléphone *" type="tel" formData={formData} onChange={onChange} />
+    <SectionTitle>Informations académiques</SectionTitle>
+    <FInput name="domaine" label="Domaine *" formData={formData} onChange={onChange} />
+    <FInput name="mention" label="Mention *" formData={formData} onChange={onChange} />
+    <FSelect name="grade" label="Grade *" formData={formData} onChange={onChange}>
+      <option value="">-- Sélectionnez --</option>
+      {gradeOptions.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+    </FSelect>
+    <FInput name="parcours" label="Parcours *" formData={formData} onChange={onChange} />
+    <FInput name="nombre_etudiants" label="Nombre d'étudiants *" type="number" min="0" formData={formData} onChange={onChange} />
+  </div>
+);
+
+// ===========================================================================
+// ✅ NIVEAUX DE CONFORMITÉ — alignés sur NiveauConformiteEnum du backend
+// Seuils basés sur pourcentage (max=368) :
+//   insuffisant    : 0–19%   → 0–73   pts
+//   faible         : 20–39%  → 74–147  pts
+//   en_developpement: 40–59% → 148–220 pts
+//   satisfaisant   : 60–79%  → 221–294 pts
+//   excellent      : ≥80%    → 295–368 pts
+// ✅ Seuls satisfaisant et excellent sont éligibles à la soumission
+// ===========================================================================
+
+const SCORE_MAX = 368;
+
+/**
+ * Calcule le niveau à partir du score brut en utilisant
+ * les mêmes seuils pourcentage que le backend (_get_niveau_from_score).
+ */
+const getLevelFromScore = (score) => {
+  const pct = SCORE_MAX > 0 ? (score / SCORE_MAX) * 100 : 0;
+  if (pct >= 80) return "excellent";
+  if (pct >= 60) return "satisfaisant";
+  if (pct >= 40) return "en_developpement";
+  if (pct >= 20) return "faible";
+  return "insuffisant";
+};
+
+/**
+ * Calcule le niveau à partir du niveau_conformite renvoyé directement
+ * par le backend (chaîne ou enum normalisé).
+ */
+/**
+ * ✅ SOURCE DE VÉRITÉ UNIQUE : le niveau est toujours calculé depuis le score brut.
+ * niveau_conformite du backend est ignoré pour l'affichage (peut être incorrect).
+ * Seul est_eligible (booléen) du backend est conservé pour l'éligibilité.
+ */
+const getCurrentLevel = (autoEvalResult) => {
+  const score = typeof autoEvalResult === "number" ? autoEvalResult : (autoEvalResult?.totalNotes ?? 0);
+  return getLevelFromScore(score);
+};
 
 const CreerDemandeAccreditation = () => {
   const { demandeId } = useParams();
@@ -57,6 +259,9 @@ const CreerDemandeAccreditation = () => {
   const [formData, setFormData] = useState({
     responsable: "", typeetablissement: "", institution: "",
     etablissement: "", domaine: "", mention: "", grade: "", parcours: "",
+    siteweb: "", adresse: "", province: "", region: "",
+    habilitation: "", arrete_habilitation: "", description: "",
+    email: "", telephone: "", nombre_etudiants: "",
   });
 
   const [autoEvaluationResult, setAutoEvaluationResult] = useState(null);
@@ -70,12 +275,19 @@ const CreerDemandeAccreditation = () => {
 
   const { theme } = useContext(ThemeContext);
 
+  // ✅ levelConfig aligné sur NiveauConformiteEnum du backend
+  // Plages de scores calculées depuis les seuils pourcentage (×368/100) :
+  //   insuffisant    : pct < 20%  → 0  à  73
+  //   faible         : pct < 40%  → 74 à 147
+  //   en_developpement: pct < 60% → 148 à 220
+  //   satisfaisant   : pct < 80%  → 221 à 294
+  //   excellent      : pct ≥ 80%  → 295 à 368
   const levelConfig = {
-    "non-conforme": { color: "bg-red-50 border-red-200",      badge: "bg-red-100 text-red-800",       bar: "bg-red-500",    bgCircle: "#FEE2E2", circleColor: "#EF4444", icon: AlertTriangle,  label: "Non conforme",  range: "0-91",    appreciation: "Absence d'une politique ou d'un dispositif crédible",             min: 0,   max: 91  },
-    faible:         { color: "bg-orange-50 border-orange-200", badge: "bg-orange-100 text-orange-800", bar: "bg-orange-500", bgCircle: "#FEF3C7", circleColor: "#F97316", icon: Zap,            label: "Faible",        range: "92-183",  appreciation: "Plusieurs insuffisances majeures",                               min: 92,  max: 183 },
-    acceptable:     { color: "bg-yellow-50 border-yellow-200", badge: "bg-yellow-100 text-yellow-800", bar: "bg-yellow-500", bgCircle: "#FEF9C3", circleColor: "#EAB308", icon: CheckCircle2,   label: "Acceptable",    range: "184-256", appreciation: "Conformité partielle, dispositifs à consolider",                 min: 184, max: 256 },
-    satisfaisant:   { color: "bg-blue-50 border-blue-200",     badge: "bg-blue-100 text-blue-800",     bar: "bg-blue-500",   bgCircle: "#DBEAFE", circleColor: "#3B82F6", icon: CheckCircle2,   label: "Satisfaisant",  range: "257-311", appreciation: "Conformité générale avec quelques points à améliorer",          min: 257, max: 311 },
-    excellent:      { color: "bg-green-50 border-green-200",   badge: "bg-green-100 text-green-800",   bar: "bg-green-500",  bgCircle: "#DCFCE7", circleColor: "#22C55E", icon: Star,           label: "Excellent",     range: "312-368", appreciation: "Très haute qualité, bonnes pratiques institutionnalisées",       min: 312, max: 368 },
+    insuffisant:      { color: "bg-red-50 border-red-200",      badge: "bg-red-100 text-red-800",       bar: "bg-red-500",    bgCircle: "#FEE2E2", circleColor: "#EF4444", icon: AlertTriangle,  label: "Insuffisant",       range: "0–73",    appreciation: "Absence d'une politique ou d'un dispositif crédible",             min: 0,   max: 73,  eligible: false },
+    faible:           { color: "bg-orange-50 border-orange-200", badge: "bg-orange-100 text-orange-800", bar: "bg-orange-500", bgCircle: "#FEF3C7", circleColor: "#F97316", icon: Zap,            label: "Faible",            range: "74–147",  appreciation: "Plusieurs insuffisances majeures",                               min: 74,  max: 147, eligible: false },
+    en_developpement: { color: "bg-yellow-50 border-yellow-200", badge: "bg-yellow-100 text-yellow-800", bar: "bg-yellow-500", bgCircle: "#FEF9C3", circleColor: "#EAB308", icon: CheckCircle2,   label: "Acceptable",        range: "148–220", appreciation: "Conformité partielle, dispositifs à consolider",                 min: 148, max: 220, eligible: true },
+    satisfaisant:     { color: "bg-blue-50 border-blue-200",     badge: "bg-blue-100 text-blue-800",     bar: "bg-blue-500",   bgCircle: "#DBEAFE", circleColor: "#3B82F6", icon: CheckCircle2,   label: "Satisfaisant",      range: "221–294", appreciation: "Conformité générale avec quelques points à améliorer",          min: 221, max: 294, eligible: true  },
+    excellent:        { color: "bg-green-50 border-green-200",   badge: "bg-green-100 text-green-800",   bar: "bg-green-500",  bgCircle: "#DCFCE7", circleColor: "#22C55E", icon: Star,           label: "Excellent",         range: "295–368", appreciation: "Très haute qualité, bonnes pratiques institutionnalisées",       min: 295, max: 368, eligible: true  },
   };
 
   const gradeOptions = [
@@ -105,24 +317,36 @@ const CreerDemandeAccreditation = () => {
     return numero;
   };
 
-  const getLevelFromScore = (score) => {
-    if (score < 92)                      return "non-conforme";
-    if (score >= 92  && score <= 183)    return "faible";
-    if (score >= 184 && score <= 256)    return "acceptable";
-    if (score >= 257 && score <= 311)    return "satisfaisant";
-    if (score >= 312 && score <= 368)    return "excellent";
-    return "excellent";
-  };
-
+  /**
+   * ✅ Éligibilité alignée sur le backend :
+   *    - utilise `est_eligible` du backend quand disponible (source de vérité)
+   *    - sinon recalcule à partir du niveau_conformite ou du score brut
+   *    - seuls "satisfaisant" et "excellent" sont éligibles
+   */
   const isEligibleForSubmission = () => {
     if (!autoEvaluationResult) return false;
+
+    // ✅ Priorité 1 : utiliser est_eligible renvoyé directement par le backend
+    if (typeof autoEvaluationResult.est_eligible === "boolean") {
+      return autoEvaluationResult.est_eligible;
+    }
+
+    // Priorité 2 : recalcul depuis le score brut (niveau_conformite ignoré — peut être incorrect)
+    // (fall-through vers Priorité 3)
+
+    // ✅ Priorité 3 : recalcul local à partir du score brut
     const totalScore = autoEvaluationResult.totalNotes || 0;
     const niveau = getLevelFromScore(totalScore);
-    return niveau !== "non-conforme" && niveau !== "faible";
+    return levelConfig[niveau]?.eligible === true;
   };
 
   const isFormPartiallyFilled = () => {
-    const filledFields = Object.values(formData).filter((value) => value && value.trim() !== "").length;
+    const filledFields = Object.values(formData).filter((value) => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === "string") return value.trim() !== "";
+      if (Array.isArray(value)) return value.length > 0;
+      return true; // number, boolean, object → considéré comme rempli
+    }).length;
     return filledFields > 0;
   };
 
@@ -186,6 +410,10 @@ const CreerDemandeAccreditation = () => {
         institution:      value === TYPE_ETABLISSEMENT.PRIVEE   ? formData.institution  : "",
         etablissement:    value === TYPE_ETABLISSEMENT.PUBLIQUE ? formData.etablissement : "",
       });
+    } else if (name === "province") {
+      setFormData({ ...formData, province: value, region: "" });
+    } else if (name === "habilitation" && value === "non") {
+      setFormData({ ...formData, [name]: value, arrete_habilitation: "" });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -241,16 +469,25 @@ const CreerDemandeAccreditation = () => {
       const demandeData = formatDemandeResponse(response.data || response);
       setDemande(demandeData);
       setFormData({
-        responsable:       demandeData.responsable       || "",
-        typeetablissement: demandeData.type_etablissement || "",
-        institution:       demandeData.institution       || "",
-        etablissement:     demandeData.etablissement     || "",
-        domaine:           demandeData.domaine           || "",
-        mention:           demandeData.mention           || "",
-        grade:             demandeData.grade             || "",
-        parcours:          demandeData.parcours          || "",
+        responsable:          demandeData.responsable          || "",
+        typeetablissement:    demandeData.type_etablissement   || "",
+        institution:          demandeData.institution          || "",
+        etablissement:        demandeData.etablissement        || "",
+        domaine:              demandeData.domaine              || "",
+        mention:              demandeData.mention              || "",
+        grade:                demandeData.grade                || "",
+        parcours:             demandeData.parcours             || "",
+        siteweb:              demandeData.siteweb              || "",
+        adresse:              demandeData.adresse              || "",
+        province:             demandeData.province             || "",
+        region:               demandeData.region               || "",
+        habilitation:         demandeData.habilitation         || "",
+        arrete_habilitation:  demandeData.arrete_habilitation  || "",
+        description:          demandeData.description          || "",
+        email:                demandeData.email                || "",
+        telephone:            demandeData.telephone            || "",
+        nombre_etudiants:     demandeData.nombre_etudiants     || "",
       });
-      // ✅ Toujours utiliser le vrai numéro du backend
       setNumeroDemande(demandeData.numero_demande || "");
       setAutoEvaluationId(demandeData.auto_evaluation_id);
       setFormSubmitted(demandeData.statut === STATUT_DEMANDE.EN_COURS);
@@ -267,28 +504,48 @@ const CreerDemandeAccreditation = () => {
     }
   };
 
-  const reloadDemandeData = async () => {
-    if (!createdDemandeId) return;
+  const reloadDemandeData = async (explicitId) => {
+    const targetId = explicitId || createdDemandeId;
+    if (!targetId) return;
     try {
-      const response    = await getDemande(createdDemandeId);
+      const response    = await getDemande(targetId);
       const demandeData  = formatDemandeResponse(response.data || response);
       setFormData({
-        responsable:       demandeData.responsable       || "",
-        typeetablissement: demandeData.type_etablissement || "",
-        institution:       demandeData.institution       || "",
-        etablissement:     demandeData.etablissement     || "",
-        domaine:           demandeData.domaine           || "",
-        mention:           demandeData.mention           || "",
-        grade:             demandeData.grade             || "",
-        parcours:          demandeData.parcours          || "",
+        responsable:          demandeData.responsable          || "",
+        typeetablissement:    demandeData.type_etablissement   || "",
+        institution:          demandeData.institution          || "",
+        etablissement:        demandeData.etablissement        || "",
+        domaine:              demandeData.domaine              || "",
+        mention:              demandeData.mention              || "",
+        grade:                demandeData.grade                || "",
+        parcours:             demandeData.parcours             || "",
+        siteweb:              demandeData.siteweb              || "",
+        adresse:              demandeData.adresse              || "",
+        province:             demandeData.province             || "",
+        region:               demandeData.region               || "",
+        habilitation:         demandeData.habilitation         || "",
+        arrete_habilitation:  demandeData.arrete_habilitation  || "",
+        description:          demandeData.description          || "",
+        email:                demandeData.email                || "",
+        telephone:            demandeData.telephone            || "",
+        nombre_etudiants:     demandeData.nombre_etudiants     || "",
       });
       if (demandeData.fichiers && demandeData.fichiers.length > 0) {
         setUploadedFiles(demandeData.fichiers);
       } else {
         setUploadedFiles([]);
       }
-      // ✅ Toujours utiliser le vrai numéro du backend
       if (demandeData.numero_demande) setNumeroDemande(demandeData.numero_demande);
+      // ✅ Mettre à jour l'objet demande, le statut soumis et l'édition
+      setDemande(demandeData);
+      setIsEditing(true);
+      if (demandeData.auto_evaluation_id && !autoEvaluationId) {
+        setAutoEvaluationId(demandeData.auto_evaluation_id);
+      }
+      setFormSubmitted(
+        demandeData.statut === STATUT_DEMANDE.EN_COURS ||
+        demandeData.statut === STATUT_DEMANDE.ACCREDITE
+      );
     } catch (error) {
       console.error("Erreur lors du rechargement des données:", error);
     }
@@ -297,19 +554,26 @@ const CreerDemandeAccreditation = () => {
   const loadAutoEvaluation = async (evalId) => {
     try {
       const evalResponse = await getAutoEvaluation(evalId);
-      const evalData     = evalResponse.data || evalResponse;
-      const criteresObj  = {};
+      // ✅ getAutoEvaluation retourne { success, data } ou directement l'objet
+      const evalData = evalResponse?.data ?? evalResponse;
+
+      const criteresObj = {};
       if (evalData.criteres && Array.isArray(evalData.criteres)) {
         evalData.criteres.forEach((c) => {
           criteresObj[c.critere_id] = { note: c.note || 0, appreciation: c.appreciation, fichiers: c.fichiers || [] };
         });
       }
+
       setAutoEvaluationResult({
-        totalNotes:       evalData.total_notes      || 0,
-        scorePourcentage: evalData.score_pourcentage || 0,
-        timestamp:        evalData.created_at,
-        id:               evalData.id,
-        formData:         { criteres: criteresObj },
+        totalNotes:        evalData.total_notes       || 0,
+        scorePourcentage:  evalData.score_pourcentage || 0,
+        // ✅ Conserver niveau_conformite tel que renvoyé par le backend
+        niveau_conformite: evalData.niveau_conformite || null,
+        // ✅ est_eligible issu du backend (booléen) — source de vérité
+        est_eligible:      evalData.est_eligible ?? null,
+        timestamp:         evalData.created_at,
+        id:                evalData.id,
+        formData:          { criteres: criteresObj },
       });
       setCriteresDetails(criteresObj);
       setHasCompleteEvaluation(true);
@@ -322,7 +586,11 @@ const CreerDemandeAccreditation = () => {
   const loadLatestAutoEvaluation = async () => {
     try {
       const evaluations = await getMyAutoEvaluations();
-      const list = Array.isArray(evaluations) ? evaluations : (evaluations?.data ?? []);
+      // ✅ getMyAutoEvaluations retourne { success, data } ou tableau direct
+      const list = Array.isArray(evaluations)
+        ? evaluations
+        : (evaluations?.data ?? []);
+
       if (list.length > 0) {
         const completeEval = list.find((e) => e.is_complete === true);
         if (completeEval) {
@@ -351,35 +619,27 @@ const CreerDemandeAccreditation = () => {
       const demandes = await getMyDemandes();
       const list = Array.isArray(demandes) ? demandes : (demandes?.data ?? []);
       if (list.length > 0) {
-        // ✅ FIX : chercher uniquement les brouillons — ignorer rejeté/ajourné
-        // pour permettre une nouvelle demande après rejet ou ajournement
-        const brouillonDemande = list.find(
-          (d) => d.statut === STATUT_DEMANDE.BROUILLON
-        );
-
+        // ✅ Priorité : EN_COURS (soumise) → BROUILLON → AJOURNE → REJETE
+        const existingDemande =
+          list.find((d) => d.statut === STATUT_DEMANDE.EN_COURS)  ||
+          list.find((d) => d.statut === STATUT_DEMANDE.BROUILLON) ||
+          list.find((d) => d.statut === STATUT_DEMANDE.AJOURNE)   ||
+          list.find((d) => d.statut === STATUT_DEMANDE.REJETE);
+        const brouillonDemande = existingDemande;
         if (brouillonDemande) {
-          const demandeDetails = await getDemande(brouillonDemande.id);
-          const demandeData    = formatDemandeResponse(demandeDetails.data || demandeDetails);
-          setFormData({
-            responsable:       demandeData.responsable       || "",
-            typeetablissement: demandeData.type_etablissement || "",
-            institution:       demandeData.institution       || "",
-            etablissement:     demandeData.etablissement     || "",
-            domaine:           demandeData.domaine           || "",
-            mention:           demandeData.mention           || "",
-            grade:             demandeData.grade             || "",
-            parcours:          demandeData.parcours          || "",
-          });
-          if (demandeData.fichiers && demandeData.fichiers.length > 0) {
-            setUploadedFiles(demandeData.fichiers);
+          // ✅ Utiliser reloadDemandeData pour un mapping uniforme et fiable
+          setCreatedDemandeId(brouillonDemande.id);
+          await reloadDemandeData(brouillonDemande.id);
+          // Afficher un message selon le statut
+          if (
+            brouillonDemande.statut === STATUT_DEMANDE.EN_COURS ||
+            brouillonDemande.statut === STATUT_DEMANDE.ACCREDITE
+          ) {
+            toast.info("Demande soumise rechargée");
+          } else {
+            toast.info("Demande en brouillon chargée");
           }
-          setCreatedDemandeId(demandeData.id);
-          // ✅ Vrai numéro du backend
-          setNumeroDemande(demandeData.numero_demande || "");
-          toast.info("Demande en brouillon chargée");
         }
-        // Si demande rejetée/ajournée → on ne charge rien, formulaire vierge
-        // pour permettre une nouvelle soumission
       }
     } catch (error) {
       console.error("Erreur lors du chargement des demandes existantes:", error);
@@ -391,9 +651,9 @@ const CreerDemandeAccreditation = () => {
     Object.entries(criteres).forEach(([id, data]) => {
       const note = parseInt(data.note) || 0;
       const num  = parseInt(id.split("_")[1]);
-      if (num <= 37)      formation  += note;
+      if (num <= 37)      formation   += note;
       else if (num <= 88) gouvernance += note;
-      else                recherche  += note;
+      else                recherche   += note;
     });
     setFormationScore(formation);
     setGouvernanceScore(gouvernance);
@@ -459,8 +719,6 @@ const CreerDemandeAccreditation = () => {
       let currentDemandeId = createdDemandeId;
       let saved;
 
-      // ✅ FIX : si la demande existante est rejetée ou ajournée,
-      // on ne la met pas à jour — on en crée une nouvelle
       const demandeEstRejeteeOuAjournee =
         demande &&
         (demande.statut === STATUT_DEMANDE.REJETE ||
@@ -470,14 +728,12 @@ const CreerDemandeAccreditation = () => {
         saved = await updateDemande(currentDemandeId, demandeData);
         toast.success("Demande mise à jour avec succès !");
       } else {
-        // Création d'une nouvelle demande (première fois OU après rejet/ajournement)
         saved = await createDemande(demandeData);
         currentDemandeId = saved.id || saved.data?.id;
         setCreatedDemandeId(currentDemandeId);
         toast.success("Demande créée avec succès !");
       }
 
-      // ✅ Utiliser le vrai numéro auto-incrémenté retourné par le backend
       const realNumero = saved.numero_demande || saved.data?.numero_demande;
       if (realNumero) setNumeroDemande(realNumero);
 
@@ -491,6 +747,8 @@ const CreerDemandeAccreditation = () => {
           setUploadedFiles(updatedData.fichiers || []);
         }, 500);
       }
+      // ✅ Recharger les données depuis le backend pour afficher les données persistées
+      await reloadDemandeData(currentDemandeId);
       setShowModal(false);
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
@@ -504,7 +762,7 @@ const CreerDemandeAccreditation = () => {
     if (!autoEvaluationResult) { toast.error("Aucune auto-évaluation trouvée"); return; }
     const eligible = isEligibleForSubmission();
     if (!eligible) {
-      toast.error("Votre établissement n'est pas éligible à la soumission d'une demande d'accréditation");
+      toast.error("Votre établissement n'est pas éligible à la soumission. Un niveau Acceptable, Satisfaisant ou Excellent est requis.");
       return;
     }
     if (!createdDemandeId) {
@@ -522,6 +780,8 @@ const CreerDemandeAccreditation = () => {
       setFormSubmitted(true);
       setShowRecapModal(false);
       toast.success(`Demande d'accréditation ${formatNumeroDemande(numeroDemande)} soumise avec succès !`);
+      // ✅ Recharger depuis le backend pour afficher les données persistées
+      await reloadDemandeData(createdDemandeId);
     } catch (error) {
       console.error("Erreur lors de la soumission:", error);
       toast.error(error.response?.data?.detail || "Erreur lors de la soumission");
@@ -559,16 +819,19 @@ const CreerDemandeAccreditation = () => {
     );
   };
 
+  // ✅ Table alignée sur les 5 niveaux du backend
   const NiveauxInstitutionnelsTable = ({ currentLevel }) => {
     const levels = [
-      { key: "excellent",    color: "bg-green-500",  textColor: "text-green-700",  bgColor: "bg-green-50"  },
-      { key: "satisfaisant", color: "bg-blue-500",   textColor: "text-blue-700",   bgColor: "bg-blue-50"   },
-      { key: "acceptable",   color: "bg-yellow-500", textColor: "text-yellow-700", bgColor: "bg-yellow-50" },
-      { key: "faible",       color: "bg-orange-500", textColor: "text-orange-700", bgColor: "bg-orange-50" },
-      { key: "non-conforme", color: "bg-red-500",    textColor: "text-red-700",    bgColor: "bg-red-50"    },
+      { key: "excellent",        color: "bg-green-500",  textColor: "text-green-700",  bgColor: "bg-green-50"  },
+      { key: "satisfaisant",     color: "bg-blue-500",   textColor: "text-blue-700",   bgColor: "bg-blue-50"   },
+      { key: "en_developpement", color: "bg-yellow-500", textColor: "text-yellow-700", bgColor: "bg-yellow-50" },
+      { key: "faible",           color: "bg-orange-500", textColor: "text-orange-700", bgColor: "bg-orange-50" },
+      { key: "insuffisant",      color: "bg-red-500",    textColor: "text-red-700",    bgColor: "bg-red-50"    },
     ];
-    const totalScore    = autoEvaluationResult?.totalNotes || 0;
-    const currentLevelKey = getLevelFromScore(totalScore);
+    const totalScore      = autoEvaluationResult?.totalNotes || 0;
+    // ✅ Priorité au niveau_conformite backend, sinon calcul local
+    const currentLevelKey = getCurrentLevel(autoEvaluationResult);
+
     return (
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg p-5 md:p-6 mt-6">
         <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -582,6 +845,7 @@ const CreerDemandeAccreditation = () => {
                 <th className="text-left py-3 px-2 font-semibold text-slate-700 dark:text-slate-200">Niveau</th>
                 <th className="text-left py-3 px-2 font-semibold text-slate-700 dark:text-slate-200">Plage de points</th>
                 <th className="text-left py-3 px-2 font-semibold text-slate-700 dark:text-slate-200">Appréciation globale</th>
+                <th className="text-left py-3 px-2 font-semibold text-slate-700 dark:text-slate-200">Éligibilité</th>
                 <th className="text-left py-3 px-2 font-semibold text-slate-700 dark:text-slate-200">Statut</th>
               </tr>
             </thead>
@@ -599,6 +863,17 @@ const CreerDemandeAccreditation = () => {
                     </td>
                     <td className="py-3 px-2 font-medium text-slate-800 dark:text-slate-100">{config.range}</td>
                     <td className="py-3 px-2 text-slate-600 dark:text-slate-300">{config.appreciation}</td>
+                    <td className="py-3 px-2">
+                      {config.eligible ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          <CheckCircle className="w-3 h-3" /> Éligible
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                          <AlertTriangle className="w-3 h-3" /> Non éligible
+                        </span>
+                      )}
+                    </td>
                     <td className="py-3 px-2">
                       {isCurrent && (
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${level.bgColor} ${level.textColor}`}>
@@ -618,7 +893,12 @@ const CreerDemandeAccreditation = () => {
             <Info className="w-4 h-4 text-blue-600" />
             <p className="text-xs text-blue-700 dark:text-blue-200">
               <span className="font-semibold">Votre établissement : </span>
-              Score de {totalScore}/368 - Niveau <span className="font-bold">{levelConfig[currentLevelKey].label}</span>
+              Score de {totalScore}/{SCORE_MAX} — Niveau{" "}
+              <span className="font-bold">{levelConfig[currentLevelKey]?.label}</span>
+              {" · "}
+              {levelConfig[currentLevelKey]?.eligible
+                ? <span className="text-green-700 font-semibold">Éligible à la soumission</span>
+                : <span className="text-red-700 font-semibold">Non éligible — niveau Acceptable minimum requis</span>}
             </p>
           </div>
         </div>
@@ -626,23 +906,29 @@ const CreerDemandeAccreditation = () => {
     );
   };
 
+  // ✅ PerformanceCircleChart — segments et seuils alignés sur le backend
   const PerformanceCircleChart = ({ score }) => {
-    const maxScore = 368;
-    const currentLevel = getLevelFromScore(score);
+    // Seuils en score brut (calculés depuis ×0.20/0.40/0.60/0.80 × 368)
     const thresholds = [
-      { value: 0,   label: "0",   color: "#EF4444" },
-      { value: 92,  label: "92",  color: "#F97316" },
-      { value: 184, label: "184", color: "#EAB308" },
-      { value: 257, label: "257", color: "#3B82F6" },
-      { value: 312, label: "312", color: "#22C55E" },
+      { value: 0,   label: "0",   color: "#EF4444" },   // insuffisant
+      { value: 74,  label: "74",  color: "#F97316" },   // faible
+      { value: 148, label: "148", color: "#EAB308" },   // en_developpement
+      { value: 221, label: "221", color: "#3B82F6" },   // satisfaisant
+      { value: 295, label: "295", color: "#22C55E" },   // excellent
       { value: 368, label: "368", color: "#22C55E" },
     ];
-    const nonConformeWidth  = (91 / maxScore) * 100;
-    const faibleWidth       = ((183 - 92 + 1) / maxScore) * 100;
-    const acceptableWidth   = ((256 - 184 + 1) / maxScore) * 100;
-    const satisfaisantWidth = ((311 - 257 + 1) / maxScore) * 100;
-    const excellentWidth    = ((368 - 312 + 1) / maxScore) * 100;
-    const cursorPosition    = (score / maxScore) * 100;
+
+    // ✅ Largeurs des segments (en % de SCORE_MAX=368)
+    const insuffisantWidth      = (74  / SCORE_MAX) * 100;  // 0–73   → 74 pts
+    const faibleWidth           = (74  / SCORE_MAX) * 100;  // 74–147 → 74 pts
+    const enDeveloppementWidth  = (73  / SCORE_MAX) * 100;  // 148–220 → 73 pts
+    const satisfaisantWidth     = (74  / SCORE_MAX) * 100;  // 221–294 → 74 pts
+    const excellentWidth        = (74  / SCORE_MAX) * 100;  // 295–368 → 74 pts
+    const cursorPosition        = (score / SCORE_MAX) * 100;
+
+    // ✅ Niveau courant : priorité au niveau_conformite backend
+    const currentLevel = getCurrentLevel(autoEvaluationResult);
+
     return (
       <div className="flex flex-col items-center justify-center w-full space-y-6">
         <div className="w-full bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-lg">
@@ -655,7 +941,7 @@ const CreerDemandeAccreditation = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-300 mb-1">Score global</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-bold text-slate-900 dark:text-slate-100">{score}</span>
-                  <span className="text-base text-slate-400 dark:text-slate-500">/ {maxScore}</span>
+                  <span className="text-base text-slate-400 dark:text-slate-500">/ {SCORE_MAX}</span>
                 </div>
               </div>
             </div>
@@ -664,19 +950,23 @@ const CreerDemandeAccreditation = () => {
               <span>{levelConfig[currentLevel].label}</span>
             </div>
           </div>
+
+          {/* Barre de progression segmentée */}
           <div className="relative mt-8 mb-10">
             <div className="h-5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
               <div className="flex h-full w-full">
-                <div className="h-full bg-gradient-to-r from-red-500 to-red-400"       style={{ width: `${nonConformeWidth}%`  }} />
-                <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400" style={{ width: `${faibleWidth}%`       }} />
-                <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400" style={{ width: `${acceptableWidth}%`   }} />
-                <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400"     style={{ width: `${satisfaisantWidth}%` }} />
-                <div className="h-full bg-gradient-to-r from-green-500 to-green-400"   style={{ width: `${excellentWidth}%`    }} />
+                <div className="h-full bg-gradient-to-r from-red-500 to-red-400"       style={{ width: `${insuffisantWidth}%`     }} />
+                <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400" style={{ width: `${faibleWidth}%`           }} />
+                <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400" style={{ width: `${enDeveloppementWidth}%`  }} />
+                <div className="h-full bg-gradient-to-r from-blue-500 to-blue-400"     style={{ width: `${satisfaisantWidth}%`     }} />
+                <div className="h-full bg-gradient-to-r from-green-500 to-green-400"   style={{ width: `${excellentWidth}%`        }} />
               </div>
             </div>
+
+            {/* Marqueurs de seuils */}
             <div className="relative w-full mt-3">
               {thresholds.map((threshold, index) => {
-                const position = (threshold.value / maxScore) * 100;
+                const position = (threshold.value / SCORE_MAX) * 100;
                 return (
                   <div key={index} className="absolute flex flex-col items-center" style={{ left: `${position}%`, transform: "translateX(-50%)" }}>
                     <div className="w-0.5 h-4 bg-slate-300 dark:bg-slate-600" />
@@ -688,6 +978,8 @@ const CreerDemandeAccreditation = () => {
                 );
               })}
             </div>
+
+            {/* Curseur */}
             <div className="absolute top-0 flex flex-col items-center transition-all duration-1000 ease-out"
               style={{ left: `${cursorPosition}%`, transform: "translateX(-50%)" }}>
               <div className="relative">
@@ -700,17 +992,24 @@ const CreerDemandeAccreditation = () => {
             </div>
           </div>
         </div>
+
+        {/* Légende des 5 niveaux */}
         <div className="grid grid-cols-5 gap-3 mt-8">
           {Object.entries(levelConfig).map(([key, config]) => (
             <div key={key} className="flex flex-col items-center p-3 bg-white dark:bg-gray-900 rounded-xl border border-slate-200 hover:shadow-md transition-shadow">
               <div className={`w-10 h-10 ${config.bar} rounded-full mb-2 flex items-center justify-center shadow-sm`}>
                 {React.createElement(config.icon, { className: "w-5 h-5 text-white" })}
               </div>
-              <span className="text-xs font-bold text-center">{config.label}</span>
+              <span className="text-xs font-bold text-center leading-tight">{config.label}</span>
               <span className="text-[10px] text-slate-600 font-medium mt-1">{config.range} pts</span>
+              {config.eligible && (
+                <span className="text-[9px] text-green-600 font-semibold mt-0.5">✓ Éligible</span>
+              )}
             </div>
           ))}
         </div>
+
+        {/* Appréciation */}
         <div className="mt-8 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -738,14 +1037,17 @@ const CreerDemandeAccreditation = () => {
         </div>
       );
     }
-    const totalScore  = autoEvaluationResult.totalNotes || 0;
-    const maxScore    = 368;
-    const pourcentage = ((totalScore / maxScore) * 100).toFixed(1);
-    const niveau      = getLevelFromScore(totalScore);
+
+    const totalScore   = autoEvaluationResult.totalNotes || 0;
+    const pourcentage  = ((totalScore / SCORE_MAX) * 100).toFixed(1);
+    // ✅ Niveau depuis backend en priorité
+    const niveau = getCurrentLevel(autoEvaluationResult);
     const niveauConfig = levelConfig[niveau];
-    const eligible    = isEligibleForSubmission();
+    const eligible     = isEligibleForSubmission();
+
     return (
       <div className="space-y-6">
+        {/* En-tête gradient */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -766,7 +1068,7 @@ const CreerDemandeAccreditation = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
               <p className="text-sm text-blue-100 mb-1">Score global</p>
-              <p className="text-3xl font-bold">{totalScore} <span className="text-lg font-normal text-blue-100">/ {maxScore}</span></p>
+              <p className="text-3xl font-bold">{totalScore} <span className="text-lg font-normal text-blue-100">/ {SCORE_MAX}</span></p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
               <p className="text-sm text-blue-100 mb-1">Taux de conformité</p>
@@ -781,6 +1083,8 @@ const CreerDemandeAccreditation = () => {
             </div>
           </div>
         </div>
+
+        {/* ✅ Alerte non éligible — message mis à jour pour Satisfaisant/Excellent */}
         {!eligible && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-5 shadow-sm">
             <div className="flex items-start gap-3">
@@ -791,13 +1095,14 @@ const CreerDemandeAccreditation = () => {
                 <p className="font-semibold text-red-800 dark:text-red-100 mb-1">Attention : Non éligible à la soumission</p>
                 <p className="text-sm text-red-700 dark:text-red-200">
                   Votre établissement a obtenu un niveau <strong>{niveauConfig.label}</strong>. Vous pouvez enregistrer
-                  vos informations en brouillon, mais seuls les niveaux <strong>Acceptable</strong>, <strong>Satisfaisant</strong> et{" "}
-                  <strong>Excellent</strong> sont éligibles à la soumission finale.
+                  vos informations en brouillon, mais les niveaux <strong>Acceptable</strong>, <strong>Satisfaisant</strong> et <strong>Excellent</strong> sont éligibles à la soumission finale.
                 </p>
               </div>
             </div>
           </div>
         )}
+
+        {/* Badge d'appréciation */}
         <div className={`${niveauConfig.color} border ${niveauConfig.badge} rounded-xl p-5 shadow-sm`}>
           <div className="flex items-start gap-3">
             <div className={`p-2 rounded-lg ${niveauConfig.badge.split(" ")[0]}`}>
@@ -809,6 +1114,8 @@ const CreerDemandeAccreditation = () => {
             </div>
           </div>
         </div>
+
+        {/* Policy cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <PolicyCard title="POLITIQUE DE FORMATION"   score={formationScore}   maxScore={148} criteresCount={37} />
           <PolicyCard title="POLITIQUE DE GOUVERNANCE" score={gouvernanceScore} maxScore={204} criteresCount={51} />
@@ -853,8 +1160,9 @@ const CreerDemandeAccreditation = () => {
     if (!showRecapModal) return null;
     const eligible     = isEligibleForSubmission();
     const totalScore   = autoEvaluationResult?.totalNotes || 0;
-    const niveau       = getLevelFromScore(totalScore);
+    const niveau = getCurrentLevel(autoEvaluationResult);
     const niveauConfig = levelConfig[niveau];
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white dark:bg-gray-900 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -874,15 +1182,17 @@ const CreerDemandeAccreditation = () => {
               </button>
             </div>
           </div>
+
           <div className="p-5 md:p-6">
             <div className="space-y-6">
+              {/* Informations établissement */}
               <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
                       <FileText className="w-4 h-4 text-blue-600 dark:text-blue-300" />
                     </div>
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-100">Informations de la demande</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-100">Informations de l'établissement</h3>
                   </div>
                   <button onClick={() => { setShowRecapModal(false); handleOpenForm(); }}
                     className="text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100 text-sm font-medium flex items-center gap-1">
@@ -898,6 +1208,10 @@ const CreerDemandeAccreditation = () => {
                       { label: "Type d'établissement :", value: formData.typeetablissement },
                       ...(formData.typeetablissement === TYPE_ETABLISSEMENT.PUBLIQUE ? [{ label: "Établissement :", value: formData.etablissement }] : []),
                       ...(formData.typeetablissement === TYPE_ETABLISSEMENT.PRIVEE   ? [{ label: "Institution :",   value: formData.institution   }] : []),
+                      { label: "Site web :", value: formData.siteweb },
+                      { label: "Province :", value: formData.province },
+                      { label: "Région :",   value: formData.region   },
+                      { label: "Adresse :",  value: formData.adresse  },
                     ].map(({ label, value, highlight }, i) => (
                       <div key={i} className="flex items-start">
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-300 w-36">{label}</span>
@@ -909,10 +1223,13 @@ const CreerDemandeAccreditation = () => {
                   </div>
                   <div className="space-y-3">
                     {[
-                      { label: "Domaine :",  value: formData.domaine  },
-                      { label: "Mention :",  value: formData.mention  },
-                      { label: "Grade :",    value: formData.grade    },
-                      { label: "Parcours :", value: formData.parcours },
+                      { label: "Domaine :",       value: formData.domaine  },
+                      { label: "Mention :",       value: formData.mention  },
+                      { label: "Grade :",         value: formData.grade    },
+                      { label: "Parcours :",      value: formData.parcours },
+                      { label: "Habilitation :",  value: formData.habilitation === "oui" ? "Habilité" : formData.habilitation === "non" ? "Non habilité" : "" },
+                      ...(formData.habilitation === "oui" ? [{ label: "Arrêté :", value: formData.arrete_habilitation }] : []),
+                      { label: "Description :",   value: formData.description },
                     ].map(({ label, value }, i) => (
                       <div key={i} className="flex items-start">
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-300 w-36">{label}</span>
@@ -928,6 +1245,8 @@ const CreerDemandeAccreditation = () => {
                   </div>
                 )}
               </div>
+
+              {/* Auto-évaluation */}
               <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
@@ -937,6 +1256,8 @@ const CreerDemandeAccreditation = () => {
                 </div>
                 <DetailCriteresSection />
               </div>
+
+              {/* ✅ Bandeau éligibilité — texte mis à jour */}
               <div className={`mt-4 p-4 rounded-lg border ${eligible ? "bg-blue-50 border-blue-200" : "bg-yellow-50 border-yellow-200"}`}>
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-0.5">
@@ -949,13 +1270,14 @@ const CreerDemandeAccreditation = () => {
                     <p className={`text-sm ${eligible ? "text-blue-700" : "text-yellow-700"}`}>
                       {eligible
                         ? "Votre demande est éligible à la soumission. En soumettant cette demande, vous certifiez que toutes les informations fournies sont exactes et complètes."
-                        : `Votre établissement a obtenu un niveau ${niveauConfig.label}. Vous pouvez enregistrer ces informations en brouillon, mais vous ne pourrez soumettre qu'à partir du niveau Acceptable.`}
+                        : `Votre établissement a obtenu un niveau ${niveauConfig.label}. Vous pouvez enregistrer ces informations en brouillon, mais vous ne pourrez soumettre qu'à partir du niveau Satisfaisant.`}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
           <div className="p-5 md:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-xl sticky bottom-0">
             <div className="flex flex-col md:flex-row gap-3 justify-end">
               <button onClick={() => setShowRecapModal(false)}
@@ -1011,101 +1333,44 @@ const CreerDemandeAccreditation = () => {
       <div className="min-h-screen bg-white dark:bg-gray-950">
         <ToastContainer />
         <div className="fixed inset-0 bg-white dark:bg-gray-950 z-50 overflow-y-auto">
-          <div className="px-5 py-6">
-            <div className="flex items-center mb-6">
-              <button onClick={() => setShowModal(false)} className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white mr-4">
-                <ArrowLeft className="w-6 h-6" />
+          <div className="px-5 py-4 pb-32">
+            <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
+              <button onClick={() => setShowModal(false)}
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-all">
+                <ArrowLeft className="w-4 h-4" />
               </button>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Informations de la Demande</h1>
-                {numeroDemande && (
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Numéro : <strong className="text-blue-600 dark:text-blue-300">{formatNumeroDemande(numeroDemande)}</strong>
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <Edit className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100">Informations de l'établissement</h1>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Les champs marqués <span className="text-red-500 font-semibold">*</span> sont obligatoires
+                    {numeroDemande && <span className="ml-1 font-semibold text-blue-600 dark:text-blue-300">· {formatNumeroDemande(numeroDemande)}</span>}
                   </p>
-                )}
-              </div>
-            </div>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-5">
-                {[{ label: "Nom du responsable", name: "responsable", type: "text", placeholder: "Nom du responsable de la demande" }]
-                  .map(({ label, name, type, placeholder }) => (
-                  <div key={name}>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{label} <span className="text-red-500">*</span></label>
-                    <input type={type} name={name} value={formData[name]} onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                      placeholder={placeholder} required />
-                  </div>
-                ))}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Type d'établissement <span className="text-red-500">*</span></label>
-                  <select name="typeetablissement" value={formData.typeetablissement} onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" required>
-                    <option value="">-- Sélectionnez un type --</option>
-                    <option value={TYPE_ETABLISSEMENT.PRIVEE}>Établissement Privé</option>
-                    <option value={TYPE_ETABLISSEMENT.PUBLIQUE}>Établissement Public</option>
-                  </select>
-                </div>
-                {formData.typeetablissement === TYPE_ETABLISSEMENT.PRIVEE && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Institution <span className="text-red-500">*</span></label>
-                    <input type="text" name="institution" value={formData.institution} onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                      placeholder="Nom de l'institution privée" required />
-                  </div>
-                )}
-                {formData.typeetablissement === TYPE_ETABLISSEMENT.PUBLIQUE && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Établissement <span className="text-red-500">*</span></label>
-                    <input type="text" name="etablissement" value={formData.etablissement} onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                      placeholder="Nom de l'établissement public" required />
-                  </div>
-                )}
-                {[
-                  { label: "Domaine",  name: "domaine",  placeholder: "Ex: Sciences, Droit, Économie" },
-                  { label: "Mention",  name: "mention",  placeholder: "Ex: Informatique, Management"  },
-                ].map(({ label, name, placeholder }) => (
-                  <div key={name}>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">{label} <span className="text-red-500">*</span></label>
-                    <input type="text" name={name} value={formData[name]} onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                      placeholder={placeholder} required />
-                  </div>
-                ))}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Grade <span className="text-red-500">*</span></label>
-                  <select name="grade" value={formData.grade} onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" required>
-                    <option value="">-- Sélectionnez un grade --</option>
-                    {gradeOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Parcours <span className="text-red-500">*</span></label>
-                  <input type="text" name="parcours" value={formData.parcours} onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    placeholder="Ex: Génie Logiciel, Finance" required />
                 </div>
               </div>
             </div>
-            <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-700 p-5">
-              <div className="flex gap-3">
-                <button onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-base font-medium">
-                  Annuler
-                </button>
-                <button onClick={handleSaveInformation} disabled={isSubmitting}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isSubmitting ? (
-                    <><svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                    </svg>Enregistrement...</>
-                  ) : (
-                    <><Save className="w-4 h-4" />Enregistrer</>
-                  )}
-                </button>
-              </div>
+            <EtablissementFormFields formData={formData} onChange={handleInputChange} gradeOptions={gradeOptions} />
+          </div>
+          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-5 py-4">
+            <div className="flex gap-3">
+              <button onClick={() => setShowModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-semibold transition-all border border-gray-200 dark:border-gray-600">
+                Annuler
+              </button>
+              <button onClick={handleSaveInformation} disabled={isSubmitting}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all">
+                {isSubmitting ? (
+                  <><svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>Enregistrement...</>
+                ) : (
+                  <><Save className="w-3.5 h-3.5" />Enregistrer</>
+                )}
+              </button>
             </div>
           </div>
           <RecapModal />
@@ -1163,23 +1428,30 @@ const CreerDemandeAccreditation = () => {
                             <div className="flex justify-between items-center mb-3">
                               <span className="font-bold text-blue-800 dark:text-blue-200">TOTAL GÉNÉRAL</span>
                               <span className="text-xl font-bold text-blue-700 dark:text-blue-100">
-                                {autoEvaluationResult?.totalNotes || 0}/368 pts
+                                {autoEvaluationResult?.totalNotes || 0}/{SCORE_MAX} pts
                               </span>
                             </div>
                             <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2.5 overflow-hidden">
-                              <div className="h-full bg-blue-600" style={{ width: `${((autoEvaluationResult?.totalNotes || 0) / 368) * 100}%` }} />
+                              <div className="h-full bg-blue-600" style={{ width: `${((autoEvaluationResult?.totalNotes || 0) / SCORE_MAX) * 100}%` }} />
                             </div>
                             <div className="flex justify-end mt-2">
-                              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-3 py-1 rounded-full font-medium">
-                                Niveau : {levelConfig[getLevelFromScore(autoEvaluationResult?.totalNotes || 0)].label}
-                              </span>
+                              {(() => {
+                                const niveau = getCurrentLevel(autoEvaluationResult);
+                                return (
+                                  <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-3 py-1 rounded-full font-medium">
+                                    Niveau : {levelConfig[niveau].label}
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <NiveauxInstitutionnelsTable currentLevel={getLevelFromScore(autoEvaluationResult?.totalNotes || 0)} />
+                  <NiveauxInstitutionnelsTable currentLevel={
+                    getCurrentLevel(autoEvaluationResult)
+                  } />
                 </>
               ) : (
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-8 text-center mb-6">
@@ -1196,16 +1468,39 @@ const CreerDemandeAccreditation = () => {
                 </div>
               )}
 
-              {/* Formulaire de Demande */}
+              {/* Fiche de Dépôt */}
               <div>
-                <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 md:mb-6">Formulaire de Demande</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 md:mb-6">
+                  Fiche de Dépôt de Demande
+                </h2>
                 <div className={`bg-white dark:bg-gray-900 rounded-xl md:rounded-2xl border ${!hasCompleteEvaluation ? "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" : "border-slate-200 dark:border-slate-700"} md:shadow-lg p-5 md:p-6 mb-6 md:mb-8`}>
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100">Informations à remplir</h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100">
+                      Informations de l'établissement
+                    </h3>
                     {!hasCompleteEvaluation && (
                       <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">Auto-évaluation requise</span>
                     )}
+                    {formSubmitted && (
+                      <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded-full border border-green-200 dark:border-green-700">
+                        <CheckCircle className="w-3.5 h-3.5" /> Dossier soumis
+                      </span>
+                    )}
                   </div>
+                  {/* ✅ Bandeau de confirmation visible après soumission */}
+                  {formSubmitted && (
+                    <div className="flex items-start gap-3 p-4 mb-5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                          Demande {numeroDemande ? formatNumeroDemande(numeroDemande) : ""} soumise avec succès
+                        </p>
+                        <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
+                          Votre dossier est enregistré et en cours d'instruction. Les informations ci-dessous ont bien été transmises.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {!hasCompleteEvaluation && (
                     <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
                       <div className="flex items-start gap-3">
@@ -1224,6 +1519,10 @@ const CreerDemandeAccreditation = () => {
                         { label: "Type d'établissement :", value: formData.typeetablissement },
                         ...(formData.typeetablissement === TYPE_ETABLISSEMENT.PUBLIQUE ? [{ label: "Établissement :", value: formData.etablissement }] : []),
                         ...(formData.typeetablissement === TYPE_ETABLISSEMENT.PRIVEE   ? [{ label: "Institution :",   value: formData.institution   }] : []),
+                        { label: "Site web :", value: formData.siteweb },
+                        { label: "Province :", value: formData.province },
+                        { label: "Région :",   value: formData.region   },
+                        { label: "Adresse :",  value: formData.adresse  },
                       ].map(({ label, value, highlight }, i) => (
                         <div key={i} className="flex items-start gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
                           <strong className="text-slate-700 dark:text-slate-200 text-sm min-w-[140px]">{label}</strong>
@@ -1235,10 +1534,13 @@ const CreerDemandeAccreditation = () => {
                     </div>
                     <div className="space-y-4">
                       {[
-                        { label: "Domaine :",  value: formData.domaine  },
-                        { label: "Mention :",  value: formData.mention  },
-                        { label: "Grade :",    value: formData.grade    },
-                        { label: "Parcours :", value: formData.parcours },
+                        { label: "Domaine :",      value: formData.domaine  },
+                        { label: "Mention :",      value: formData.mention  },
+                        { label: "Grade :",        value: formData.grade    },
+                        { label: "Parcours :",     value: formData.parcours },
+                        { label: "Habilitation :", value: formData.habilitation === "oui" ? "Habilité" : formData.habilitation === "non" ? "Non habilité" : "" },
+                        ...(formData.habilitation === "oui" ? [{ label: "Arrêté :", value: formData.arrete_habilitation }] : []),
+                        { label: "Description :",  value: formData.description },
                       ].map(({ label, value }, i) => (
                         <div key={i} className="flex items-start gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
                           <strong className="text-slate-700 dark:text-slate-200 text-sm min-w-[140px]">{label}</strong>
@@ -1277,108 +1579,63 @@ const CreerDemandeAccreditation = () => {
 
       {/* Modal d'édition (desktop) */}
       {showModal && !isMobile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-5 md:p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {isEditing ? "Modifier la Demande" : "Informations de la Demande"}
-                  </h2>
-                  {numeroDemande && (
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                      Numéro de demande : <strong className="text-blue-600 dark:text-blue-300">{formatNumeroDemande(numeroDemande)}</strong>
-                    </p>
-                  )}
-                </div>
-                <button onClick={() => setShowModal(false)} className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            <div className="p-5 md:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Nom du responsable <span className="text-red-500">*</span></label>
-                  <input type="text" name="responsable" value={formData.responsable} onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm md:text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    placeholder="Nom du responsable" required />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            style={{ animation: "modalIn 0.18s cubic-bezier(.4,0,.2,1)" }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <Edit className="w-4 h-4" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Type d'établissement <span className="text-red-500">*</span></label>
-                  <select name="typeetablissement" value={formData.typeetablissement} onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm md:text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" required>
-                    <option value="">-- Sélectionnez --</option>
-                    <option value={TYPE_ETABLISSEMENT.PRIVEE}>Établissement Privé</option>
-                    <option value={TYPE_ETABLISSEMENT.PUBLIQUE}>Établissement Public</option>
-                  </select>
-                </div>
-                {formData.typeetablissement === TYPE_ETABLISSEMENT.PRIVEE && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Institution <span className="text-red-500">*</span></label>
-                    <input type="text" name="institution" value={formData.institution} onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm md:text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                      placeholder="Nom de l'institution" required />
-                  </div>
-                )}
-                {formData.typeetablissement === TYPE_ETABLISSEMENT.PUBLIQUE && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Établissement <span className="text-red-500">*</span></label>
-                    <input type="text" name="etablissement" value={formData.etablissement} onChange={handleInputChange}
-                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm md:text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                      placeholder="Nom de l'établissement" required />
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Domaine <span className="text-red-500">*</span></label>
-                  <input type="text" name="domaine" value={formData.domaine} onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm md:text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    placeholder="Ex: Sciences" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Mention <span className="text-red-500">*</span></label>
-                  <input type="text" name="mention" value={formData.mention} onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm md:text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    placeholder="Ex: Informatique" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Grade <span className="text-red-500">*</span></label>
-                  <select name="grade" value={formData.grade} onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm md:text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" required>
-                    <option value="">-- Sélectionnez --</option>
-                    {gradeOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Parcours <span className="text-red-500">*</span></label>
-                  <input type="text" name="parcours" value={formData.parcours} onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm md:text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                    placeholder="Ex: Génie Logiciel" required />
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">Informations de l'établissement</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Les champs marqués <span className="text-red-500 font-semibold">*</span> sont obligatoires
+                    {numeroDemande && (
+                      <span className="ml-2 font-semibold text-blue-600 dark:text-blue-300">· {formatNumeroDemande(numeroDemande)}</span>
+                    )}
+                  </p>
                 </div>
               </div>
+              <button onClick={() => setShowModal(false)}
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-all">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="p-5 md:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
-              <div className="flex flex-col md:flex-row gap-3 justify-end">
-                <button onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm w-full md:w-auto">
-                  Annuler
-                </button>
-                <button onClick={handleSaveInformation} disabled={isSubmitting}
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm w-full md:w-auto flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isSubmitting ? (
-                    <><svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              <EtablissementFormFields formData={formData} onChange={handleInputChange} gradeOptions={gradeOptions} />
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70 flex justify-end gap-2 flex-shrink-0">
+              <button onClick={() => setShowModal(false)}
+                className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs font-semibold transition-all">
+                Annuler
+              </button>
+              <button onClick={handleSaveInformation} disabled={isSubmitting}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold shadow-md hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all">
+                {isSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                    </svg>Enregistrement...</>
-                  ) : (
-                    <><Save className="w-4 h-4" />{isEditing ? "Mettre à jour" : "Enregistrer"}</>
-                  )}
-                </button>
-              </div>
+                    </svg>
+                    Enregistrement...
+                  </>
+                ) : (
+                  <><Save className="w-3.5 h-3.5" />{isEditing ? "Mettre à jour" : "Enregistrer"}</>
+                )}
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.96) translateY(8px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);   }
+        }
+      `}</style>
     </div>
   );
 };

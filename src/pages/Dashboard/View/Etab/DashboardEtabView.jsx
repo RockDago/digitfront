@@ -553,6 +553,106 @@ const DashboardEtabView = () => {
     </div>
   );
 
+  // ── Habilitation Status Card ────────────────────────────────────────────────
+  const HabilitationStatusCard = () => (
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
+      <div className={`p-3 rounded-lg flex-shrink-0 ${
+        habilitationData.status === "Actif" 
+          ? "bg-green-50 dark:bg-green-900/40" 
+          : "bg-red-50 dark:bg-red-900/40"
+      }`}>
+        {habilitationData.status === "Actif" 
+          ? <CheckCircle className="w-6 h-6 text-green-600" />
+          : <AlertCircle className="w-6 h-6 text-red-600" />
+        }
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Statut Habilitation</p>
+        <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-sm font-semibold ${
+          habilitationData.status === "Actif" 
+            ? "bg-green-100 text-green-800" 
+            : "bg-red-100 text-red-800"
+        }`}>
+          {habilitationData.status}
+        </span>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+          {habilitationData.certificateNumber}
+        </p>
+      </div>
+    </div>
+  );
+
+  // ── Habilitation Request Card ───────────────────────────────────────────────
+  const HabilitationRequestCard = () => {
+    const latestRequest = habilitationData.history[0] || null;
+    
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
+        <div className={`p-3 rounded-lg flex-shrink-0 ${
+          latestRequest?.status === "Approuvée" ? "bg-green-50 dark:bg-green-900/40" :
+          latestRequest?.status === "En traitement" ? "bg-blue-50 dark:bg-blue-900/40" :
+          "bg-slate-50 dark:bg-slate-800"
+        }`}>
+          {latestRequest?.status === "Approuvée" ? <CheckCircle className="w-6 h-6 text-green-600" /> :
+           latestRequest?.status === "En traitement" ? <Clock className="w-6 h-6 text-blue-600" /> :
+           <FileText className="w-6 h-6 text-slate-600" />}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm text-slate-500 dark:text-slate-400">Demande Habilitation</p>
+          {latestRequest ? (
+            <>
+              <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-sm font-semibold ${
+                latestRequest.status === "Approuvée" ? "bg-green-100 text-green-800" :
+                latestRequest.status === "En traitement" ? "bg-blue-100 text-blue-800" :
+                "bg-slate-100 text-slate-800"
+              }`}>
+                {latestRequest.status}
+              </span>
+              {latestRequest.certificateNumber !== "-" && (
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate">
+                  {latestRequest.certificateNumber}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold text-slate-400 dark:text-slate-500 mt-1">—</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Aucune demande</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Auto Evaluation Processing Card ─────────────────────────────────────────
+  const AutoEvalProcessingCard = () => {
+    const latestEval = accreditationData.evaluationHistory[0] || null;
+    const processingDays = latestEval?.date ? daysSince(latestEval.date) : null;
+    
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
+        <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/40 flex-shrink-0">
+          <Clock className="w-6 h-6 text-purple-600" />
+        </div>
+        <div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Traitement Auto-évaluation</p>
+          <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+            {processingDays !== null ? processingDays : "—"}
+          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            {processingDays !== null ? "jours depuis la soumission" : "Aucune évaluation"}
+          </p>
+          {latestEval?.date && (
+            <p className="text-xs text-purple-500 dark:text-purple-400 mt-0.5">
+              Soumise le {formatDate(latestEval.date)}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // ── getPolicyColorConfig ─────────────────────────────────────────────────────
   const getPolicyColorConfig = (score, max) => {
     const ratio = max > 0 ? score / max : 0;
@@ -813,39 +913,69 @@ const DashboardEtabView = () => {
         <div className="px-6 py-6">
           <div className="space-y-8">
 
-            {/* ── Vue d'ensemble ── */}
+            {/* ── VUE D'ENSEMBLE : Toutes les cards Habilitation + Accréditation ── */}
             <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-4">Vue d'ensemble</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-
-                {/* Card 1 — Habilitation */}
+              
+              {/* Cards Habilitation */}
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3">Habilitation</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {/* Card 1 — Jours restants */}
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
                   <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/40 flex-shrink-0">
                     <Clock className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Habilitation</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Validité restante</p>
                     <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{habilitationData.remainingDays}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">jours restants</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">jours</p>
                   </div>
                 </div>
 
-                {/* Card 2 — Score */}
+                {/* Card 2 — Statut Habilitation */}
+                <HabilitationStatusCard />
+
+                {/* Card 3 — Demande Habilitation */}
+                <HabilitationRequestCard />
+
+                {/* Card 4 — Date expiration */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/40 flex-shrink-0">
+                    <Calendar className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Expire le</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                      {formatDate(habilitationData.endDate)}
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      Renouvellement: {formatDate(habilitationData.renewalDate)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cards Accréditation */}
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 mt-6">Accréditation</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* Card 1 — Score global */}
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
                   <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/40 flex-shrink-0">
                     <BarChart3 className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Accréditation</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Score global</p>
                     <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
                       {accreditationData.currentEval.score}{" "}
                       <span className="text-base font-medium text-slate-500 dark:text-slate-400">/ 368</span>
                     </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">score total</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      Niveau {levelConfig[getLevelFromScore(accreditationData.currentEval.score)].label}
+                    </p>
                   </div>
                 </div>
 
-                {/* Card 3 — Politiques */}
+                {/* Card 2 — Politiques évaluées */}
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
                   <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/40 flex-shrink-0">
                     <Award className="w-6 h-6 text-purple-600" />
@@ -859,33 +989,14 @@ const DashboardEtabView = () => {
                   </div>
                 </div>
 
-                {/* Card 4 — Traitement */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
-                  <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/40 flex-shrink-0">
-                    <Calendar className="w-6 h-6 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Traitement</p>
-                    <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-                      {accreditationData.processingDays !== null ? accreditationData.processingDays : "—"}
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      {accreditationData.processingDays !== null ? "jours depuis le dépôt" : "Pas encore soumis"}
-                    </p>
-                    {accreditationData.submissionDate && (
-                      <p className="text-xs text-orange-500 dark:text-orange-400 mt-0.5">
-                        Soumis le {formatDate(accreditationData.submissionDate)}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                {/* Card 3 — Jours de traitement auto-évaluation */}
+                <AutoEvalProcessingCard />
 
-                {/* ✅ Card 5 — Statut du dossier */}
+                {/* Card 4 — Statut dossier */}
                 {(() => {
                   const latest  = accreditationData.accreditationHistory[0] || null;
                   const raw     = latest?.rawStatut || null;
                   const cfg     = getDemandeStatusConfig(raw);
-                  const numero  = latest?.certificateNumber || null;
                   return (
                     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
                       <div className={`p-3 rounded-lg flex-shrink-0 ${cfg.iconBg}`}>
@@ -898,9 +1009,9 @@ const DashboardEtabView = () => {
                             <span className={`inline-block mt-1 px-2.5 py-1 rounded-full text-sm font-semibold ${cfg.badge}`}>
                               {cfg.label}
                             </span>
-                            {numero && (
-                              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate" title={numero}>
-                                {numero}
+                            {latest?.certificateNumber && (
+                              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate">
+                                {latest.certificateNumber}
                               </p>
                             )}
                           </>
@@ -915,27 +1026,42 @@ const DashboardEtabView = () => {
                   );
                 })()}
 
+                {/* Card 5 — Prochaine échéance */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/40 flex-shrink-0">
+                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Prochaine échéance</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                      {accreditationData.nextEvalDate ? formatDate(accreditationData.nextEvalDate) : "—"}
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      {accreditationData.nextEvalDate ? `${daysUntil(accreditationData.nextEvalDate)} jours` : "Non définie"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* ── Habilitation ── */}
+            {/* ── DÉTAILS HABILITATION (en bas) ── */}
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-4">Habilitation</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-4">Détails Habilitation</h2>
               <div className="space-y-4">
                 <HabilitationCard />
                 <HabilitationHistory />
               </div>
             </div>
 
-            {/* ── Accréditation ── */}
+            {/* ── DÉTAILS ACCRÉDITATION (en bas) ── */}
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-4">Accréditation</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-4">Détails Accréditation</h2>
               <AccreditationWithChart />
             </div>
 
-            {/* ── Historique ── */}
+            {/* ── HISTORIQUE COMPLET (en bas) ── */}
             <div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-4">Historique</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-4">Historique Complet</h2>
               <AccreditationUnifiedHistory />
             </div>
 

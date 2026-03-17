@@ -16,7 +16,9 @@ export default function SidebarExpert({
   setCollapsed,
   isMobileOpen,
   setIsMobileOpen,
+  user,
 }) {
+  const canRead = user?.can_read !== false;
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useContext(ThemeContext);
@@ -115,32 +117,46 @@ export default function SidebarExpert({
 
         {/* NAVIGATION */}
         <nav className="flex-1 overflow-y-auto custom-scrollbar pb-6">
-          <div className="mb-2">
-            {navItems.map((item) => {
-              const active = isLinkActive(item.to);
-              return (
-                <div
-                  key={item.to}
-                  onClick={() => goTo(item.to)}
-                  className={`${baseItemClass} ${
-                    active ? activeClass : inactiveClass
-                  }`}
-                  title={collapsed ? item.label : ""}
-                >
-                  <div className="flex items-center gap-3">
-                    <item.icon
-                      className={`text-lg flex-shrink-0 ${
-                        active
-                          ? "text-blue-600 dark:text-blue-300"
-                          : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
-                      }`}
-                    />
-                    {!collapsed && <span>{item.label}</span>}
+          {!canRead ? (
+            <div className="flex flex-col items-center justify-center h-full px-6 py-10 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-4">
+                <FaTimes className="text-red-500" />
+              </div>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                Accès non autorisé
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Vous n'avez pas la permission de consulter ce contenu.
+              </p>
+            </div>
+          ) : (
+            <div className="mb-2">
+              {navItems.map((item) => {
+                const active = isLinkActive(item.to);
+                return (
+                  <div
+                    key={item.to}
+                    onClick={() => goTo(item.to)}
+                    className={`${baseItemClass} ${
+                      active ? activeClass : inactiveClass
+                    }`}
+                    title={collapsed ? item.label : ""}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon
+                        className={`text-lg flex-shrink-0 ${
+                          active
+                            ? "text-blue-600 dark:text-blue-300"
+                            : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
+                        }`}
+                      />
+                      {!collapsed && <span>{item.label}</span>}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
         {/* BOUTON MODE SOMBRE/CLAIR */}

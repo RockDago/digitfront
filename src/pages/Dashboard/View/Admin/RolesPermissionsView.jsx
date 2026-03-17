@@ -1,27 +1,40 @@
 import React, { useState, useContext, useEffect } from "react";
-import { FaUserShield, FaCheckCircle, FaTimes, FaSave, FaInfoCircle } from "react-icons/fa";
+import { FaUserShield, FaCheckCircle, FaTimes, FaSave, FaInfoCircle, FaSpinner, FaTimesCircle } from "react-icons/fa";
 import { ThemeContext } from "../../../../context/ThemeContext";
+import RoleService from "../../../../services/role.service";
 
-// ─── Rôles avec permissions initiales (sans Administrateur) ───────────────────
-const INITIAL_ROLES = [
-  { id: 2, name: "SAE",                       canRead: true,  canWrite: true  },
-  { id: 3, name: "SICP",                      canRead: true,  canWrite: true  },
-  { id: 4, name: "CNH",                       canRead: true,  canWrite: false },
-  { id: 5, name: "Expert",                    canRead: true,  canWrite: false },
-  { id: 6, name: "Responsable",               canRead: true,  canWrite: true  },
-  { id: 7, name: "Gestionnaire Habilitation", canRead: true,  canWrite: true  },
-  { id: 8, name: "Établissement",             canRead: true,  canWrite: true  },
-  { id: 9, name: "Requérant",                 canRead: true,  canWrite: true  },
-];
+const ROLE_LABELS = {
+  Admin: "Administrateur",
+  admin: "Administrateur",
+  Requerant: "Requérant",
+  Etablissement: "Établissement",
+  SAE: "Service SAE",
+  SICP: "Service SICP",
+  CNH: "Service CNH",
+  Expert: "Expert Évaluateur",
+  Universite: "Université",
+  gestionnaire_habilitation: "Gestionnaire Habilitation",
+};
+
+const formatRole = (role) => {
+  if (!role) return "";
+  if (ROLE_LABELS[role]) return ROLE_LABELS[role];
+  return role.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim().replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 // ─── Toast notification ───────────────────────────────────────────────────────
-const Toast = ({ message, onClose }) => {
+const Toast = ({ message, type = "success", onClose }) => {
   useEffect(() => { const timer = setTimeout(onClose, 3000); return () => clearTimeout(timer); }, [onClose]);
+  const isError = type === "error";
   return (
-    <div className="fixed top-6 right-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 bg-green-50 dark:bg-green-900/30 border-green-500 shadow-lg animate-slide-in-right">
-      <FaCheckCircle className="text-green-500 text-xl" />
-      <p className="text-sm font-medium text-green-800 dark:text-green-300">{message}</p>
-      <button onClick={onClose} className="ml-2 text-green-800 dark:text-green-300 hover:opacity-70"><FaTimes /></button>
+    <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 shadow-lg animate-slide-in-right ${
+      isError 
+        ? "bg-red-50 dark:bg-red-900/30 border-red-500" 
+        : "bg-green-50 dark:bg-green-900/30 border-green-500"
+    }`}>
+      {isError ? <FaTimesCircle className="text-red-500 text-xl" /> : <FaCheckCircle className="text-green-500 text-xl" />}
+      <p className={`text-sm font-medium ${isError ? "text-red-800 dark:text-red-300" : "text-green-800 dark:text-green-300"}`}>{message}</p>
+      <button onClick={onClose} className={`ml-2 hover:opacity-70 ${isError ? "text-red-800 dark:text-red-300" : "text-green-800 dark:text-green-300"}`}><FaTimes /></button>
     </div>
   );
 };
@@ -29,9 +42,33 @@ const Toast = ({ message, onClose }) => {
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function RolesPermissionsView() {
   const { theme } = useContext(ThemeContext);
-  const [roles, setRoles] = useState(INITIAL_ROLES);
+  const [roles, setRoles] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState(null); // { message, type }
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const rolesData = await RoleService.getRoles();
+        // Rename can_read and can_write to camelCase for the frontend component if necessary
+        const formattedRoles = rolesData.map((r) => ({
+             id: r.id, 
+             name: r.name, 
+             canRead: r.can_read, 
+             canWrite: r.can_write 
+        }));
+        setRoles(formattedRoles);
+      } catch (error) {
+        console.error("Error fetching roles:", error);
+        setToast({ message: "Erreur lors du chargement des rôles.", type: "error" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRoles();
+  }, []);
 
   // Gérer le clic sur une checkbox
   const handleToggle = (id, field) => {
@@ -40,16 +77,30 @@ export default function RolesPermissionsView() {
   };
 
   // Enregistrer
-  const handleSave = () => {
-    setHasChanges(false);
-    setToast("Les permissions ont été mises à jour avec succès.");
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+        const dataToSave = roles.map(r => ({
+            id: r.id,
+            can_read: r.canRead,
+            can_write: r.canWrite
+        }));
+        await RoleService.updateRoles(dataToSave);
+        setHasChanges(false);
+        setToast({ message: "Les permissions ont été mises à jour avec succès.", type: "success" });
+    } catch (e) {
+        console.error("Error updating roles:", e);
+        setToast({ message: "Erreur lors de la mise à jour des permissions.", type: "error" });
+    } finally {
+        setSaving(false);
+    }
   };
 
   return (
     <div className="p-6 min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
       
       {/* Toast */}
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* ── En-tête ── */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -72,19 +123,24 @@ export default function RolesPermissionsView() {
         {/* Bouton Sauvegarder */}
         <button 
           onClick={handleSave}
-          disabled={!hasChanges}
+          disabled={!hasChanges || saving}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm
-            ${hasChanges 
+            ${hasChanges && !saving
               ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer" 
               : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border border-gray-200 dark:border-gray-700"}`}
         >
-          <FaSave className="text-base" />
-          Enregistrer les modifications
+          {saving ? <FaSpinner className="text-base animate-spin" /> : <FaSave className="text-base" />}
+          {saving ? "Enregistrement..." : "Enregistrer les modifications"}
         </button>
       </div>
 
-      {/* ── Tableau simple ── */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+           <FaSpinner className="animate-spin text-3xl text-blue-500" />
+        </div>
+      ) : (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* ── Tableau simple ── */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -106,7 +162,7 @@ export default function RolesPermissionsView() {
                   
                   {/* Nom du rôle */}
                   <td className="py-4 px-6 text-sm text-gray-800 dark:text-gray-200 font-medium border-r border-gray-100 dark:border-gray-700">
-                    {role.name}
+                    {formatRole(role.name)}
                   </td>
                   
                   {/* Checkbox Lecture */}
@@ -132,13 +188,13 @@ export default function RolesPermissionsView() {
                       />
                     </label>
                   </td>
-                  
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+      )}
 
       <style jsx>{`
         @keyframes slide-in-right {

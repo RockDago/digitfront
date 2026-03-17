@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect, useContext, useMemo } from "react";
 import {
   FaUsers, FaGlobe, FaChartLine, FaClock,
   FaUserPlus, FaServer, FaCircle,
@@ -8,6 +8,8 @@ import { HiOutlineCalendar } from "react-icons/hi2";
 import { PiChartLineUp, PiChartBar, PiChartPieSlice } from "react-icons/pi";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { ThemeContext } from "../../../../context/ThemeContext";
+import UserService from "../../../../services/user.service";
+import AnalyticsService from "../../../../services/analytics.service";
 
 // ─── DONNÉES ──────────────────────────────────────────────────────────────────
 
@@ -231,18 +233,17 @@ function RealtimeMiniChart({ data, color, label, icon: Icon, unit = "%", totalCa
 
 // ─── COURBE SVG ───────────────────────────────────────────────────────────────
 
-function LineChartSVG({ isDark }) {
-  const [hov, setHov] = useState(null);
-  const pts = userGrowthData.map(d => ({ y: d.month, v: d.utilisateurs }));
+function LineChartSVG({ isDark, data = userGrowthData }) {
+  const pts = data.map(d => ({ y: d.month, v: d.utilisateurs }));
 
   const W = 580, H = 230;
   const PL = 46, PR = 22, PT = 22, PB = 30;
   const cW = W - PL - PR, cH = H - PT - PB;
-  const minV = 700, maxV = 1350;
+  const minV = Math.max(0, Math.min(...pts.map(p => p.v)) - 50);
+  const maxV = Math.max(...pts.map(p => p.v)) + 100;
   const xP = i => PL + (i / (pts.length - 1)) * cW;
-  const yP = v => PT + cH - ((v - minV) / (maxV - minV)) * cH;
+  const yP = v => maxV === minV ? PT + cH / 2 : PT + cH - ((v - minV) / (maxV - minV)) * cH;
   const lp   = pts.map((d, i) => `${i ? "L" : "M"} ${xP(i).toFixed(1)} ${yP(d.v).toFixed(1)}`).join(" ");
-  const area = `${lp} L ${xP(pts.length - 1).toFixed(1)} ${PT + cH} L ${PL} ${PT + cH} Z`;
 
   const gridC  = isDark ? "#e2e8f0" : "#f1f5f9";
   const labelC = isDark ? "#64748b" : "#94a3b8";
@@ -256,45 +257,24 @@ function LineChartSVG({ isDark }) {
         Évolution mensuelle des inscrits
       </p>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ overflow: "visible", display: "block" }}>
-        <defs>
-          <linearGradient id="lgLine" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#6366f1" stopOpacity=".20" />
-            <stop offset="100%" stopColor="#6366f1" stopOpacity="0"   />
-          </linearGradient>
-        </defs>
-
         {[800, 900, 1000, 1100, 1200, 1300].map(v => (
           <g key={v}>
-            <line x1={PL} y1={yP(v)} x2={W - PR} y2={yP(v)} stroke={gridC} strokeWidth="1.2" />
+            <line x1={PL} y1={yP(v)} x2={W - PR} y2={yP(v)} stroke={gridC} strokeWidth="1" />
             <text x={PL - 8} y={yP(v) + 4} textAnchor="end" fontSize="11" fill={labelC} fontWeight="500">
               {v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
             </text>
           </g>
         ))}
 
-        <path d={area} fill="url(#lgLine)" />
-        <path d={lp} fill="none" stroke="#6366f1" strokeWidth="2.8"
-          strokeLinecap="round" strokeLinejoin="round" />
+        <path d={lp} fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
         {pts.map((d, i) => (
-          <g key={i} onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)}
-            style={{ cursor: "default" }}>
-            {hov === i && (
-              <>
-                <line x1={xP(i)} y1={PT} x2={xP(i)} y2={PT + cH}
-                  stroke="#6366f1" strokeWidth="1" strokeDasharray="3 3" opacity=".3" />
-                <rect x={xP(i) - 30} y={yP(d.v) - 32} width="60" height="22" rx="6" fill="#4f46e5" />
-                <text x={xP(i)} y={yP(d.v) - 17} textAnchor="middle"
-                  fontSize="11" fontWeight="700" fill="white">
-                  {d.v.toLocaleString()}
-                </text>
-              </>
-            )}
+          <g key={i}>
             <circle
               cx={xP(i)} cy={yP(d.v)}
-              r={hov === i ? 6 : 4.5}
-              fill={hov === i ? "#6366f1" : "white"}
-              stroke="#6366f1" strokeWidth="2.5"
+              r={4}
+              fill="#ffffff"
+              stroke="#6366f1" strokeWidth="2"
             />
             <text x={xP(i)} y={H - 4} textAnchor="middle"
               fontSize="11" fill={labelC} fontWeight="500">
@@ -395,9 +375,9 @@ function BarChartSVG({ isDark }) {
 
 // ─── DONUT SVG ────────────────────────────────────────────────────────────────
 
-function DonutChartSVG({ isDark }) {
+function DonutChartSVG({ isDark, data = userDistributionData }) {
   const [hov, setHov] = useState(null);
-  const total = userDistributionData.reduce((s, d) => s + d.value, 0);
+  const total = data.reduce((s, d) => s + d.value, 0);
 
   const cx = 120, cy = 120, R = 100, r = 62;
   let angle = -Math.PI / 2;
@@ -411,7 +391,7 @@ function DonutChartSVG({ isDark }) {
     const lg   = a > Math.PI ? 1 : 0;
     const path = `M ${x1} ${y1} A ${R} ${R} 0 ${lg} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${r} ${r} 0 ${lg} 0 ${ix1} ${iy1} Z`;
     angle += a;
-    return { ...d, path, color: PIE_COLORS[i] };
+    return { ...d, path, color: PIE_COLORS[i % PIE_COLORS.length] };
   });
 
   return (
@@ -636,17 +616,124 @@ export default function DashboardAdminView() {
   const { theme } = useContext(ThemeContext);
   const isDark    = theme === "dark";
 
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [chart, setChart]         = useState("line");
   const [dateRange, setDateRange] = useState({
     label: "Année 2026", from: "2026-01-01", to: "2026-12-31",
   });
+  const [analytics, setAnalytics] = useState({ total_views: 0, active_sessions: 0 });
+
+  const processedDistribution = useMemo(() => {
+    if (loading || !users.length) return userDistributionData;
+    const counts = {};
+    users.forEach(u => {
+      const role = u.role || "Inconnu";
+      counts[role] = (counts[role] || 0) + 1;
+    });
+    // Use proper labels if possible, but role names for now
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [users, loading]);
+
+  const processedGrowth = useMemo(() => {
+    if (loading || !users.length) return userGrowthData;
+    const months = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // Simplification : count users per month for the current year
+    const growth = months.map((m, idx) => {
+      const count = users.filter(u => {
+        if (!u.created_at) return false;
+        const d = new Date(u.created_at);
+        return d.getFullYear() === currentYear && d.getMonth() <= idx;
+      }).length;
+      return { month: m, utilisateurs: count };
+    });
+    
+    // Only return up to current month or similar
+    return growth.slice(0, now.getMonth() + 1);
+  }, [users, loading]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const data = await UserService.getAll();
+        setUsers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des utilisateurs:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+
+    const fetchAnalytics = async () => {
+      try {
+        const data = await AnalyticsService.getStats();
+        setAnalytics(data);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des analytics:", error);
+      }
+    };
+    fetchAnalytics();
+    
+    // 📡 Abonnement temps réel via WebSocket
+    const unsubscribe = AnalyticsService.subscribeToStats((data) => {
+      setAnalytics(data);
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   const stats = [
-    { label: "Utilisateurs totaux",  value: "1 240",  icon: FaUsers,     trend: 4.8,  trendLabel: "ce mois",       accentColor: "#6366f1" },
-    { label: "Vues totales",         value: "12 400", icon: FaGlobe,     trend: 12.3, trendLabel: "cette semaine", accentColor: "#10b981" },
-    { label: "Sessions actives",     value: "342",    icon: FaChartLine, trend: 7.1,  trendLabel: "aujourd'hui",   accentColor: "#3b82f6" },
-    { label: "Nouveaux inscrits",    value: "58",     icon: FaUserPlus,  trend: 9.2,  trendLabel: "cette semaine", accentColor: "#8b5cf6" },
-    { label: "Temps de réponse",     value: "124 ms", icon: FaClock,     trend: -8,   trendLabel: "vs hier",       accentColor: "#ef4444" },
+    { 
+      label: "Utilisateurs totaux",  
+      value: loading ? "..." : users.length.toLocaleString(),  
+      icon: FaUsers,     
+      trend: 4.8,  
+      trendLabel: "ce mois",       
+      accentColor: "#6366f1" 
+    },
+    { 
+      label: "Vues totales",         
+      value: loading ? "..." : analytics.total_views.toLocaleString(), 
+      icon: FaGlobe,     
+      trend: 12.3, 
+      trendLabel: "cette semaine", 
+      accentColor: "#10b981" 
+    },
+    { 
+      label: "Sessions actives",     
+      value: loading ? "..." : analytics.active_sessions.toLocaleString(),    
+      icon: FaChartLine, 
+      trend: 7.1,  
+      trendLabel: "aujourd'hui",   
+      accentColor: "#3b82f6" 
+    },
+    { 
+      label: "Nouveaux inscrits",    
+      value: loading ? "..." : users.filter(u => {
+        if (!u.created_at) return false;
+        const now = new Date();
+        const created = new Date(u.created_at);
+        const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+        return diffDays <= 7;
+      }).length.toLocaleString(),     
+      icon: FaUserPlus,  
+      trend: 9.2,  
+      trendLabel: "cette semaine", 
+      accentColor: "#8b5cf6" 
+    },
+    { 
+      label: "Temps de réponse",     
+      value: "124 ms", 
+      icon: FaClock,     
+      trend: -8,   
+      trendLabel: "vs hier",       
+      accentColor: "#ef4444" 
+    },
   ];
 
   const CHART_TABS = [
@@ -751,9 +838,9 @@ export default function DashboardAdminView() {
                 maxWidth: "740px",
               }}
             >
-              {chart === "line" && <LineChartSVG  isDark={isDark} />}
+              {chart === "line" && <LineChartSVG  isDark={isDark} data={processedGrowth} />}
               {chart === "bar"  && <BarChartSVG   isDark={isDark} />}
-              {chart === "pie"  && <DonutChartSVG isDark={isDark} />}
+              {chart === "pie"  && <DonutChartSVG isDark={isDark} data={processedDistribution} />}
             </div>
           </div>
         </div>

@@ -226,6 +226,8 @@ const UserService = {
         nom: profileData.nom,
         prenom: profileData.prenom,
         email: profileData.email,
+        can_read: profileData.can_read,
+        can_write: profileData.can_write,
       };
 
       localStorage.setItem("user", JSON.stringify(updatedUser));

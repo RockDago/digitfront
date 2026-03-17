@@ -13,8 +13,11 @@ import {
   HiOutlineChevronRight,
 } from 'react-icons/hi2';
 import { PiChartLineUp, PiChartBar, PiChartPieSlice } from 'react-icons/pi';
-import { AlertTriangle, Zap, CheckCircle2, Star } from 'lucide-react';
+import { AlertTriangle, Zap, CheckCircle2, Star, Loader2 } from 'lucide-react';
 import { ThemeContext } from '../../../../context/ThemeContext';
+import InspectionControleService from '../../../../services/inspectionControle.service';
+import PlanificationDescenteService from '../../../../services/planificationDescente.service';
+import accreditationServices from '../../../../services/accreditation.services';
 
 // ─── Evaluation helpers ───────────────────────────────────────────────────────
 const getLevelKey = (pts) => {
@@ -58,30 +61,12 @@ const LEVEL_CFG = {
   },
 };
 
-// ─── UNIVERSITIES data ────────────────────────────────────────────────────────
-const UNIVERSITIES = [
-  { id:'UNI-001', name:"Université d'Antananarivo",       shortName:'UA',   pts:340 },
-  { id:'UNI-007', name:'Univ. Catholique de Madagascar',  shortName:'UCM',  pts:315 },
-  { id:'UNI-002', name:'Université de Fianarantsoa',      shortName:'UF',   pts:295 },
-  { id:'UNI-003', name:'Université de Mahajanga',         shortName:'UM',   pts:270 },
-  { id:'UNI-010', name:'ENS Antananarivo',                shortName:'ENS',  pts:260 },
-  { id:'UNI-008', name:'IST Antananarivo',                shortName:'IST',  pts:258 },
-  { id:'UNI-004', name:'Université de Toamasina',         shortName:'UT',   pts:240 },
-  { id:'UNI-009', name:'Université Privée de Madagascar', shortName:'UPM',  pts:185 },
-  { id:'UNI-005', name:'Université de Toliara',           shortName:'UTol', pts:168 },
-  { id:'UNI-006', name:"Université d'Antsiranana",        shortName:'UAN',  pts:78  },
-];
-const SORTED_UNIS = [...UNIVERSITIES].sort((a, b) => b.pts - a.pts);
-
-// ─── Inspections data ─────────────────────────────────────────────────────────
-const inspectionsData = [
-  { id:1, universite:"Université d'Antananarivo",  type:'Audit Annuel',         responsable:'Jean Rakoto',    date:'2026-02-20', statut:'Achevée',  rapports:2 },
-  { id:2, universite:'Université de Fianarantsoa', type:'Inspection Surprise',  responsable:'Marie Rasoa',    date:'2026-03-05', statut:'Prévue',   rapports:0 },
-  { id:3, universite:'Université de Toamasina',    type:'Contrôle Qualité',     responsable:'Hery Randria',   date:'2026-02-15', statut:'En cours', rapports:1 },
-  { id:4, universite:'Université de Mahajanga',    type:'Suivi Pédagogique',    responsable:'Lucie Andria',   date:'2026-01-10', statut:'Achevée',  rapports:3 },
-  { id:5, universite:"Université d'Antsiranana",   type:'Audit Financier',      responsable:'Marc Solofo',    date:'2026-04-12', statut:'Prévue',   rapports:0 },
-  { id:6, universite:'Université de Toliara',      type:'Inspection Bâtiments', responsable:'Pauline Razafy', date:'2026-02-28', statut:'En cours', rapports:1 },
-];
+// ─── Helper: generate shortName from university name ──────────────────────────
+const makeShortName = (name) => {
+  if (!name) return '?';
+  const words = name.replace(/['']/g, ' ').split(/\s+/).filter(w => w.length > 2);
+  return words.map(w => w[0].toUpperCase()).join('').slice(0, 4) || name.slice(0, 3).toUpperCase();
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDate = (iso) => {
@@ -227,10 +212,11 @@ const StatCard = ({ title, value, sub, Icon, isDark }) => (
   </div>
 );
 
-// ─── Top10Section ─────────────────────────────────────────────────────────────
-const Top10Section = ({ isDark }) => {
-  const top3 = SORTED_UNIS.slice(0, 3);
-  const rest = SORTED_UNIS.slice(3, 10);
+// ─── Top10Section ─────────────────────────────────────────────────────────
+const Top10Section = ({ isDark, universities = [] }) => {
+  const sorted = [...universities].sort((a, b) => b.pts - a.pts);
+  const top3 = sorted.slice(0, 3);
+  const rest = sorted.slice(3);
 
   const PODIUM_GRAD = [
     'from-green-600 to-green-700',
@@ -238,78 +224,88 @@ const Top10Section = ({ isDark }) => {
     'from-blue-600 to-blue-700',
   ];
   const PODIUM_DESC = [
-    'Leader absolu en recherche & innovation',
-    'Excellence académique & valeurs humanistes',
-    'Innovation technologique & informatique',
+    "Meilleur score d'auto-évaluation",
+    'Excellence académique reconnue',
+    'Performance notable',
   ];
+
+  if (sorted.length === 0) {
+    return (
+      <div className="rounded-xl p-8 text-center" style={{
+        background: isDark ? '#1e293b' : '#ffffff',
+        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+      }}>
+        <HiOutlineBuildingLibrary className="w-10 h-10 mx-auto mb-2 opacity-30" style={{ color: isDark ? '#64748b' : '#94a3b8' }} />
+        <p className="text-sm" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>Aucune université classée pour le moment</p>
+      </div>
+    );
+  }
 
   return (
     <div>
       <h2 className="text-base font-bold mb-3 flex items-center gap-2"
         style={{ color: isDark ? '#f1f5f9' : '#0f172a' }}>
-        🏆 Top 10 Universités
+        🏆 Classement des Universités ({sorted.length})
       </h2>
 
-      {/* Top 3 podium */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-        {top3.map((u, i) => (
-          <div key={u.id}
-            className={`bg-gradient-to-br ${PODIUM_GRAD[i]} rounded-2xl p-5 text-center shadow-lg`}>
-            <div className="text-4xl mb-2">🏆</div>
-            <div className="text-3xl font-black text-white/90 mb-1">#{i + 1}</div>
-            <div className="text-sm font-bold text-white mb-2 leading-tight">{u.name}</div>
-            <div className="text-2xl font-black text-white">
-              {u.pts}<span className="text-xs text-white/70">/368</span>
-            </div>
-            <p className="text-[10px] text-white/80 mt-1.5 leading-snug">{PODIUM_DESC[i]}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* #4 – #10 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-        {rest.map((u, i) => {
-          const lk  = getLevelKey(u.pts);
-          const cfg = LEVEL_CFG[lk];
-          return (
+      {top3.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          {top3.map((u, i) => (
             <div key={u.id}
-              className="rounded-xl p-3.5 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow cursor-default"
-              style={{
-                background: isDark ? '#1e293b' : '#ffffff',
-                border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-              }}
-            >
-              <div className="text-base font-black mb-1"
-                style={{ color: isDark ? '#64748b' : '#94a3b8' }}>#{i + 4}</div>
-
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 text-xs font-black border-2 flex-shrink-0"
-                style={{ background: cfg.ring + '18', borderColor: cfg.ring, color: cfg.ring }}
-              >
-                {u.shortName.slice(0, 3)}
+              className={`bg-gradient-to-br ${PODIUM_GRAD[i]} rounded-2xl p-5 text-center shadow-lg`}>
+              <div className="text-4xl mb-2">🏆</div>
+              <div className="text-3xl font-black text-white/90 mb-1">#{i + 1}</div>
+              <div className="text-sm font-bold text-white mb-2 leading-tight">{u.name}</div>
+              <div className="text-2xl font-black text-white">
+                {u.pts}<span className="text-xs text-white/70">/368</span>
               </div>
-
-              <div className="text-[11px] font-semibold leading-tight mb-2 min-h-[30px] flex items-center justify-center"
-                style={{ color: isDark ? '#cbd5e1' : '#334155' }}>
-                {u.name}
-              </div>
-
-              <div className="mt-auto flex flex-col items-center gap-1">
-                <div className="flex items-baseline justify-center gap-0.5">
-                  <span className={`text-2xl font-black ${cfg.score}`}>{u.pts}</span>
-                  <span className="text-[10px]"
-                    style={{ color: isDark ? '#64748b' : '#94a3b8' }}>/368</span>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>
-                  {cfg.label}
-                </span>
-              </div>
+              <p className="text-[10px] text-white/80 mt-1.5 leading-snug">{PODIUM_DESC[i]}</p>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Légende */}
+      {rest.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2.5">
+          {rest.map((u, i) => {
+            const lk  = getLevelKey(u.pts);
+            const cfg = LEVEL_CFG[lk];
+            return (
+              <div key={u.id}
+                className="rounded-xl p-3.5 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow cursor-default"
+                style={{
+                  background: isDark ? '#1e293b' : '#ffffff',
+                  border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+                }}
+              >
+                <div className="text-base font-black mb-1"
+                  style={{ color: isDark ? '#64748b' : '#94a3b8' }}>#{i + 4}</div>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2 text-xs font-black border-2 flex-shrink-0"
+                  style={{ background: cfg.ring + '18', borderColor: cfg.ring, color: cfg.ring }}
+                >
+                  {u.shortName.slice(0, 3)}
+                </div>
+                <div className="text-[11px] font-semibold leading-tight mb-2 min-h-[30px] flex items-center justify-center"
+                  style={{ color: isDark ? '#cbd5e1' : '#334155' }}>
+                  {u.name}
+                </div>
+                <div className="mt-auto flex flex-col items-center gap-1">
+                  <div className="flex items-baseline justify-center gap-0.5">
+                    <span className={`text-2xl font-black ${cfg.score}`}>{u.pts}</span>
+                    <span className="text-[10px]"
+                      style={{ color: isDark ? '#64748b' : '#94a3b8' }}>/368</span>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>
+                    {cfg.label}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div
         className="flex flex-wrap gap-3 p-3 rounded-xl mt-3"
         style={{
@@ -329,86 +325,114 @@ const Top10Section = ({ isDark }) => {
   );
 };
 
-// ─── LineChartSVG ─────────────────────────────────────────────────────────────
-const LineChartSVG = ({ isDark }) => {
+// ─── LineChartSVG (smooth curves like DashboardSaeView) ───────────────────────
+const LineChartSVG = ({ isDark, data: rawData = [] }) => {
   const [hov, setHov] = useState(null);
-  const pts = [
-    {y:'Oct',v:1},{y:'Nov',v:2},{y:'Déc',v:3},
-    {y:'Jan',v:2},{y:'Fév',v:4},{y:'Mar',v:3},
-  ];
-  const gridC  = isDark ? '#1e293b' : '#f1f5f9';
-  const labelC = isDark ? '#475569' : '#94a3b8';
-  const W=520,H=210,PL=44,PR=20,PT=36,PB=36,cW=W-PL-PR,cH=H-PT-PB,max=6;
-  const xP = i => PL + (i / (pts.length - 1)) * cW;
-  const yP = v => PT + cH - (v / max) * cH;
-  const lp   = pts.map((d,i) => `${i?'L':'M'} ${xP(i)} ${yP(d.v)}`).join(' ');
-  const area = `${lp} L ${xP(pts.length-1)} ${PT+cH} L ${PL} ${PT+cH} Z`;
+  const pts = rawData.length > 0 ? rawData : [];
+  const W = 600, H = 250, PL = 36, PR = 30, PT = 20, PB = 30;
+  const cW = W - PL - PR, cH = H - PT - PB;
+  const maxV = Math.max(1, ...pts.map(p => p.v));
+  const xP = (i) => PL + (i / Math.max(1, pts.length - 1)) * cW;
+  const yP = (v) => PT + cH - (v / maxV) * cH;
+
+  const getSmoothPath = () => {
+    if (pts.length === 0) return '';
+    let path = `M ${xP(0).toFixed(1)} ${yP(pts[0].v).toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const cx = (xP(i - 1) + xP(i)) / 2;
+      path += ` C ${cx.toFixed(1)} ${yP(pts[i - 1].v).toFixed(1)}, ${cx.toFixed(1)} ${yP(pts[i].v).toFixed(1)}, ${xP(i).toFixed(1)} ${yP(pts[i].v).toFixed(1)}`;
+    }
+    return path;
+  };
+
+  if (pts.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', color: isDark ? '#94a3b8' : '#64748b' }}>
+        Aucune donnée d'inspection disponible
+      </div>
+    );
+  }
+
+  const lp = getSmoothPath();
+  const area = `${lp} L ${xP(pts.length - 1).toFixed(1)} ${PT + cH} L ${PL} ${PT + cH} Z`;
+  const gridLines = [0, Math.round(maxV / 4), Math.round(maxV / 2), Math.round(maxV * 3 / 4), maxV];
 
   return (
-    <div>
-      <p className="text-xs font-black mb-1"
-        style={{ color: isDark ? '#f1f5f9' : '#0f172a' }}>
-        Évolution mensuelle des missions
-      </p>
-      <p className="text-[11px] mb-3"
-        style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
-        Nombre de missions de descente par mois
-      </p>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full overflow-visible">
+    <div className="relative">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-sm font-bold" style={{ color: isDark ? '#f1f5f9' : '#0f172a' }}>
+            Évolution mensuelle des inspections
+          </p>
+          <p className="text-[11px] font-normal" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+            Nombre d'inspections par mois
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-md" style={{ background: '#6366f1' }} />
+          <span className="text-[11px] font-normal" style={{ color: isDark ? '#cbd5e1' : '#475569' }}>Inspections</span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ overflow: 'visible', display: 'block' }}>
         <defs>
-          <linearGradient id="lgLine" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#6366f1" stopOpacity=".22"/>
-            <stop offset="100%" stopColor="#6366f1" stopOpacity="0"/>
+          <linearGradient id="sicpLg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity=".25" />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
           </linearGradient>
+          <filter id="sicpGlow">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#6366f1" floodOpacity="0.4" />
+          </filter>
         </defs>
 
-        {[1,2,3,4,5].map(v => (
+        {gridLines.map(v => (
           <g key={v}>
-            <line x1={PL} y1={yP(v)} x2={W-PR} y2={yP(v)}
-              stroke={gridC} strokeWidth="1.5"/>
-            <text x={PL-7} y={yP(v)+4} textAnchor="end"
-              fontSize="9.5" fill={labelC} fontWeight="600">{v}</text>
+            <line x1={PL} y1={yP(v)} x2={W - PR} y2={yP(v)}
+              stroke={isDark ? '#334155' : '#f1f5f9'} strokeWidth="1" strokeDasharray="4 4" />
+            <text x={PL - 10} y={yP(v) + 4} textAnchor="end"
+              fontSize="10" fill={isDark ? '#64748b' : '#94a3b8'} fontWeight="normal">{v}</text>
           </g>
         ))}
 
-        <path d={area} fill="url(#lgLine)"/>
-        <path d={lp} fill="none" stroke="#6366f1"
-          strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-
         {pts.map((d, i) => (
-          <g key={i}
+          <text key={i} x={xP(i)} y={H - 10} textAnchor="middle"
+            fontSize="11" fill={isDark ? '#94a3b8' : '#64748b'} fontWeight="normal">{d.y}</text>
+        ))}
+
+        <path d={area} fill="url(#sicpLg)" />
+        <path d={lp} fill="none" stroke="#6366f1"
+          strokeWidth="3" strokeLinecap="round" filter="url(#sicpGlow)" />
+
+        {hov !== null && (
+          <g>
+            <line x1={xP(hov)} y1={PT} x2={xP(hov)} y2={PT + cH}
+              stroke={isDark ? '#64748b' : '#94a3b8'} strokeWidth="1" strokeDasharray="4 4" />
+            <circle cx={xP(hov)} cy={yP(pts[hov].v)} r="5"
+              fill="#6366f1" stroke={isDark ? '#0f172a' : '#ffffff'} strokeWidth="2.5" />
+            <g transform={`translate(${xP(hov) > W / 2 ? xP(hov) - 125 : xP(hov) + 15}, ${PT})`}>
+              <rect width="110" height="50" rx="8"
+                fill={isDark ? '#1e293b' : '#ffffff'}
+                stroke={isDark ? '#334155' : '#e2e8f0'}
+                filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))" />
+              <text x="12" y="20" fontSize="11" fontWeight="bold"
+                fill={isDark ? '#f1f5f9' : '#0f172a'}>{pts[hov].y}</text>
+              <circle cx="16" cy="36" r="3.5" fill="#6366f1" />
+              <text x="26" y="40" fontSize="11"
+                fill={isDark ? '#94a3b8' : '#64748b'}>Inspections:</text>
+              <text x="98" y="40" fontSize="11" textAnchor="end"
+                fontWeight="bold" fill={isDark ? '#f1f5f9' : '#0f172a'}>{pts[hov].v}</text>
+            </g>
+          </g>
+        )}
+
+        {pts.map((_, i) => (
+          <rect key={i}
+            x={xP(i) - (pts.length > 1 ? cW / (pts.length - 1) / 2 : cW / 2)}
+            y={PT} width={pts.length > 1 ? cW / (pts.length - 1) : cW} height={cH}
+            fill="transparent"
             onMouseEnter={() => setHov(i)}
             onMouseLeave={() => setHov(null)}
-            style={{ cursor:'pointer' }}
-          >
-            {hov === i && (
-              <>
-                <line x1={xP(i)} y1={PT} x2={xP(i)} y2={PT+cH}
-                  stroke="#6366f1" strokeWidth="1"
-                  strokeDasharray="3 3" opacity=".3"/>
-                <rect x={xP(i)-30} y={yP(d.v)-34}
-                  width="60" height="22" rx="7" fill="#4f46e5"/>
-                <text x={xP(i)} y={yP(d.v)-19}
-                  textAnchor="middle" fontSize="11"
-                  fontWeight="800" fill="white">
-                  {d.v} mission{d.v > 1 ? 's' : ''}
-                </text>
-              </>
-            )}
-            <circle
-              cx={xP(i)} cy={yP(d.v)}
-              r={hov === i ? 7 : 4.5}
-              fill={hov === i ? '#6366f1' : isDark ? '#1e293b' : 'white'}
-              stroke="#6366f1" strokeWidth="2.5"
-            />
-            <text x={xP(i)} y={H-4}
-              textAnchor="middle" fontSize="10"
-              fill={labelC} fontWeight="600">{d.y}</text>
-            <text x={xP(i)} y={yP(d.v)-9}
-              textAnchor="middle" fontSize="9"
-              fill="#6366f1" fontWeight="800"
-              opacity={hov === i ? 0 : 1}>{d.v}</text>
-          </g>
+            style={{ cursor: 'pointer' }}
+          />
         ))}
       </svg>
     </div>
@@ -416,30 +440,32 @@ const LineChartSVG = ({ isDark }) => {
 };
 
 // ─── BarChartSVG ──────────────────────────────────────────────────────────────
-const BarChartSVG = ({ isDark }) => {
+const BAR_COLORS = [
+  {c:'#6366f1',cH:'#4f46e5'},{c:'#06b6d4',cH:'#0891b2'},{c:'#10b981',cH:'#059669'},
+  {c:'#eab308',cH:'#ca8a04'},{c:'#f97316',cH:'#ea580c'},{c:'#ef4444',cH:'#dc2626'},
+  {c:'#8b5cf6',cH:'#7c3aed'},{c:'#ec4899',cH:'#db2777'},{c:'#14b8a6',cH:'#0d9488'},
+];
+const BarChartSVG = ({ isDark, data: rawData = [] }) => {
   const [hov, setHov] = useState(null);
-  const data = [
-    {r:'Antananarivo',v:92,c:'#6366f1',cH:'#4f46e5'},
-    {r:'Fianarantsoa',v:80,c:'#06b6d4',cH:'#0891b2'},
-    {r:'Mahajanga',   v:73,c:'#10b981',cH:'#059669'},
-    {r:'Toamasina',   v:65,c:'#eab308',cH:'#ca8a04'},
-    {r:'Toliara',     v:46,c:'#f97316',cH:'#ea580c'},
-    {r:'Antsiranana', v:21,c:'#ef4444',cH:'#dc2626'},
-  ];
+  const data = rawData.length > 0
+    ? rawData.map((d, i) => ({ ...d, c: BAR_COLORS[i % BAR_COLORS.length].c, cH: BAR_COLORS[i % BAR_COLORS.length].cH }))
+    : [{r:'Aucune donnée', v:0, c:'#94a3b8', cH:'#94a3b8'}];
   const gridC  = isDark ? '#1e293b' : '#f1f5f9';
   const labelC = isDark ? '#475569' : '#94a3b8';
   const barBg  = isDark ? '#0f172a' : '#f8fafc';
-  const W=520,H=220,PL=42,PR=16,PT=32,PB=58,cW=W-PL-PR,cH=H-PT-PB,bW=cW/data.length;
+  const maxVal = Math.max(1, ...data.map(d => d.v));
+  const W=520,H=220,PL=42,PR=16,PT=32,PB=58,cW=W-PL-PR,cH=H-PT-PB,bW=cW/Math.max(1, data.length);
+  const gridLines = Array.from({length: 4}, (_, i) => Math.round(maxVal * (i+1) / 4));
 
   return (
     <div>
       <p className="text-xs font-black mb-1"
         style={{ color: isDark ? '#f1f5f9' : '#0f172a' }}>
-        Qualité par région (%)
+        Inspections par université
       </p>
       <p className="text-[11px] mb-3"
         style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
-        Score de performance des IES par province
+        Nombre d'inspections par établissement
       </p>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full overflow-visible">
         <defs>
@@ -451,20 +477,20 @@ const BarChartSVG = ({ isDark }) => {
           ))}
         </defs>
 
-        {[25,50,75,100].map(v => {
-          const y = PT + cH - (v/100)*cH;
+        {gridLines.map(v => {
+          const y = PT + cH - (v/maxVal)*cH;
           return (
             <g key={v}>
               <line x1={PL} y1={y} x2={W-PR} y2={y}
                 stroke={gridC} strokeWidth="1.5"/>
               <text x={PL-5} y={y+4}
-                textAnchor="end" fontSize="9" fill={labelC}>{v}%</text>
+                textAnchor="end" fontSize="9" fill={labelC}>{v}</text>
             </g>
           );
         })}
 
         {data.map((d, i) => {
-          const bH = (d.v/100)*cH, x = PL+i*bW+bW*.15, w = bW*.7, y = PT+cH-bH;
+          const bH = (d.v/maxVal)*cH, x = PL+i*bW+bW*.15, w = bW*.7, y = PT+cH-bH;
           return (
             <g key={i}
               onMouseEnter={() => setHov(i)}
@@ -477,8 +503,8 @@ const BarChartSVG = ({ isDark }) => {
                 opacity={hov !== null && hov !== i ? 0.4 : 1}/>
               <text x={x+w/2} y={y-6}
                 textAnchor="middle" fontSize="10" fontWeight="800"
-                fill={d.v>=80 ? '#15803d' : d.v>=60 ? '#d97706' : '#dc2626'}>
-                {d.v}%
+                fill={d.c}>
+                {d.v}
               </text>
               {hov === i && (
                 <>
@@ -487,7 +513,7 @@ const BarChartSVG = ({ isDark }) => {
                   <text x={x+w/2} y={y-16}
                     textAnchor="middle" fontSize="9.5"
                     fontWeight="700" fill="white">
-                    {d.v}% — {d.r}
+                    {d.v} — {d.r}
                   </text>
                 </>
               )}
@@ -503,13 +529,9 @@ const BarChartSVG = ({ isDark }) => {
 };
 
 // ─── DonutChartSVG ────────────────────────────────────────────────────────────
-const DonutChartSVG = ({ isDark }) => {
+const DonutChartSVG = ({ isDark, data: rawData = [] }) => {
   const [hov, setHov] = useState(null);
-  const data = [
-    { label:'Conforme',      value:4, color:'#22c55e' },
-    { label:'Partiellement', value:2, color:'#eab308' },
-    { label:'Non conforme',  value:1, color:'#ef4444' },
-  ];
+  const data = rawData.length > 0 ? rawData : [{ label:'Aucune donnée', value:1, color:'#94a3b8' }];
   const total = data.reduce((s, d) => s + d.value, 0);
   const cx=160, cy=130, R=100, r=62;
   let angle = -Math.PI / 2;
@@ -795,6 +817,58 @@ export default function DashboardSicpView() {
     label:'Année 2026', from:'2026-01-01', to:'2026-12-31',
   });
 
+  // ── Dynamic state from backend ──
+  const [inspectionsData, setInspectionsData] = useState([]);
+  const [missions, setMissions]               = useState([]);
+  const [universities, setUniversities]       = useState([]);
+  const [loading, setLoading]                 = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        // 1) Inspections
+        const inspRes = await InspectionControleService.getAllInspections();
+        const inspList = Array.isArray(inspRes) ? inspRes : (inspRes?.data || []);
+        setInspectionsData(inspList.map(item => ({
+          id: item.id,
+          universite: item.universite || '',
+          type: item.type || '',
+          responsable: item.responsable || '',
+          date: item.date || '',
+          statut: item.statut || 'Prévue',
+          rapports: Array.isArray(item.rapports) ? item.rapports.length : (item.rapports || 0),
+        })));
+
+        // 2) Missions (planification)
+        const missRes = await PlanificationDescenteService.getAllMissions();
+        const missList = Array.isArray(missRes) ? missRes : (missRes?.data || []);
+        setMissions(missList);
+
+        // 3) Toutes les universités (geolocalisations) → classement
+        const geoData = await accreditationServices.getUniversitesGeolocalisations(true);
+        const geoList = Array.isArray(geoData) ? geoData : [];
+        const uniList = geoList
+          .filter(d => d.nom)
+          .map(d => {
+            const score_total = d.score_total ?? Math.round(((d.score_pourcentage || 0) * 368) / 100);
+            return {
+              id: d.id,
+              name: d.nom || 'Établissement inconnu',
+              shortName: makeShortName(d.nom),
+              pts: score_total,
+            };
+          });
+        setUniversities(uniList);
+      } catch (err) {
+        console.error('[DashboardSicpView] Erreur de chargement:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
+
   const filteredData = inspectionsData.filter(item => {
     const d = parseIso(item.date);
     const s = parseIso(dateRange.from);
@@ -805,13 +879,15 @@ export default function DashboardSicpView() {
     return true;
   });
 
+  const uniqueUnis = new Set(inspectionsData.map(i => i.universite));
+
   const kpis = [
     { title:'Inspections prévues',   value: inspectionsData.filter(i=>i.statut==='Prévue').length,  sub:'Missions planifiées',     Icon: HiOutlineClipboardDocument },
     { title:'En cours',              value: inspectionsData.filter(i=>i.statut==='En cours').length, sub:'Missions actives',        Icon: HiOutlineFlag              },
     { title:'Achevées',              value: inspectionsData.filter(i=>i.statut==='Achevée').length,  sub:'Missions terminées',      Icon: HiOutlineCheckCircle       },
-    { title:'IES visités',           value: 8,                                                        sub:'Établissements couverts', Icon: HiOutlineBuildingLibrary   },
+    { title:'IES visités',           value: uniqueUnis.size,                                         sub:'Établissements couverts', Icon: HiOutlineBuildingLibrary   },
     { title:'Rapports finalisés',    value: inspectionsData.reduce((s,i)=>s+i.rapports,0),           sub:'Documents produits',      Icon: HiOutlineShieldCheck       },
-    { title:'Établissements actifs', value: 6,                                                        sub:'IES répertoriés',         Icon: HiOutlineAcademicCap       },
+    { title:'Missions planifiées',   value: missions.length,                                         sub:'Planifications de descente', Icon: HiOutlineAcademicCap    },
   ];
 
   // ── Couleurs dynamiques ──
@@ -839,12 +915,65 @@ export default function DashboardSicpView() {
     gap:            '12px',
     flexWrap:       'wrap',
   };
+  // ── Computed chart data from real backend data ──
+  const MONTH_NAMES = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
+  const monthlyData = (() => {
+    const counts = {};
+    inspectionsData.forEach(insp => {
+      if (!insp.date) return;
+      const d = new Date(insp.date);
+      if (isNaN(d)) return;
+      const key = d.getMonth();
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    const months = Object.keys(counts).map(Number).sort((a,b) => a - b);
+    if (months.length === 0) return [];
+    return months.map(m => ({ y: MONTH_NAMES[m], v: counts[m] }));
+  })();
+
+  const barData = (() => {
+    const provCounts = {};
+    inspectionsData.forEach(insp => {
+      const uni = insp.universite || '';
+      if (!uni) return;
+      provCounts[uni] = (provCounts[uni] || 0) + 1;
+    });
+    return Object.entries(provCounts)
+      .sort((a,b) => b[1] - a[1])
+      .map(([r, v]) => ({ r, v }));
+  })();
+
+  const donutData = (() => {
+    const levels = { excellent:0, satisfaisant:0, acceptable:0, faible:0, 'non-conforme':0 };
+    universities.forEach(u => {
+      const lk = getLevelKey(u.pts);
+      if (levels[lk] !== undefined) levels[lk]++;
+    });
+    return [
+      { label:'Excellent',       value: levels['excellent'],      color:'#22c55e' },
+      { label:'Satisfaisant',    value: levels['satisfaisant'],   color:'#3b82f6' },
+      { label:'Acceptable',      value: levels['acceptable'],     color:'#eab308' },
+      { label:'Faible',          value: levels['faible'],         color:'#f97316' },
+      { label:'Non conforme',    value: levels['non-conforme'],   color:'#ef4444' },
+    ].filter(d => d.value > 0);
+  })();
 
   const CHART_TABS = [
     { k:'line', I: PiChartLineUp,   l:'Courbe'   },
     { k:'bar',  I: PiChartBar,      l:'Barres'   },
     { k:'pie',  I: PiChartPieSlice, l:'Secteurs' },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: rootBg }}>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+          <p className="text-sm font-semibold" style={{ color: subC }}>Chargement du tableau de bord…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-6 space-y-5 font-sans"
@@ -874,7 +1003,7 @@ export default function DashboardSicpView() {
       </div>
 
       {/* ── Top 10 ── */}
-      <Top10Section isDark={isDark}/>
+      <Top10Section isDark={isDark} universities={universities}/>
 
       {/* ── Charts ── */}
       <div style={cardS}>
@@ -914,9 +1043,9 @@ export default function DashboardSicpView() {
         <div className="p-5">
           <div className="p-5 rounded-xl min-h-[250px]"
             style={{ background: cardBg, border: `1px solid ${dividerC}` }}>
-            {chart === 'line' && <LineChartSVG  isDark={isDark}/>}
-            {chart === 'bar'  && <BarChartSVG   isDark={isDark}/>}
-            {chart === 'pie'  && <DonutChartSVG isDark={isDark}/>}
+            {chart === 'line' && <LineChartSVG  isDark={isDark} data={monthlyData}/>}
+            {chart === 'bar'  && <BarChartSVG   isDark={isDark} data={barData}/>}
+            {chart === 'pie'  && <DonutChartSVG isDark={isDark} data={donutData}/>}
           </div>
         </div>
       </div>

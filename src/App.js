@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
-import { AuthService } from "./services";
+import { AuthService, AnalyticsService } from "./services";
 
 // Theme
 import { ThemeProvider } from "./context/ThemeContext";
@@ -222,6 +222,7 @@ const DashboardRedirect = () => {
 };
 
 function App() {
+
   return (
     <ThemeProvider>
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

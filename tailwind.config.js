@@ -5,9 +5,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        // custom font used for logos and headers
         henno: ["Henno", "serif"],
-        // legacy cassannet kept in case other parts still reference it
         cassannet: ["Cassannet Plus", "serif"],
       },
     },

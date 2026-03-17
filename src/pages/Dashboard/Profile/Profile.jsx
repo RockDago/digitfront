@@ -636,6 +636,7 @@ export default function Profile() {
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
       localStorage.setItem("user", JSON.stringify({
         ...storedUser,
+        username: response.username,
         nom: response.nom,
         prenom: response.prenom,
         email: response.email,
@@ -773,7 +774,7 @@ function ProfileHeader({ profileData, loading, onSave, triggerToast }) {
     reader.readAsDataURL(file);
     setUploadingImage(true);
     try {
-      await onSave({ nom: profileData?.nom || "", prenom: profileData?.prenom || "", email: profileData?.email || "", telephone: profileData?.telephone || "", code_postal: profileData?.code_postal || "", adresse: profileData?.adresse || "" }, file);
+      await onSave({ username: profileData?.username || "", nom: profileData?.nom || "", prenom: profileData?.prenom || "", email: profileData?.email || "", telephone: profileData?.telephone || "", code_postal: profileData?.code_postal || "", adresse: profileData?.adresse || "" }, file);
     } catch { triggerToast("Erreur lors de la mise à jour de la photo", "error"); }
     finally { setUploadingImage(false); }
   };
@@ -809,7 +810,7 @@ function ProfileHeader({ profileData, loading, onSave, triggerToast }) {
 
         {/* Infos */}
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: profileData?.username ? 2 : 0 }}>
             <h1 style={{ fontSize: 18, fontWeight: 700, color: "var(--pr-text)", margin: 0 }}>
               {profileData ? `${profileData.nom || ""} ${profileData.prenom || ""}` : "—"}
             </h1>
@@ -817,6 +818,9 @@ function ProfileHeader({ profileData, loading, onSave, triggerToast }) {
               <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor"><circle cx="2" cy="2" r="2"/><circle cx="8" cy="2" r="2"/><circle cx="14" cy="2" r="2"/></svg>
             </button>
           </div>
+          {profileData?.username && (
+            <div style={{ fontSize: 13, color: "var(--pr-text-muted)", marginBottom: 4 }}>@{profileData.username}</div>
+          )}
           <div style={{ display: "flex", alignItems: "center", marginTop: 4, gap: 4 }}>
             <span className="online-dot" />
             <span style={{ fontSize: 12, color: "var(--pr-text-muted)" }}>En ligne</span>
@@ -844,7 +848,7 @@ function ProfileHeader({ profileData, loading, onSave, triggerToast }) {
 /* ─── PERSONAL INFO FORM ─────────────────────────────────────────────── */
 function PersonalInfoForm({ onSubmit, profileData, triggerToast, loading }) {
   const [selectedCountry, setSelectedCountry] = useState(COUNTRIES.find((c) => c.code === "MG"));
-  const [formData, setFormData] = useState({ nom: "", prenom: "", email: "", telephone: "", code_postal: "", adresse: "" });
+  const [formData, setFormData] = useState({ username: "", nom: "", prenom: "", email: "", telephone: "", code_postal: "", adresse: "" });
   const [selectedFile, setSelectedFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [editInfo, setEditInfo] = useState(false);   // mode édition infos perso
@@ -852,7 +856,7 @@ function PersonalInfoForm({ onSubmit, profileData, triggerToast, loading }) {
 
   useEffect(() => {
     if (profileData) {
-      setFormData({ nom: profileData.nom || "", prenom: profileData.prenom || "", email: profileData.email || "", telephone: profileData.telephone || "", code_postal: profileData.code_postal || "", adresse: profileData.adresse || "" });
+      setFormData({ username: profileData.username || "", nom: profileData.nom || "", prenom: profileData.prenom || "", email: profileData.email || "", telephone: profileData.telephone || "", code_postal: profileData.code_postal || "", adresse: profileData.adresse || "" });
     }
   }, [profileData]);
 
@@ -864,6 +868,7 @@ function PersonalInfoForm({ onSubmit, profileData, triggerToast, loading }) {
 
   const validateForm = () => {
     const newErrors = {};
+    if (!formData.username.trim()) newErrors.username = "Requis";
     if (!formData.nom.trim()) newErrors.nom = "Requis";
     if (!formData.prenom.trim()) newErrors.prenom = "Requis";
     if (!formData.email.trim()) newErrors.email = "Requis";
@@ -900,14 +905,25 @@ function PersonalInfoForm({ onSubmit, profileData, triggerToast, loading }) {
 
           {!editInfo ? (
             <div className="info-grid">
+              <div className="info-item"><label>Nom d'utilisateur</label><span>{profileData?.username ? `@${profileData.username}` : "—"}</span></div>
               <div className="info-item"><label>Nom</label><span>{profileData?.nom || "—"}</span></div>
               <div className="info-item"><label>Prénom</label><span>{profileData?.prenom || "—"}</span></div>
-              <div className="info-item"><label>Pays</label><span>{selectedCountry?.name || "—"}</span></div>
+              <div className="info-item"><label>Pays</label>
+                <span>
+                  {selectedCountry ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <img src={`https://flagcdn.com/w20/${selectedCountry.code.toLowerCase()}.png`} alt={selectedCountry.code} style={{ width: 16, height: 12, borderRadius: 2 }} />
+                      {selectedCountry.name}
+                    </span>
+                  ) : "—"}
+                </span>
+              </div>
               <div className="info-item"><label>Adresse</label><span>{profileData?.adresse || "—"}</span></div>
               <div className="info-item"><label>Code postal</label><span>{profileData?.code_postal || "—"}</span></div>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <DarkInput label="Nom d'utilisateur" name="username" value={formData.username} onChange={handleInputChange} error={errors.username} required placeholder="Ex: johndoe" />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <DarkInput label="Nom" name="nom" value={formData.nom} onChange={handleInputChange} error={errors.nom} required placeholder="Ex: Rakoto" />
                 <DarkInput label="Prénom" name="prenom" value={formData.prenom} onChange={handleInputChange} error={errors.prenom} required placeholder="Ex: Jean" />
@@ -1038,7 +1054,14 @@ function CountrySelectDark({ selectedCountry, onCountryChange }) {
     <div style={{ position: "relative" }} ref={containerRef}>
       <label className="dark-label">Pays</label>
       <button type="button" onClick={() => setOpen(!open)} className="dark-input" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", width: "100%", textAlign: "left" }}>
-        <span style={{ fontSize: 12, color: selectedCountry ? "var(--pr-text)" : "var(--pr-input-placeholder)" }}>{selectedCountry?.name || "Sélectionner..."}</span>
+        <span style={{ fontSize: 12, color: selectedCountry ? "var(--pr-text)" : "var(--pr-input-placeholder)", display: "flex", alignItems: "center", gap: "8px" }}>
+          {selectedCountry ? (
+            <>
+              <img src={`https://flagcdn.com/w20/${selectedCountry.code.toLowerCase()}.png`} alt={selectedCountry.code} style={{ width: 16, height: 12, borderRadius: 2 }} />
+              {selectedCountry.name}
+            </>
+          ) : "Sélectionner..."}
+        </span>
         <ChevronDown size={12} style={{ color: "var(--pr-text-sub)" }} />
       </button>
       {open && (
@@ -1053,7 +1076,10 @@ function CountrySelectDark({ selectedCountry, onCountryChange }) {
                 style={{ padding: "8px 12px", fontSize: 12, cursor: "pointer", display: "flex", justifyContent: "space-between", color: selectedCountry?.code === c.code ? "#3b82f6" : "var(--pr-text-body)", background: selectedCountry?.code === c.code ? "rgba(59,130,246,0.08)" : "transparent" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--pr-btn-ghost-hover)"}
                 onMouseLeave={e => e.currentTarget.style.background = selectedCountry?.code === c.code ? "rgba(59,130,246,0.08)" : "transparent"}>
-                <span>{c.name}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img src={`https://flagcdn.com/w20/${c.code.toLowerCase()}.png`} alt={c.code} style={{ width: 16, height: 12, borderRadius: 2 }} />
+                  {c.name}
+                </span>
                 <span style={{ color: "var(--pr-text-sub)" }}>{c.dial_code}</span>
               </li>
             ))}

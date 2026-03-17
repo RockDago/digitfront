@@ -6,6 +6,7 @@ import {
   FaUsers, FaClock, FaCheckCircle, FaBan, FaSpinner,
   FaEdit, FaChevronDown,
 } from "react-icons/fa";
+import PlanificationDescenteService from "../../../../services/planificationDescente.service";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -55,29 +56,7 @@ const EMPTY_FORM = {
   dateFin: "",
 };
 
-const initialData = [
-  {
-    id: 1,
-    experts: ["Marie Ranaivo", "Hanta Rasolofo", "Jean Rakoto"],
-    lieux: ["Université d'Antananarivo", "ESPA"],
-    province: "Antananarivo", region: "Analamanga",
-    dateDebut: "2026-02-10", dateFin: "2026-02-14", statut: "Terminée",
-  },
-  {
-    id: 2,
-    experts: ["Paul Andriamaro", "Hanta Rasolofo"],
-    lieux: ["Université de Fianarantsoa"],
-    province: "Fianarantsoa", region: "Haute Matsiatra",
-    dateDebut: "2026-02-20", dateFin: "2026-02-25", statut: "En cours",
-  },
-  {
-    id: 3,
-    experts: ["Lala Rakotondrabe", "Hery Andrianirina", "Nirina Rakoto", "Mialy Rasoa"],
-    lieux: ["Université de Toamasina", "IST"],
-    province: "Toamasina", region: "Atsinanana",
-    dateDebut: "2026-03-01", dateFin: "2026-03-05", statut: "Annulée",
-  },
-];
+
 
 function getDuree(debut, fin) {
   if (!debut || !fin) return "—";
@@ -318,7 +297,8 @@ const MissionForm = ({
 
 // ── Composant principal ───────────────────────────────────
 export default function PlanificationDescente() {
-  const [missions, setMissions] = useState(initialData);
+  const [missions, setMissions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -332,6 +312,22 @@ export default function PlanificationDescente() {
 
   const regions = form.province ? PROVINCES[form.province] : [];
 
+  // ── Chargement initial ─────────────────────────────────
+  const fetchMissions = async () => {
+    try {
+      setLoading(true);
+      const data = await PlanificationDescenteService.getAllMissions();
+      setMissions(data);
+    } catch (err) {
+      console.error("Erreur chargement missions:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchMissions(); }, []);
+
+  // ── Gestion du formulaire ──────────────────────────────
   const handleChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value, ...(field === "province" ? { region: "" } : {}) }));
     setErrors(prev => ({ ...prev, [field]: "" }));
@@ -372,13 +368,19 @@ export default function PlanificationDescente() {
     setForm(EMPTY_FORM); setExpertInput(""); setLieuInput(""); setErrors({});
   };
 
-  const handleSubmit = (e) => {
+  // ── CRUD backend ───────────────────────────────────────
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    const newId = missions.length > 0 ? Math.max(...missions.map(m => m.id)) + 1 : 1;
-    setMissions([{ id: newId, ...form, statut: "En cours" }, ...missions]);
-    closeModal(); setPage(1);
+    try {
+      const created = await PlanificationDescenteService.createMission({ ...form, statut: "En cours" });
+      setMissions(prev => [created, ...prev]);
+      closeModal(); setPage(1);
+    } catch (err) {
+      console.error("Erreur création:", err);
+      alert("Erreur lors de la création de la mission.");
+    }
   };
 
   const openEdit = (mission) => {
@@ -394,16 +396,27 @@ export default function PlanificationDescente() {
     setExpertInput(""); setLieuInput(""); setErrors({});
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    setMissions(missions.map(m => m.id === editTarget.id ? { ...m, ...form } : m));
-    closeModal();
+    try {
+      const updated = await PlanificationDescenteService.updateMission(editTarget.id, form);
+      setMissions(prev => prev.map(m => m.id === editTarget.id ? updated : m));
+      closeModal();
+    } catch (err) {
+      console.error("Erreur modification:", err);
+      alert("Erreur lors de la modification.");
+    }
   };
 
-  const handleStatusChange = (id, newStatut) => {
-    setMissions(missions.map(m => m.id === id ? { ...m, statut: newStatut } : m));
+  const handleStatusChange = async (id, newStatut) => {
+    try {
+      const updated = await PlanificationDescenteService.updateMission(id, { statut: newStatut });
+      setMissions(prev => prev.map(m => m.id === id ? updated : m));
+    } catch (err) {
+      console.error("Erreur statut:", err);
+    }
   };
 
   const handleSort = (field) => {
@@ -467,7 +480,14 @@ export default function PlanificationDescente() {
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-14 text-center">
+                  <FaSpinner className="animate-spin mx-auto text-blue-500 mb-3" size={26} />
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">Chargement des missions...</span>
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-4 py-10 text-center text-gray-400 dark:text-gray-500 text-sm italic">
                   Aucune mission planifiée.
@@ -620,7 +640,16 @@ export default function PlanificationDescente() {
                 className="px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors">
                 Annuler
               </button>
-              <button onClick={() => { setMissions(missions.filter(m => m.id !== deleteTarget)); setDeleteTarget(null); }}
+              <button onClick={async () => {
+                  try {
+                    await PlanificationDescenteService.deleteMission(deleteTarget);
+                    setMissions(prev => prev.filter(m => m.id !== deleteTarget));
+                    setDeleteTarget(null);
+                  } catch (err) {
+                    console.error("Erreur suppression:", err);
+                    alert("Erreur lors de la suppression.");
+                  }
+                }}
                 className="px-5 py-2.5 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md shadow-red-500/30 transition-colors">
                 Supprimer
               </button>

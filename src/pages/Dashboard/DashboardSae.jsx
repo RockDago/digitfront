@@ -52,6 +52,7 @@ export default function DashboardSae() {
         setCollapsed={setCollapsed}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
+        user={user}
       />
 
       {/* 2. WRAPPER PRINCIPAL */}
@@ -86,7 +87,20 @@ export default function DashboardSae() {
         >
           {/* Conteneur limité en largeur (max-w-7xl) */}
           <div className="mx-auto w-full max-w-7xl">
-            <Outlet />
+            {user?.can_read !== true ? (
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-10 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-6">
+                  <span className="text-4xl text-red-500">🚫</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Accès refusé</h2>
+                <p className="text-gray-500 dark:text-gray-400 max-w-md">
+                  Désolé, vous n'avez pas les permissions nécessaires pour consulter cette section. 
+                  Veuillez contacter l'administrateur si vous pensez qu'il s'agit d'une erreur.
+                </p>
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </div>
         </main>
       </div>

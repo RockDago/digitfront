@@ -29,7 +29,10 @@ export default function SidebarAdmin({
   setCollapsed,
   isMobileOpen,
   setIsMobileOpen,
+  user,
 }) {
+  const canRead = user?.can_read !== false;
+  const canWrite = user?.can_write !== false;
   // États d'ouverture des accordéons
   const [saeOpen, setSaeOpen] = useState(false);
   const [universiteOpen, setUniversiteOpen] = useState(false);
@@ -404,147 +407,163 @@ export default function SidebarAdmin({
 
         {/* Navigation Area */}
         <nav className="flex-1 overflow-y-auto pb-6 custom-scrollbar">
-          {/* === 1. VUE D'ENSEMBLE === */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Vue d'ensemble
+          {!canRead ? (
+            <div className="flex flex-col items-center justify-center h-full px-6 py-10 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-4">
+                <FaTimes className="text-red-500" />
               </div>
-            )}
-            {overviewItems.map((item) => (
-              <div
-                key={item.to}
-                onClick={() => goTo(item.to)}
-                className={`${baseItemClass} ${
-                  isLinkActive(item.to) ? activeClass : inactiveClass
-                }`}
-                title={collapsed ? item.label : ""}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon
-                    className={`text-lg flex-shrink-0 ${
-                      isLinkActive(item.to)
-                        ? "text-blue-600 dark:text-blue-300"
-                        : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                Accès non autorisé
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Vous n'avez pas la permission de consulter ce contenu.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* === 1. VUE D'ENSEMBLE === */}
+              <div className="mb-6">
+                {!collapsed && (
+                  <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Vue d'ensemble
+                  </div>
+                )}
+                {overviewItems.map((item) => (
+                  <div
+                    key={item.to}
+                    onClick={() => goTo(item.to)}
+                    className={`${baseItemClass} ${
+                      isLinkActive(item.to) ? activeClass : inactiveClass
                     }`}
-                  />
-                  {!collapsed && <span>{item.label}</span>}
-                </div>
+                    title={collapsed ? item.label : ""}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon
+                        className={`text-lg flex-shrink-0 ${
+                          isLinkActive(item.to)
+                            ? "text-blue-600 dark:text-blue-300"
+                            : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
+                        }`}
+                      />
+                      {!collapsed && <span>{item.label}</span>}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* === 2. MODULES MÉTIERS === */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Modules
+              {/* === 2. MODULES MÉTIERS === */}
+              <div className="mb-6">
+                {!collapsed && (
+                  <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Modules
+                  </div>
+                )}
+                {renderAccordion(
+                  "CNH",
+                  FaLandmark,
+                  cnhOpen,
+                  setCnhOpen,
+                  cnhItems,
+                  false,
+                )}
+                {renderAccordion(
+                  "SAE",
+                  FaGraduationCap,
+                  saeOpen,
+                  setSaeOpen,
+                  saeItems,
+                  true,
+                )}
+                {renderAccordion(
+                  "SICP",
+                  FaSitemap,
+                  sicpOpen,
+                  setSicpOpen,
+                  sicpItems,
+                  false,
+                )}
+                {renderAccordion(
+                  "Expert",
+                  FaUserTie,
+                  expertOpen,
+                  setExpertOpen,
+                  expertItems,
+                  false,
+                )}
+                {renderAccordion(
+                  "Gestionnaire habilitation",
+                  FaClipboardCheck,
+                  gestionHabilitationOpen,
+                  setGestionHabilitationOpen,
+                  gestionHabilitationItems,
+                  false,
+                )}
+                {renderAccordion(
+                  "Université",
+                  FaUniversity,
+                  universiteOpen,
+                  setUniversiteOpen,
+                  universiteItems,
+                  false,
+                )}
               </div>
-            )}
-            {renderAccordion(
-              "CNH",
-              FaLandmark,
-              cnhOpen,
-              setCnhOpen,
-              cnhItems,
-              false,
-            )}
-            {renderAccordion(
-              "SAE",
-              FaGraduationCap,
-              saeOpen,
-              setSaeOpen,
-              saeItems,
-              true,
-            )}
-            {renderAccordion(
-              "SICP",
-              FaSitemap,
-              sicpOpen,
-              setSicpOpen,
-              sicpItems,
-              false,
-            )}
-            {renderAccordion(
-              "Expert",
-              FaUserTie,
-              expertOpen,
-              setExpertOpen,
-              expertItems,
-              false,
-            )}
-            {renderAccordion(
-              "Gestionnaire habilitation",
-              FaClipboardCheck,
-              gestionHabilitationOpen,
-              setGestionHabilitationOpen,
-              gestionHabilitationItems,
-              false,
-            )}
-            {renderAccordion(
-              "Université",
-              FaUniversity,
-              universiteOpen,
-              setUniversiteOpen,
-              universiteItems,
-              false,
-            )}
-          </div>
 
-          {/* === 3. ADMINISTRATION === */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Administration
+              {/* === 3. ADMINISTRATION === */}
+              <div className="mb-6">
+                {!collapsed && (
+                  <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Administration
+                  </div>
+                )}
+                {renderAccordion(
+                  "Gestion Utilisateurs",
+                  FaUsers,
+                  utilisateursOpen,
+                  setUtilisateursOpen,
+                  utilisateursItems,
+                  false,
+                )}
+                {renderAccordion(
+                  "Paramètres",
+                  FaCog,
+                  settingsOpen,
+                  setSettingsOpen,
+                  settingsItems,
+                  false,
+                )}
               </div>
-            )}
-            {renderAccordion(
-              "Gestion Utilisateurs",
-              FaUsers,
-              utilisateursOpen,
-              setUtilisateursOpen,
-              utilisateursItems,
-              false,
-            )}
-            {renderAccordion(
-              "Paramètres",
-              FaCog,
-              settingsOpen,
-              setSettingsOpen,
-              settingsItems,
-              false,
-            )}
-          </div>
 
-          {/* === 4. SYSTÈME === */}
-          <div className="mb-6">
-            {!collapsed && (
-              <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                Système
-              </div>
-            )}
-            {systemItems.map((item) => (
-              <div
-                key={item.to}
-                onClick={() => goTo(item.to)}
-                className={`${baseItemClass} ${
-                  isLinkActive(item.to) ? activeClass : inactiveClass
-                }`}
-                title={collapsed ? item.label : ""}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon
-                    className={`text-lg flex-shrink-0 ${
-                      isLinkActive(item.to)
-                        ? "text-blue-600 dark:text-blue-300"
-                        : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
+              {/* === 4. SYSTÈME === */}
+              <div className="mb-6">
+                {!collapsed && (
+                  <div className="px-6 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Système
+                  </div>
+                )}
+                {systemItems.map((item) => (
+                  <div
+                    key={item.to}
+                    onClick={() => goTo(item.to)}
+                    className={`${baseItemClass} ${
+                      isLinkActive(item.to) ? activeClass : inactiveClass
                     }`}
-                  />
-                  {!collapsed && <span>{item.label}</span>}
-                </div>
+                    title={collapsed ? item.label : ""}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon
+                        className={`text-lg flex-shrink-0 ${
+                          isLinkActive(item.to)
+                            ? "text-blue-600 dark:text-blue-300"
+                            : "text-gray-400 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"
+                        }`}
+                      />
+                      {!collapsed && <span>{item.label}</span>}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </nav>
 
         {/* Bouton thème */}

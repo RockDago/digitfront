@@ -6,16 +6,11 @@ import {
   FaBuilding, FaUsers, FaFlask, FaAward
 } from "react-icons/fa";
 
-const dataInitiale = [
-  { id: 1, nom: "Université d'Antananarivo", province: "Antananarivo", region: "Analamanga", dateVisite: "2025-11-10", conformite: "Conforme" },
-  { id: 2, nom: "Université de Fianarantsoa", province: "Fianarantsoa", region: "Haute Matsiatra", dateVisite: "2025-09-05", conformite: "Partiellement" },
-  { id: 3, nom: "Université de Toamasina", province: "Toamasina", region: "Atsinanana", dateVisite: "2026-01-20", conformite: "Conforme" },
-  { id: 4, nom: "Université de Mahajanga", province: "Mahajanga", region: "Boeny", dateVisite: "2025-12-15", conformite: "Non conforme" },
-  { id: 5, nom: "Université de Toliara", province: "Toliara", region: "Atsimo-Andrefana", dateVisite: "2026-02-01", conformite: "Conforme" },
-  { id: 6, nom: "Université d'Antsiranana", province: "Antsiranana", region: "Diana", dateVisite: "2025-10-22", conformite: "Partiellement" },
-  { id: 7, nom: "IST Antananarivo", province: "Antananarivo", region: "Analamanga", dateVisite: "2026-02-10", conformite: "" },
-  { id: 8, nom: "ESSA Antananarivo", province: "Antananarivo", region: "Analamanga", dateVisite: "2025-08-30", conformite: "Conforme" },
-];
+import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+const API_BASE_URL = "http://localhost:8000/api/suivi-ies";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -60,7 +55,9 @@ const initForm = {
 
 export default function FormulaireSuiviIES() {
   const [page, setPage] = useState(1);
-  const [universites, setUniversites] = useState(dataInitiale);
+  const [universites, setUniversites] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [universiteSelectionnee, setUniversiteSelectionnee] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentStep, setCurrentStep] = useState(0);
@@ -73,12 +70,30 @@ export default function FormulaireSuiviIES() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
+  // ─── CHARGEMENT DES DONNÉES ───────────────────────────────────────────────
+  const fetchUniversites = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/`);
+      setUniversites(response.data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération :", error);
+      toast.error("Erreur de connexion au serveur.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchUniversites();
+  }, []);
+
   // ─── FILTRES ─────────────────────────────────────────────────────────────
   const filtered = universites.filter(u => {
     const t = searchTerm.toLowerCase();
-    const ok = u.id.toString().includes(t) || u.nom.toLowerCase().includes(t) ||
-      u.province.toLowerCase().includes(t) || u.region.toLowerCase().includes(t) ||
-      formatDate(u.dateVisite).includes(t) || u.dateVisite.includes(t);
+    const ok = u.id?.toString().includes(t) || u.nom?.toLowerCase().includes(t) ||
+      u.province?.toLowerCase().includes(t) || u.region?.toLowerCase().includes(t) ||
+      (u.dateVisite && formatDate(u.dateVisite).includes(t));
     let dateOk = true;
     if (dateDebut || dateFin) {
       const d = new Date(u.dateVisite).getTime();
@@ -108,16 +123,33 @@ export default function FormulaireSuiviIES() {
   };
 
   const triggerDelete = (id) => { setItemToDelete(id); setIsDeleteModalOpen(true); };
-  const confirmDelete = () => {
-    setUniversites(u => u.filter(x => x.id !== itemToDelete));
-    if (paginated.length === 1 && currentPage > 1) setCurrentPage(p => p-1);
-    setIsDeleteModalOpen(false); setItemToDelete(null);
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE_URL}/${itemToDelete}`);
+      setUniversites(u => u.filter(x => x.id !== itemToDelete));
+      if (paginated.length === 1 && currentPage > 1) setCurrentPage(p => p-1);
+      toast.success("Évaluation supprimée avec succès.");
+    } catch (error) {
+      console.error("Erreur suppression:", error);
+      toast.error("Erreur lors de la suppression.");
+    } finally {
+      setIsDeleteModalOpen(false); setItemToDelete(null);
+    }
   };
 
   const openForm = (univ = null) => {
     setUniversiteSelectionnee(univ);
     setCurrentStep(0); setErrors({});
-    setFormData(univ ? { ...initForm, nom: univ.nom, province: univ.province, region: univ.region, conformite: univ.conformite || "" } : initForm);
+    if (univ) {
+      // Load all properties to formData, falling back to empty string for null values
+      const loadedData = { ...initForm };
+      Object.keys(initForm).forEach(key => {
+        loadedData[key] = univ[key] !== null && univ[key] !== undefined ? univ[key] : "";
+      });
+      setFormData(loadedData);
+    } else {
+      setFormData(initForm);
+    }
     setPage(2);
   };
 
@@ -146,7 +178,44 @@ export default function FormulaireSuiviIES() {
 
   const nextStep = () => { if (validateStep(currentStep) && currentStep < steps.length-1) setCurrentStep(s => s+1); };
   const prevStep = () => { if (currentStep > 0) setCurrentStep(s => s-1); };
-  const handleSubmit = () => { if (!validateStep(currentStep)) return; setPage(1); };
+  
+  const handleSubmit = async () => { 
+    if (!validateStep(currentStep)) return; 
+    
+    setIsSubmitting(true);
+    try {
+      // Nettoyer les données (remplacer les chaînes vides par null pour certains types si nécessaire, 
+      // ou laisser string vide. Pydantic va gérer selon le schéma.)
+      const payload = { ...formData };
+      
+      // Conversion des types si besoin
+      ["nb_etudiants", "nb_diplomes", "taux_reussite", "taux_abandon", "nb_ouvrages", 
+       "nb_ordinateurs", "nb_enseignants", "permanents", "vacataires", "professeurs", 
+       "docteurs", "assistants", "nb_salles", "nb_publications"].forEach(key => {
+        if (payload[key] === "") {
+          payload[key] = null;
+        } else if (payload[key] !== null) {
+          payload[key] = Number(payload[key]);
+        }
+      });
+
+      if (universiteSelectionnee) {
+        await axios.put(`${API_BASE_URL}/${universiteSelectionnee.id}`, payload);
+        toast.success("Évaluation mise à jour avec succès.");
+      } else {
+        await axios.post(`${API_BASE_URL}/`, payload);
+        toast.success("Nouvelle évaluation créée avec succès.");
+      }
+      
+      await fetchUniversites();
+      setPage(1);
+    } catch (error) {
+      console.error("Erreur lors de la soumission :", error);
+      toast.error("Erreur lors de l'enregistrement. Vérifiez les champs.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // ─── BADGE ───────────────────────────────────────────────────────────────
   const BadgeConformite = ({ status }) => {
@@ -490,6 +559,7 @@ export default function FormulaireSuiviIES() {
   // ─── RENDER PRINCIPAL ────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-white font-sans p-4 sm:p-8">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
 
       {/* MODALE */}
       {isDeleteModalOpen && (
@@ -578,7 +648,7 @@ export default function FormulaireSuiviIES() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                            <FaCalendarAlt className="text-gray-400" size={11}/>{formatDate(u.dateVisite)}
+                            <FaCalendarAlt className="text-gray-400" size={11}/>{u.dateVisite ? formatDate(u.dateVisite) : "Non définie"}
                           </div>
                         </td>
                         <td className="px-5 py-4 text-center"><BadgeConformite status={u.conformite}/></td>
@@ -676,8 +746,12 @@ export default function FormulaireSuiviIES() {
                 </button>
               )}
               {currentStep === steps.length-1 ? (
-                <button type="button" onClick={handleSubmit} className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium">
-                  <FaCheck size={11}/> Enregistrer l'évaluation
+                <button type="button" onClick={handleSubmit} disabled={isSubmitting} className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition text-sm font-medium text-white ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>
+                  {isSubmitting ? (
+                    <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> Enregistrement...</>
+                  ) : (
+                    <><FaCheck size={11}/> Enregistrer l'évaluation</>
+                  )}
                 </button>
               ) : (
                 <button type="button" onClick={nextStep} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium">

@@ -7,6 +7,7 @@ import Actu from "./Actu";
 import Faq from "./Faq";
 import Apropos from "./APropos";
 import Contact from "./Contact"; // Import du nouveau composant Contact
+import { AnalyticsService } from "../../services";
 
 // --- COMPOSANT UTILITAIRE : CONTENEUR ---
 const PageContainer = ({ children, className = "" }) => (
@@ -55,6 +56,10 @@ const ScrollToTop = () => {
 
 // --- HOME ---
 const Home = () => {
+  useEffect(() => {
+    AnalyticsService.recordVisit("/");
+  }, []);
+
   return (
     <>
       {/* === 1. SECTION ACCUEIL === */}

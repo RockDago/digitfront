@@ -30,3 +30,105 @@ body {
   padding: 0;
   height: 100%;
 }
+
+/* --- Global Animations & Utilities --- */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.clip-circle-0 {
+  clip-path: circle(0% at 100% 0);
+  pointer-events: none;
+}
+
+.clip-circle-full {
+  clip-path: circle(150% at 100% 0);
+  pointer-events: auto;
+}
+
+/* Toast override for high z-index modules */
+.toast-container-override {
+  z-index: 999999 !important;
+}
+
+/* Slide in animation for custom toasts */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out forwards;
+}
+
+/* --- Tiptap Editor Styles --- */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+.ProseMirror ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin: 0.8rem 0 !important;
+}
+.ProseMirror ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin: 0.8rem 0 !important;
+}
+.ProseMirror li {
+  margin-bottom: 0.3rem !important;
+}
+.ProseMirror strong {
+  font-weight: 700 !important;
+}
+.ProseMirror em {
+  font-style: italic !important;
+}
+.ProseMirror u {
+  text-decoration: underline !important;
+}
+.ProseMirror s {
+  text-decoration: line-through !important;
+}
+.ProseMirror a {
+  color: #3b82f6 !important;
+  text-decoration: underline !important;
+  cursor: pointer;
+}
+.ProseMirror blockquote,
+.ProseMirror .tiptap-blockquote {
+  border-left: 3px solid #3b82f6 !important;
+  padding-left: 1rem !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+  color: #6b7280 !important;
+  font-style: italic !important;
+  margin: 1rem 0 !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+}
+.ProseMirror blockquote p {
+  margin: 0 !important;
+  color: #6b7280 !important;
+}

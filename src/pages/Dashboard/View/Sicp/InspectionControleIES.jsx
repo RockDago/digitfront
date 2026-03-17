@@ -15,99 +15,16 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 
-const mockData = [
-  {
-    id: 1,
-    date: "2026-02-20",
-    universite: "Université d'Antananarivo",
-    adresse: "Ambohitsaina, Antananarivo 101",
-    type: "Audit Annuel",
-    responsable: "Jean Rakoto",
-    statut: "Achevée",
-    problemes: "Manque d'infrastructures de laboratoire.",
-    recommandations: "Construire de nouvelles salles de TP d'ici 2027.",
-    rapports: 2,
-    etapes: "Suivi budgétaire prévu pour le prochain trimestre.",
-    commentaires: "Rapport validé par le ministère.",
-  },
-  {
-    id: 2,
-    date: "2026-03-05",
-    universite: "Université de Fianarantsoa",
-    adresse: "Andrainjato, Fianarantsoa",
-    type: "Inspection Surprise",
-    responsable: "Marie Rasoa",
-    statut: "Prévue",
-    problemes: "-",
-    recommandations: "-",
-    rapports: 0,
-    etapes: "Préparation de l'équipe de descente.",
-    commentaires: "En attente d'ordre de mission.",
-  },
-  {
-    id: 3,
-    date: "2026-02-15",
-    universite: "Université de Toamasina",
-    adresse: "Andranomena, Toamasina",
-    type: "Contrôle Qualité",
-    responsable: "Hery Randria",
-    statut: "En cours",
-    problemes: "Connexion internet très instable dans le campus.",
-    recommandations: "Installer la fibre optique sur les zones pédagogiques.",
-    rapports: 1,
-    etapes: "Rédaction du rapport partiel en cours.",
-    commentaires: "Intervention technique requise avec le fournisseur d'accès.",
-  },
-  {
-    id: 4,
-    date: "2026-01-10",
-    universite: "Université de Mahajanga",
-    adresse: "Ambondrona, Mahajanga",
-    type: "Suivi Pédagogique",
-    responsable: "Lucie Andria",
-    statut: "Achevée",
-    problemes: "Effectif étudiant trop élevé par rapport aux salles.",
-    recommandations: "Mettre en place un système de cours alternés.",
-    rapports: 3,
-    etapes: "Vérification des emplois du temps du second semestre.",
-    commentaires: "Très bonne coopération de l'administration locale.",
-  },
-  {
-    id: 5,
-    date: "2026-04-12",
-    universite: "Université d'Antsiranana",
-    adresse: "Ambiky, Antsiranana",
-    type: "Audit Financier",
-    responsable: "Marc Solofo",
-    statut: "Prévue",
-    problemes: "-",
-    recommandations: "-",
-    rapports: 0,
-    etapes: "Demande des états financiers de 2025.",
-    commentaires: "Dossier en préparation.",
-  },
-  {
-    id: 6,
-    date: "2026-02-28",
-    universite: "Université de Toliara",
-    adresse: "Antsiranana, Toliara",
-    type: "Inspection Bâtiments",
-    responsable: "Pauline Razafy",
-    statut: "En cours",
-    problemes: "Toiture du bloc C endommagée.",
-    recommandations: "Réfection urgente avant la saison des pluies.",
-    rapports: 1,
-    etapes: "Évaluation du devis des travaux.",
-    commentaires: "Risque de fermeture du bâtiment si non réparé.",
-  },
-];
+import inspectionControleService from "../../../../services/inspectionControle.service";
+import { toast } from "react-toastify"; // Optional, assumes react-toastify is available or can be added for notifications
 
 export default function InspectionControleIES() {
-  const [data, setData] = useState(mockData);
+  const [data, setData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewItem, setViewItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const initialFormState = {
     date: "",
@@ -126,6 +43,22 @@ export default function InspectionControleIES() {
   const [files, setFiles] = useState([]);
   const [fileError, setFileError] = useState("");
   const fileInputRef = useRef(null);
+
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await inspectionControleService.getAllInspections();
+      setData(res);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des inspections", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [searchTerm, setSearchTerm] = useState("");
   const [dateStart, setDateStart] = useState("");
@@ -176,18 +109,35 @@ export default function InspectionControleIES() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newItem = {
-      id: data.length + 1,
-      ...formData,
-      type: formData.typeInspection,
-      rapports: files.length,
-    };
-    setData([newItem, ...data]);
-    setIsModalOpen(false);
-    setFormData(initialFormState);
-    setFiles([]);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("date", formData.date);
+      formDataToSend.append("universite", formData.universite);
+      formDataToSend.append("adresse", formData.adresse);
+      formDataToSend.append("type", formData.typeInspection);
+      formDataToSend.append("responsable", formData.responsable);
+      formDataToSend.append("statut", formData.statut);
+      formDataToSend.append("problemes", formData.problemes);
+      formDataToSend.append("recommandations", formData.recommandations);
+      formDataToSend.append("etapes", formData.etapes);
+      formDataToSend.append("commentaires", formData.commentaires);
+      
+      files.forEach((file) => {
+        formDataToSend.append("files", file);
+      });
+
+      await inspectionControleService.createInspection(formDataToSend);
+      await fetchData(); // Refresh data
+      toast.success("Inspection créée avec succès !");
+      setIsModalOpen(false);
+      setFormData(initialFormState);
+      setFiles([]);
+    } catch (error) {
+      console.error("Erreur post", error);
+      toast.error("Erreur lors de la création de l'inspection.");
+    }
   };
 
   const handleEditClick = (item) => {
@@ -206,22 +156,48 @@ export default function InspectionControleIES() {
     setEditItem(item);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    const updatedData = data.map((item) =>
-      item.id === editItem.id
-        ? { ...item, ...formData, type: formData.typeInspection, rapports: item.rapports + files.length }
-        : item
-    );
-    setData(updatedData);
-    setEditItem(null);
-    setFormData(initialFormState);
-    setFiles([]);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("date", formData.date);
+      formDataToSend.append("universite", formData.universite);
+      formDataToSend.append("adresse", formData.adresse);
+      formDataToSend.append("type", formData.typeInspection);
+      formDataToSend.append("responsable", formData.responsable);
+      formDataToSend.append("statut", formData.statut);
+      formDataToSend.append("problemes", formData.problemes);
+      formDataToSend.append("recommandations", formData.recommandations);
+      formDataToSend.append("etapes", formData.etapes);
+      formDataToSend.append("commentaires", formData.commentaires);
+      
+      files.forEach((file) => {
+        formDataToSend.append("files", file);
+      });
+
+      await inspectionControleService.updateInspection(editItem.id, formDataToSend);
+      await fetchData();
+      toast.success("Inspection modifiée avec succès !");
+      setEditItem(null);
+      setFormData(initialFormState);
+      setFiles([]);
+    } catch (error) {
+      console.error("Erreur put", error);
+      console.error("===== ERREUR DETAILS =====", error.response?.data);
+      toast.error("Erreur lors de la modification de l'inspection.");
+    }
   };
 
-  const confirmDelete = () => {
-    setData(data.filter((item) => item.id !== deleteItem.id));
-    setDeleteItem(null);
+  const confirmDelete = async () => {
+    try {
+      await inspectionControleService.deleteInspection(deleteItem.id);
+      await fetchData();
+      toast.success("Inspection supprimée avec succès !");
+      setDeleteItem(null);
+    } catch (error) {
+      console.error("Erreur delete", error);
+      toast.error("Erreur lors de la suppression de l'inspection.");
+    }
   };
 
   const filteredData = data.filter((item) => {
@@ -318,7 +294,13 @@ export default function InspectionControleIES() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {currentItems.length > 0 ? (
+              {loading ? (
+                 <tr>
+                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      Chargement des inspections...
+                    </td>
+                 </tr>
+              ) : currentItems.length > 0 ? (
                 currentItems.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-200 text-center">{item.date}</td>
@@ -338,7 +320,7 @@ export default function InspectionControleIES() {
                     <td className="px-4 py-3 text-sm text-center">
                       <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300">
                         <FaFileAlt className="text-gray-400" />
-                        {item.rapports > 0 ? `${item.rapports} fichier(s)` : "Aucun"}
+                        {Array.isArray(item.rapports) && item.rapports.length > 0 ? `${item.rapports.length} fichier(s)` : "Aucun"}
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -672,21 +654,23 @@ export default function InspectionControleIES() {
 
               <div>
                 <h4 className="text-sm font-bold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1 mb-3">Rapports & Pièces jointes</h4>
-                {viewItem.rapports > 0 ? (
+                {Array.isArray(viewItem.rapports) && viewItem.rapports.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {Array.from({ length: viewItem.rapports }).map((_, idx) => (
+                    {viewItem.rapports.map((rapport, idx) => (
                       <div key={idx} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <FaFilePdf className="text-red-500 text-xl flex-shrink-0" />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">Rapport_Audit_0{idx + 1}.pdf</span>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate" title={rapport.original_name}>
+                             {rapport.original_name || `Document_${idx + 1}`}
+                          </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 transition-colors" title="Visualiser">
+                          <a href={rapport.file_path && rapport.file_path.startsWith('/') ? `http://localhost:8000${rapport.file_path}` : `http://localhost:8000/${rapport.file_path}`} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 transition-colors" title="Visualiser">
                             <FaEye />
-                          </button>
-                          <button className="p-2 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 transition-colors" title="Télécharger">
+                          </a>
+                          <a href={rapport.file_path && rapport.file_path.startsWith('/') ? `http://localhost:8000${rapport.file_path}` : `http://localhost:8000/${rapport.file_path}`} download={rapport.original_name} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 transition-colors" title="Télécharger">
                             <FaDownload />
-                          </button>
+                          </a>
                         </div>
                       </div>
                     ))}

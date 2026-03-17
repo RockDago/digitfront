@@ -289,35 +289,6 @@ const Navbar = ({ children }) => {
         </div>
       )}
 
-      {/* --- STYLES GLOBAUX --- */}
-      <style jsx global>{`
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: scale(0.95) translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .clip-circle-0 {
-          clip-path: circle(0% at 100% 0);
-          pointer-events: none;
-        }
-        .clip-circle-full {
-          clip-path: circle(150% at 100% 0);
-          pointer-events: auto;
-        }
-
-        /* C'est ICI la clé pour que le toast passe par-dessus le modal (z-index modal = 100) */
-        .toast-container-override {
-          z-index: 999999 !important;
-        }
-      `}</style>
     </div>
   );
 };

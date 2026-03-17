@@ -1,13 +1,15 @@
 // src/pages/Home/APropos.jsx
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { fetchApropos } from "../../services/apropos.services";
+
 
 const APropos = () => {
   const [aproposData, setAproposData]           = useState(null);
   const [loading, setLoading]                   = useState(true);
   const [error, setError]                       = useState(null);
   const [expandedSections, setExpandedSections] = useState({});
+
 
   // ─── Chargement API ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -27,8 +29,10 @@ const APropos = () => {
     })();
   }, []);
 
+
   const toggleSection = (id) =>
     setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }));
+
 
   // ─── Chargement ──────────────────────────────────────────────────────────────
   if (loading) {
@@ -44,22 +48,33 @@ const APropos = () => {
     );
   }
 
+
   // ─── Erreur ──────────────────────────────────────────────────────────────────
   if (error || !aproposData) {
     return (
       <section id="apropos" className="bg-gradient-to-b from-slate-50 to-white py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <p className="text-red-500 font-medium">{error || "Données indisponibles."}</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-blue-50 text-blue-400">
+              <Info size={32} />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-700 mb-2">
+              À propos de nous
+            </h3>
+            <p className="text-slate-500 text-sm max-w-sm">
+              Cette section sera bientôt disponible.
+            </p>
           </div>
         </div>
       </section>
     );
   }
 
+
   const sections = (aproposData.sections || [])
     .slice()
     .sort((a, b) => a.position - b.position);
+
 
   // ─── Rendu ───────────────────────────────────────────────────────────────────
   return (
@@ -68,6 +83,7 @@ const APropos = () => {
       className="bg-gradient-to-b from-slate-50 to-white py-16 lg:py-20"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
 
         {/* ─── EN-TÊTE ─────────────────────────────────────────────────────────── */}
         <header className="mb-12 text-center">
@@ -82,11 +98,20 @@ const APropos = () => {
           )}
         </header>
 
+
         {/* ─── SECTIONS DYNAMIQUES ─────────────────────────────────────────────── */}
         {sections.length === 0 ? (
-          <p className="text-center text-slate-400 italic text-sm py-10">
-            Aucune section disponible pour le moment.
-          </p>
+          <div className="text-center p-8 bg-slate-50 rounded-xl border border-slate-100 max-w-2xl mx-auto">
+            <div className="w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <Info size={26} />
+            </div>
+            <h3 className="text-base font-semibold text-slate-700 mb-1">
+              Aucune section disponible
+            </h3>
+            <p className="text-slate-500 text-sm">
+              Le contenu À propos n'a pas encore été ajouté.
+            </p>
+          </div>
         ) : (
           <div className="space-y-4">
             {sections.map((section) => (
@@ -110,6 +135,7 @@ const APropos = () => {
                   )}
                 </button>
 
+
                 {/* ─── CONTENU HTML RICHE ───────────────────────────────────── */}
                 {expandedSections[section.id] && (
                   <div className="px-5 sm:px-6 pb-6 animate-fadeIn">
@@ -125,7 +151,9 @@ const APropos = () => {
         )}
       </div>
 
+
       <style jsx>{`
+
 
         /* ─── ANIMATION ──────────────────────────────────────────────────────── */
         @keyframes fadeIn {
@@ -136,6 +164,7 @@ const APropos = () => {
           animation: fadeIn 0.3s ease-out forwards;
         }
 
+
         /* ─── CONTENEUR PRINCIPAL ────────────────────────────────────────────── */
         .apropos-content {
           font-size: 0.95rem;
@@ -143,12 +172,14 @@ const APropos = () => {
           color: #334155;
         }
 
+
         /* ─── PARAGRAPHES ────────────────────────────────────────────────────── */
         .apropos-content p {
           margin-bottom: 0.9rem;
           text-align: justify;
           color: #334155;
         }
+
 
         /* ─── TITRES ─────────────────────────────────────────────────────────── */
         .apropos-content h1,
@@ -165,11 +196,13 @@ const APropos = () => {
         .apropos-content h3 { font-size: 1.1rem; }
         .apropos-content h4 { font-size: 1rem;   }
 
+
         /* ─── STYLES INLINE ──────────────────────────────────────────────────── */
         .apropos-content strong { font-weight: 700; }
         .apropos-content em     { font-style: italic; }
         .apropos-content u      { text-decoration: underline; }
         .apropos-content s      { text-decoration: line-through; }
+
 
         /* ─── LIENS ──────────────────────────────────────────────────────────── */
         .apropos-content a {
@@ -179,6 +212,7 @@ const APropos = () => {
           transition: color 0.2s;
         }
         .apropos-content a:hover { color: #1e40af; }
+
 
         /* ─── LISTES ─────────────────────────────────────────────────────────── */
         .apropos-content ul {
@@ -198,6 +232,7 @@ const APropos = () => {
           text-align: left;
         }
 
+
         /* ─── CITATION ───────────────────────────────────────────────────────── */
         .apropos-content blockquote {
           border-left: 4px solid #2563eb !important;
@@ -209,7 +244,9 @@ const APropos = () => {
           margin: 1rem 0 !important;
         }
 
+
         /* ─── IMAGES ─────────────────────────────────────────────────────────── */
+
 
         /*
           ✅ margin auto  → centrage garanti
@@ -227,9 +264,11 @@ const APropos = () => {
           border-radius: 8px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 
+
           /* Empêche juste le débordement, sans forcer une taille */
           max-width: 100%;
         }
+
 
         /* Responsive mobile : on repasse à 100% sur petit écran */
         @media (max-width: 640px) {
@@ -239,9 +278,11 @@ const APropos = () => {
           }
         }
 
+
       `}</style>
     </section>
   );
 };
+
 
 export default APropos;

@@ -1,5 +1,8 @@
-// C:\Users\hp\Desktop\Digitalisation\frontend\src\pages\Dashboard\View\Admin\DiffusionMessages.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import UserService from "../../../../services/user.service";
+import NotificationService from "../../../../services/notification.service";
 import {
   FaPaperPlane,
   FaUsers,
@@ -18,67 +21,16 @@ import {
   FaEye,
 } from "react-icons/fa";
 
-const USER_GROUPS = [
-  {
-    id: "CNH",
-    label: "Service CNH",
-    color: "bg-indigo-500",
-    light:
-      "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
-    count: 5,
-  },
-  {
-    id: "SAE",
-    label: "Service SAE",
-    color: "bg-sky-500",
-    light: "bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
-    count: 3,
-  },
-  {
-    id: "SICP",
-    label: "Service SICP",
-    color: "bg-cyan-500",
-    light: "bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
-    count: 4,
-  },
-  {
-    id: "Expert",
-    label: "Expert Evaluateur",
-    color: "bg-violet-500",
-    light:
-      "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
-    count: 12,
-  },
-  {
-    id: "GestionnaireHabilitation",
-    label: "Gestionnaire Habilitation",
-    color: "bg-teal-500",
-    light: "bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
-    count: 2,
-  },
-  {
-    id: "Universite",
-    label: "Universite",
-    color: "bg-amber-500",
-    light:
-      "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-    count: 28,
-  },
-  {
-    id: "Requerant",
-    label: "Requerant",
-    color: "bg-rose-500",
-    light: "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
-    count: 134,
-  },
-  {
-    id: "Etablissement",
-    label: "Etablissement",
-    color: "bg-orange-500",
-    light:
-      "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-    count: 47,
-  },
+const BASE_USER_GROUPS = [
+  { id: "CNH", label: "Service CNH", color: "bg-indigo-500", light: "bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" },
+  { id: "SAE", label: "Service SAE", color: "bg-sky-500", light: "bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300" },
+  { id: "SICP", label: "Service SICP", color: "bg-cyan-500", light: "bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300" },
+  { id: "Expert", label: "Expert Evaluateur", color: "bg-violet-500", light: "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300" },
+  { id: "gestionnaire_habilitation", label: "Gestionnaire Habilitation", color: "bg-teal-500", light: "bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300" },
+  { id: "Universite", label: "Universite", color: "bg-amber-500", light: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
+  { id: "Requerant", label: "Requerant", color: "bg-rose-500", light: "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300" },
+  { id: "Etablissement", label: "Etablissement", color: "bg-orange-500", light: "bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" },
+  { id: "Admin", label: "Administrateur", color: "bg-red-500", light: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
 ];
 
 const NOTIF_TYPES = [
@@ -108,60 +60,10 @@ const NOTIF_TYPES = [
   },
 ];
 
-const INIT_HISTORY = [
-  {
-    id: 1,
-    title: "Mise a jour criteres 2025",
-    type: "message",
-    targets: ["CNH", "SAE", "SICP"],
-    date: "25/02/2025 09h14",
-    read: 10,
-    total: 12,
-    message:
-      "Informations importantes concernant la mise a jour des criteres d evaluation 2025.",
-    content:
-      "Chers utilisateurs,\n\nNous vous informons que les criteres d evaluation ont ete mis a jour.\n\nChangements principaux :\n- Nouveaux indicateurs de qualite pedagogique\n- Grille d evaluation revisee\n- Delais de traitement reduits a 30 jours ouvrables\n\nL equipe d administration",
-  },
-  {
-    id: 2,
-    title: "Maintenance 02/03",
-    type: "maintenance",
-    targets: ["all"],
-    date: "24/02/2025 17h30",
-    read: 235,
-    total: 235,
-    message: "Le systeme sera indisponible le 02/03/2025 de 00h00 a 04h00.",
-    content:
-      "Avis de maintenance systeme :\n\nLa plateforme sera en maintenance le :\n\n- Date : Dimanche 02 mars 2025\n- Plage horaire : 00h00 - 04h00\n- Impact : Indisponibilite totale\n\nL equipe technique",
-  },
-  {
-    id: 3,
-    title: "Delai dossier expirant",
-    type: "alerte",
-    targets: ["Requerant"],
-    date: "23/02/2025 08h00",
-    read: 98,
-    total: 134,
-    message:
-      "Le delai de reponse pour plusieurs dossiers expire dans 48 heures.",
-    content:
-      "ALERTE DELAI :\n\nPlusieurs dossiers arrivent a echeance dans les prochaines 48 heures.\n\nMerci d agir rapidement en vous connectant a votre espace.",
-  },
-  {
-    id: 4,
-    title: "Nouveaux criteres habilitation",
-    type: "info",
-    targets: ["Expert", "GestionnaireHabilitation"],
-    date: "20/02/2025 14h22",
-    read: 11,
-    total: 14,
-    message: "Les criteres d habilitation de programme ont ete mis a jour.",
-    content:
-      "Information importante :\n\nLes nouveaux criteres d habilitation de programme sont disponibles.\n\nPoints cles :\n- Mise a jour de la grille d evaluation\n- Nouveaux seuils d encadrement pedagogique\n- Documentation complementaire requise",
-  },
-];
+
 
 export default function DiffusionMessages() {
+  const [userGroups, setUserGroups] = useState([]);
   const [targetMode, setTargetMode] = useState("groups");
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [notifType, setNotifType] = useState("message");
@@ -172,7 +74,8 @@ export default function DiffusionMessages() {
   const [showPreview, setShowPreview] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [historyList, setHistoryList] = useState(INIT_HISTORY);
+  const [historyList, setHistoryList] = useState([]);
+  
   const [selectedH, setSelectedH] = useState(null);
   const [showHModal, setShowHModal] = useState(false);
   const [editingH, setEditingH] = useState(false);
@@ -180,7 +83,57 @@ export default function DiffusionMessages() {
   const [editMsg, setEditMsg] = useState("");
   const [editContent, setEditContent] = useState("");
 
-  const filteredGroups = USER_GROUPS.filter((g) =>
+  const fetchData = async () => {
+    try {
+      // Get users for counts
+      const allUsers = await UserService.getAll();
+      const roleCounts = {};
+      allUsers.forEach(u => {
+        // lowercasing role comparison or keeping it accurate
+        const r = u.role ? u.role : "Requerant";
+        roleCounts[r] = (roleCounts[r] || 0) + 1;
+      });
+
+      const updatedGroups = BASE_USER_GROUPS.map(g => {
+        let count = 0;
+        Object.entries(roleCounts).forEach(([role, rcount]) => {
+            // Normalize both to handle spaces/underscores (e.g. "Gestionnaire Habilitation" vs "gestionnaire_habilitation")
+            const normalizedRole = role.toLowerCase().replace(/[\s_]/g, '');
+            const normalizedGroupId = g.id.toLowerCase().replace(/[\s_]/g, '');
+            if (normalizedRole === normalizedGroupId) count += rcount;
+        });
+        return { ...g, count };
+      });
+      setUserGroups(updatedGroups);
+
+      // Get history
+      const history = await NotificationService.getSentNotifications();
+      // map backend history to the format used in component
+      const mappedHistory = history.map(h => ({
+         id: h.id,
+         title: h.title,
+         type: h.type,
+         targets: h.target_roles === "all" ? ["all"] : h.target_roles.split(","),
+         // Format from UTC to Madagascar timezone (EAT - UTC+3)
+         date: new Date(h.created_at).toLocaleString("fr-FR", { timeZone: "Indian/Antananarivo", day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ''),
+         read: h.read_count || 0,
+         total: h.total_count || 0,
+         message: h.message,
+         content: h.content || "",
+         status: h.status
+      }));
+      setHistoryList(mappedHistory);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+
+  const filteredGroups = userGroups.filter((g) =>
     g.label.toLowerCase().includes(groupSearch.toLowerCase()),
   );
 
@@ -191,8 +144,8 @@ export default function DiffusionMessages() {
 
   const totalRecipients =
     targetMode === "all"
-      ? USER_GROUPS.reduce((s, g) => s + g.count, 0)
-      : USER_GROUPS.filter((g) => selectedGroups.includes(g.id)).reduce(
+      ? userGroups.reduce((s, g) => s + g.count, 0)
+      : userGroups.filter((g) => selectedGroups.includes(g.id)).reduce(
           (s, g) => s + g.count,
           0,
         );
@@ -205,41 +158,41 @@ export default function DiffusionMessages() {
   const selType = NOTIF_TYPES.find((t) => t.id === notifType);
   const TIcon = selType ? selType.icon : FaEnvelope;
 
-  const handleSend = async () => {
+    const handleSend = async () => {
     if (!canSend) return;
     setSending(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setSending(false);
-    setSent(true);
-    const newEntry = {
-      id: Date.now(),
-      title,
-      type: notifType,
-      targets: targetMode === "all" ? ["all"] : [...selectedGroups],
-      date: new Date()
-        .toLocaleString("fr-FR", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-        .replace(",", ""),
-      read: 0,
-      total: totalRecipients,
-      message,
-      content,
-    };
-    setHistoryList((prev) => [newEntry, ...prev]);
-    setTimeout(() => {
-      setSent(false);
-      setTitle("");
-      setMessage("");
-      setContent("");
-      setSelectedGroups([]);
-      setTargetMode("groups");
-      setNotifType("message");
-    }, 2500);
+    
+    try {
+      const data = {
+        title,
+        message,
+        content,
+        type: notifType,
+        target_roles: targetMode === "all" ? "all" : selectedGroups.join(",")
+      };
+      await NotificationService.sendNotification(data);
+      
+      setSending(false);
+      setSent(true);
+      toast.success("Message envoyé avec succès !");
+      
+      await fetchData(); 
+      
+      setTimeout(() => {
+        setSent(false);
+        setTitle("");
+        setMessage("");
+        setContent("");
+        setSelectedGroups([]);
+        setTargetMode("groups");
+        setNotifType("message");
+        setShowPreview(false);
+      }, 2500);
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de l'envoi du message.");
+      setSending(false);
+    }
   };
 
   const openH = (h) => {
@@ -253,27 +206,46 @@ export default function DiffusionMessages() {
     setSelectedH(null);
   };
 
-  const saveEdit = () => {
-    const updated = {
-      ...selectedH,
-      title: editTitle,
-      message: editMsg,
-      content: editContent,
-    };
-    setHistoryList((prev) =>
-      prev.map((h) => (h.id === selectedH.id ? updated : h)),
-    );
-    setSelectedH(updated);
-    setEditingH(false);
+  const saveEdit = async () => {
+    try {
+      const updatedData = {
+        title: editTitle,
+        message: editMsg,
+        content: editContent,
+      };
+      await NotificationService.updateNotification(selectedH.id, updatedData);
+      
+      const updated = {
+        ...selectedH,
+        ...updatedData
+      };
+      setHistoryList((prev) =>
+        prev.map((h) => (h.id === selectedH.id ? updated : h)),
+      );
+      setSelectedH(updated);
+      setEditingH(false);
+      toast.success("Message modifié avec succès !");
+    } catch(err) {
+      toast.error("Erreur lors de la modification du message.");
+    }
   };
 
-  const deleteH = (id) => {
-    setHistoryList((prev) => prev.filter((h) => h.id !== id));
-    closeH();
+  const deleteH = async (id) => {
+    if (window.confirm("Êtes-vous sûr de vouloir annuler ce message ? Les utilisateurs ne le verront plus.")) {
+      try {
+        await NotificationService.cancelNotification(id);
+        setHistoryList((prev) => prev.map((h) => h.id === id ? {...h, status: 'cancelled'} : h));
+        closeH();
+        toast.info("Message annulé.");
+      } catch(err) {
+        toast.error("Erreur lors de l'annulation du message.");
+      }
+    }
   };
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-800 p-4 md:p-8">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="mb-8 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
           <FaPaperPlane className="text-white text-base" />
@@ -361,7 +333,7 @@ export default function DiffusionMessages() {
                 {selectedGroups.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {selectedGroups.map((id) => {
-                      const g = USER_GROUPS.find((x) => x.id === id);
+                      const g = userGroups.find((x) => x.id === id);
                       return (
                         <span
                           key={id}
@@ -559,9 +531,14 @@ export default function DiffusionMessages() {
                         <HIcon className="text-white text-xs" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {h.title}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className={`text-sm font-semibold truncate transition-colors ${h.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}>
+                            {h.title}
+                          </p>
+                          {h.status === 'cancelled' && (
+                             <span className="px-2 py-0.5 text-[10px] bg-red-100 text-red-600 rounded-lg font-bold">Annulé</span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                           {h.date}
                         </p>
@@ -663,7 +640,7 @@ export default function DiffusionMessages() {
                     selectedGroups.length > 0 &&
                     ` - ${selectedGroups
                       .map((id) => {
-                        const g = USER_GROUPS.find((g) => g.id === id);
+                        const g = userGroups.find((g) => g.id === id);
                         return g ? g.label : id;
                       })
                       .join(", ")}`}
@@ -711,7 +688,7 @@ export default function DiffusionMessages() {
                 ? "Tous les utilisateurs"
                 : selectedH.targets
                     .map((id) => {
-                      const g = USER_GROUPS.find((g) => g.id === id);
+                      const g = userGroups.find((g) => g.id === id);
                       return g ? g.label : id;
                     })
                     .join(", ");
@@ -874,25 +851,33 @@ export default function DiffusionMessages() {
                       </>
                     ) : (
                       <>
-                        <button
-                          onClick={() => deleteH(selectedH.id)}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                        >
-                          <FaTimesCircle className="text-xs" />
-                          Annuler l envoi
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditTitle(selectedH.title);
-                            setEditMsg(selectedH.message);
-                            setEditContent(selectedH.content || "");
-                            setEditingH(true);
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                        >
-                          <FaEnvelope className="text-xs" />
-                          Modifier le message
-                        </button>
+                        {selectedH.status !== 'cancelled' ? (
+                          <>
+                            <button
+                              onClick={() => deleteH(selectedH.id)}
+                              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            >
+                              <FaTimesCircle className="text-xs" />
+                              Annuler l envoi
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditTitle(selectedH.title);
+                                setEditMsg(selectedH.message);
+                                setEditContent(selectedH.content || "");
+                                setEditingH(true);
+                              }}
+                              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            >
+                              <FaEnvelope className="text-xs" />
+                              Modifier le message
+                            </button>
+                          </>
+                        ) : (
+                           <div className="flex-1 text-center py-2.5 text-sm text-red-500 font-bold bg-red-50 rounded-xl">
+                             Ce message a été annulé
+                           </div>
+                        )}
                       </>
                     )}
                   </div>

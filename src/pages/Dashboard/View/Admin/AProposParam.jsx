@@ -422,35 +422,7 @@ const RichEditor = ({ content, onChange, isDark, openUrlModal }) => {
     <div className={`rounded-xl border overflow-hidden transition-colors w-full ${isDark ? "border-gray-700 bg-gray-900 focus-within:border-blue-500" : "border-gray-200 bg-white focus-within:border-blue-500"}`}>
       <MenuBar editor={editor} isDark={isDark} openUrlModal={openUrlModal}/>
       <EditorContent editor={editor}/>
-      <style jsx global>{`
-        .ProseMirror p.is-editor-empty:first-child::before {
-          content: attr(data-placeholder); float: left; color: #9ca3af; pointer-events: none; height: 0;
-        }
-        .ProseMirror ul         { list-style-type: disc    !important; padding-left: 1.5rem !important; margin: 0.8rem 0 !important; }
-        .ProseMirror ol         { list-style-type: decimal !important; padding-left: 1.5rem !important; margin: 0.8rem 0 !important; }
-        .ProseMirror li         { margin-bottom: 0.3rem !important; }
-        .ProseMirror strong     { font-weight: 700 !important; }
-        .ProseMirror em         { font-style: italic !important; }
-        .ProseMirror u          { text-decoration: underline !important; }
-        .ProseMirror s          { text-decoration: line-through !important; }
-        .ProseMirror a          { color: #3b82f6 !important; text-decoration: underline !important; cursor: pointer; }
-        .ProseMirror blockquote,
-        .ProseMirror .tiptap-blockquote {
-          border-left: 3px solid #3b82f6 !important;
-          padding-left: 1rem !important;
-          padding-top: 0.25rem !important;
-          padding-bottom: 0.25rem !important;
-          color: #6b7280 !important;
-          font-style: italic !important;
-          margin: 1rem 0 !important;
-          background-color: transparent !important;
-          border-radius: 0 !important;
-        }
-        .ProseMirror blockquote p {
-          margin: 0 !important;
-          color: #6b7280 !important;
-        }
-      `}</style>
+      <EditorContent editor={editor}/>
     </div>
   );
 };

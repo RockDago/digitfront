@@ -1,4 +1,3 @@
-// C:\Users\hp\Desktop\Digitalisation\frontend\src\components\Navbar.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -20,115 +19,157 @@ import {
   FaTools,
 } from "react-icons/fa";
 import UserService from "../../../services/user.service";
+import NotificationService from "../../../services/notification.service";
 
 const ROLE_LABELS = {
-  Admin:         "Administrateur",
-  admin:         "Administrateur",
-  Requerant:     "Requérant",
+  Admin: "Administrateur",
+  admin: "Administrateur",
+  Requerant: "Requérant",
   Etablissement: "Établissement",
-  SAE:           "Service SAE",
-  SICP:          "Service SICP",
-  CNH:           "Service CNH",
-  Expert:        "Expert Évaluateur",
-  Universite:    "Université",
+  SAE: "Service SAE",
+  SICP: "Service SICP",
+  CNH: "Service CNH",
+  Expert: "Expert Évaluateur",
+  Universite: "Université",
 };
 
 const formatRole = (role) => {
   if (!role) return "";
   if (ROLE_LABELS[role]) return ROLE_LABELS[role];
-  return role.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim().replace(/\b\w/g, (c) => c.toUpperCase());
+  return role
+    .replace(/_/g, " ")
+    .replace(/([A-Z])/g, " $1")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
 const NOTIF_ICONS = {
-  dossier:     { icon: FaClipboardList,       bg: "bg-blue-500",   label: "Dossier reçu" },
-  retour:      { icon: FaFileAlt,             bg: "bg-purple-500", label: "Retour dossier" },
-  approuve:    { icon: FaCheckCircle,         bg: "bg-green-500",  label: "Approuvé" },
-  commentaire: { icon: FaCommentDots,         bg: "bg-teal-500",   label: "Note / Commentaire" },
-  message:     { icon: FaEnvelope,            bg: "bg-indigo-500", label: "Message admin" },
-  maintenance: { icon: FaTools,              bg: "bg-orange-500", label: "Maintenance" },
-  alerte:      { icon: FaExclamationTriangle, bg: "bg-red-500",    label: "Alerte système" },
-  info:        { icon: FaInfoCircle,          bg: "bg-gray-500",   label: "Information" },
+  dossier: { icon: FaClipboardList, bg: "bg-blue-500", label: "Dossier reçu" },
+  retour: { icon: FaFileAlt, bg: "bg-purple-500", label: "Retour dossier" },
+  approuve: { icon: FaCheckCircle, bg: "bg-green-500", label: "Approuvé" },
+  commentaire: {
+    icon: FaCommentDots,
+    bg: "bg-teal-500",
+    label: "Note / Commentaire",
+  },
+  message: { icon: FaEnvelope, bg: "bg-indigo-500", label: "Message admin" },
+  maintenance: { icon: FaTools, bg: "bg-orange-500", label: "Maintenance" },
+  alerte: {
+    icon: FaExclamationTriangle,
+    bg: "bg-red-500",
+    label: "Alerte système",
+  },
+  info: { icon: FaInfoCircle, bg: "bg-gray-500", label: "Information" },
 };
 
-export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuClick }) {
-  const [showProfileMenu, setShowProfileMenu]             = useState(false);
-  const [showLogoutModal, setShowLogoutModal]             = useState(false);
-  const [profileImage, setProfileImage]                   = useState(null);
-  const [showNotifications, setShowNotifications]         = useState(false);
-  const [activeTab, setActiveTab]                         = useState("all");
-  const [expanded, setExpanded]                           = useState(false);
-  const [showDotsMenu, setShowDotsMenu]                   = useState(false);
-  const [selectedNotification, setSelectedNotification]   = useState(null);
+export default function Navbar({
+  collapsed,
+  user,
+  onLogoutClick,
+  onMobileMenuClick,
+}) {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
+  const [expanded, setExpanded] = useState(false);
+  const [showDotsMenu, setShowDotsMenu] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Nouveau dossier reçu",
-      message: "Un nouveau dossier d'accréditation a été soumis par l'Université de Fianarantsoa.",
-      content: "Détails du dossier reçu :\n\n• Établissement : Université de Fianarantsoa\n• Type : Accréditation d'établissement\n• Référence : ACC-2025-0047\n• Date de soumission : 15/02/2025\n• Documents joints : 12 fichiers\n• Statut : En attente d'affectation\n\nVeuillez prendre en charge ce dossier et l'affecter à un expert évaluateur.",
-      time: "Il y a 5 min", read: false, type: "dossier",
-    },
-    {
-      id: 2,
-      title: "Retour sur dossier #HAB-2025-012",
-      message: "Des observations ont été formulées par le service CNH sur votre dossier.",
-      content: "Observations du service CNH :\n\n• Référence : HAB-2025-012\n• Type : Habilitation de programme\n• Évaluateur : Service CNH\n• Date : 25/02/2025\n\nObservations :\n— Le programme ne précise pas les modalités de contrôle continu.\n— La liste des enseignants permanents est incomplète.\n— Merci de compléter et soumettre à nouveau sous 15 jours.",
-      time: "Il y a 1 h", read: false, type: "retour",
-    },
-    {
-      id: 3,
-      title: "Dossier approuvé",
-      message: "Votre dossier d'équivalence de diplôme #EQ-2024-088 a été approuvé.",
-      content: "Félicitations ! Votre dossier d'équivalence de diplôme a été approuvé.\n\n• Référence : EQ-2024-088\n• Type : Équivalence de diplôme\n• Date d'approbation : 24/02/2025\n• Validé par : Commission d'évaluation CNH\n\nProchaines étapes :\n1. Téléchargez votre attestation depuis votre espace\n2. Prenez rendez-vous pour la remise officielle\n3. Préparez les originaux pour vérification",
-      time: "Il y a 3 h", read: false, type: "approuve",
-    },
-    {
-      id: 4,
-      title: "Note ajoutée sur dossier",
-      message: "L'expert évaluateur a ajouté une note d'instruction sur le dossier ACC-2025-031.",
-      content: "Nouvelle note de l'expert évaluateur Dr. Rakoto Jean :\n\n« Le dossier est globalement bien constitué. Cependant, le plan stratégique de l'établissement doit couvrir une période d'au moins 5 ans. Le document fourni ne couvre que 2 ans. Merci de fournir le document actualisé. »\n\n• Dossier : ACC-2025-031\n• Expert : Dr. Rakoto Jean\n• Date : 25/02/2025 à 09h15",
-      time: "Hier", read: true, type: "commentaire",
-    },
-    {
-      id: 5,
-      title: "Message de l'administrateur",
-      message: "Informations importantes concernant la mise à jour des critères d'évaluation 2025.",
-      content: "Chers utilisateurs,\n\nNous vous informons que les critères d'évaluation pour l'accréditation ont été mis à jour conformément aux nouvelles directives ministérielles.\n\nChangements principaux :\n• Nouveaux indicateurs de qualité pédagogique\n• Grille d'évaluation révisée pour les habilitations\n• Délais de traitement réduits à 30 jours ouvrables\n\nCes règles s'appliquent à tous les dossiers soumis à partir du 01/03/2025.\n\nL'équipe d'administration",
-      time: "Il y a 2 jours", read: true, type: "message",
-    },
-    {
-      id: 6,
-      title: "Maintenance programmée",
-      message: "Le système sera indisponible le 02/03/2025 de 00h00 à 04h00.",
-      content: "Avis de maintenance système :\n\nLa plateforme sera en maintenance le :\n\n• Date : Dimanche 02 mars 2025\n• Plage horaire : 00h00 – 04h00 (heure de Madagascar)\n• Impact : Indisponibilité totale\n\nNous vous recommandons de soumettre vos dossiers avant cette période.\nNous nous excusons pour la gêne occasionnée.\n\nL'équipe technique",
-      time: "Il y a 2 jours", read: true, type: "maintenance",
-    },
-    {
-      id: 7,
-      title: "Alerte : délai expirant",
-      message: "Le délai de réponse pour le dossier HAB-2025-005 expire dans 48 heures.",
-      content: "ALERTE DÉLAI :\n\nVotre dossier arrive à échéance :\n\n• Référence : HAB-2025-005\n• Type : Habilitation de programme\n• Date limite : 28/02/2025\n• Temps restant : 48 heures\n\nSi vous ne complétez pas les informations avant la date limite, votre dossier sera classé sans suite.\n\nMerci d'agir rapidement.",
-      time: "Il y a 3 jours", read: true, type: "alerte",
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
-  const profileRef    = useRef(null);
-  const notifRef      = useRef(null);
-  const modalRef      = useRef(null);
-  const notifListRef  = useRef(null);
+  useEffect(() => {
+    let interval;
+    const fetchNotifs = async () => {
+      try {
+        const notifs = await NotificationService.getMyNotifications();
+        // Filter out cancelled notifications (if backend sends them) and sort
+        const validNotifs = notifs.filter(n => n.status !== "cancelled");
+        const formatted = validNotifs.map(n => {
+            const dateObj = new Date(n.created_at);
+            const time = dateObj.toLocaleString("fr-FR", { timeZone: "Indian/Antananarivo", day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+            return {
+                ...n,
+                time
+            };
+        });
+        setNotifications(formatted);
+      } catch(e) { 
+        console.error("Error fetching notifications:", e); 
+      }
+    };
 
-  const unreadCount   = notifications.filter((n) => !n.read).length;
-  const filteredNotifs = activeTab === "unread" ? notifications.filter((n) => !n.read) : notifications;
+    if (user?.id) {
+       fetchNotifs();
+       interval = setInterval(fetchNotifs, 60000); // refresh every minute
 
-  const VISIBLE_COUNT  = 4;
-  const visibleNotifs  = expanded ? filteredNotifs : filteredNotifs.slice(0, VISIBLE_COUNT);
-  const hasMore        = filteredNotifs.length > VISIBLE_COUNT;
-  const newNotifs      = visibleNotifs.filter((n) => !n.read);
-  const earlierNotifs  = visibleNotifs.filter((n) => n.read);
+       // Setup WebSocket connection
+       const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+       const wsUrl = `${protocol}://${window.location.hostname}:8000/api/notifications/ws/${user.id}`;
+       const ws = new WebSocket(wsUrl);
 
-  const markAllAsRead = () => setNotifications((p) => p.map((n) => ({ ...n, read: true })));
-  const markAsRead    = (id) => setNotifications((p) => p.map((n) => n.id === id ? { ...n, read: true } : n));
+       ws.onmessage = (event) => {
+         try {
+           const msg = JSON.parse(event.data);
+           if (msg.event === "new_notification") {
+             const n = msg.data;
+             const time = new Date(n.created_at).toLocaleString("fr-FR", { timeZone: "Indian/Antananarivo", day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+             setNotifications(prev => [{...n, time}, ...prev]);
+           } else if (msg.event === "update_notification") {
+             setNotifications(prev => prev.map(n => {
+               if (n.id === msg.data.id) {
+                 return { ...n, ...msg.data, time: n.time }; // preserve original time if not supplied
+               }
+               return n;
+             }));
+           } else if (msg.event === "cancel_notification") {
+             setNotifications(prev => prev.filter(n => n.id !== msg.data.id));
+           }
+         } catch(e) {
+           console.error("WebSocket message parsing error:", e);
+         }
+       };
+
+       return () => {
+         clearInterval(interval);
+         ws.close();
+       };
+    }
+  }, [user?.id]);
+
+  const profileRef = useRef(null);
+  const notifRef = useRef(null);
+  const modalRef = useRef(null);
+  const notifListRef = useRef(null);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const filteredNotifs =
+    activeTab === "unread"
+      ? notifications.filter((n) => !n.read)
+      : notifications;
+
+  const VISIBLE_COUNT = 4;
+  const visibleNotifs = expanded
+    ? filteredNotifs
+    : filteredNotifs.slice(0, VISIBLE_COUNT);
+  const hasMore = filteredNotifs.length > VISIBLE_COUNT;
+  const newNotifs = visibleNotifs.filter((n) => !n.read);
+  const earlierNotifs = visibleNotifs.filter((n) => n.read);
+
+  const markAllAsRead = async () => {
+    try {
+        await NotificationService.markAllAsRead();
+        setNotifications((p) => p.map((n) => ({ ...n, read: true })));
+    } catch(e) { console.error(e); }
+  };
+  const markAsRead = async (id) => {
+    try {
+        await NotificationService.markAsRead(id);
+        setNotifications((p) => p.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    } catch(e) { console.error(e); }
+  };
 
   const openNotifModal = (notif) => {
     setSelectedNotification(notif);
@@ -136,21 +177,31 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
     setShowNotifications(false);
     if (!notif.read) markAsRead(notif.id);
   };
-  const closeNotifModal = () => { setShowNotificationModal(false); setSelectedNotification(null); };
+  const closeNotifModal = () => {
+    setShowNotificationModal(false);
+    setSelectedNotification(null);
+  };
 
   const handleExpandAndScroll = () => {
     setExpanded(true);
     setTimeout(() => {
-      notifListRef.current?.scrollTo({ top: notifListRef.current.scrollHeight, behavior: "smooth" });
+      notifListRef.current?.scrollTo({
+        top: notifListRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }, 100);
   };
 
   const getProfileLink = () => {
     const m = {
-      Admin: "/dashboard/admin/profile", admin: "/dashboard/admin/profile",
-      Requerant: "/dashboard/requerant/profile", Etablissement: "/dashboard/etablissement/profile",
-      SAE: "/dashboard/sae/profile", SICP: "/dashboard/sicp/profile",
-      CNH: "/dashboard/cnh/profile", Expert: "/dashboard/expert/profile",
+      Admin: "/dashboard/admin/profile",
+      admin: "/dashboard/admin/profile",
+      Requerant: "/dashboard/requerant/profile",
+      Etablissement: "/dashboard/etablissement/profile",
+      SAE: "/dashboard/sae/profile",
+      SICP: "/dashboard/sicp/profile",
+      CNH: "/dashboard/cnh/profile",
+      Expert: "/dashboard/expert/profile",
       Universite: "/dashboard/universite/profile",
     };
     return m[user?.role] || "/dashboard/profile";
@@ -167,7 +218,10 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
         setProfileImage(imageURL);
         // Mettre à jour le cache localStorage
         const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-        localStorage.setItem("user", JSON.stringify({ ...storedUser, profileImage: imageURL }));
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ ...storedUser, profileImage: imageURL }),
+        );
       }
     } catch (error) {
       if (error.message !== "Token d'authentification manquant") {
@@ -214,10 +268,13 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
     window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      window.removeEventListener("profileImageUpdated", handleProfileImageUpdated);
+      window.removeEventListener(
+        "profileImageUpdated",
+        handleProfileImageUpdated,
+      );
       window.removeEventListener("storage", handleStorageChange);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── FIX: Re-fetch quand le prop `user` change (ex: après navigation post-login)
@@ -225,14 +282,24 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
     if (user?.id) {
       fetchAndCacheProfileImage();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfileMenu(false);
-      if (notifRef.current && !notifRef.current.contains(e.target)) { setShowNotifications(false); setExpanded(false); setShowDotsMenu(false); }
-      if (showNotificationModal && modalRef.current && !modalRef.current.contains(e.target)) closeNotifModal();
+      if (profileRef.current && !profileRef.current.contains(e.target))
+        setShowProfileMenu(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+        setExpanded(false);
+        setShowDotsMenu(false);
+      }
+      if (
+        showNotificationModal &&
+        modalRef.current &&
+        !modalRef.current.contains(e.target)
+      )
+        closeNotifModal();
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -240,14 +307,18 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
 
   useEffect(() => {
     document.body.style.overflow = showNotificationModal ? "hidden" : "unset";
-    return () => { document.body.style.overflow = "unset"; };
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [showNotificationModal]);
 
-  useEffect(() => { if (!showNotifications) setExpanded(false); }, [showNotifications]);
+  useEffect(() => {
+    if (!showNotifications) setExpanded(false);
+  }, [showNotifications]);
 
   // Notification row
   const NotifRow = ({ notif }) => {
-    const cfg     = NOTIF_ICONS[notif.type] || NOTIF_ICONS.info;
+    const cfg = NOTIF_ICONS[notif.type] || NOTIF_ICONS.info;
     const IconCmp = cfg.icon;
     return (
       <div
@@ -259,26 +330,40 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
         {/* Avatar + type badge */}
         <div className="relative flex-shrink-0">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-[#3a3b3c] dark:to-[#4e4f50] flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+            <svg
+              className="w-8 h-8 text-gray-400 dark:text-gray-500"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
             </svg>
           </div>
-          <div className={`absolute -bottom-0.5 -right-0.5 w-6 h-6 ${cfg.bg} rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#242526]`}>
+          <div
+            className={`absolute -bottom-0.5 -right-0.5 w-6 h-6 ${cfg.bg} rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#242526]`}
+          >
             <IconCmp className="text-white text-[10px]" />
           </div>
         </div>
         {/* Text */}
         <div className="flex-1 min-w-0 pr-3">
-          <p className={`text-sm leading-snug ${!notif.read ? "text-gray-900 dark:text-[#e4e6eb]" : "text-gray-600 dark:text-[#b0b3b8]"}`}>
-            <span className={!notif.read ? "font-semibold" : "font-normal"}>{notif.title}</span>
+          <p
+            className={`text-sm leading-snug ${!notif.read ? "text-gray-900 dark:text-[#e4e6eb]" : "text-gray-600 dark:text-[#b0b3b8]"}`}
+          >
+            <span className={!notif.read ? "font-semibold" : "font-normal"}>
+              {notif.title}
+            </span>
             <span className="font-normal"> — {notif.message}</span>
           </p>
-          <p className={`text-xs mt-0.5 font-semibold ${!notif.read ? "text-blue-500" : "text-gray-400 dark:text-[#b0b3b8]"}`}>
+          <p
+            className={`text-xs mt-0.5 font-semibold ${!notif.read ? "text-blue-500" : "text-gray-400 dark:text-[#b0b3b8]"}`}
+          >
             {notif.time}
           </p>
         </div>
         {/* Unread dot */}
-        {!notif.read && <div className="flex-shrink-0 w-3 h-3 rounded-full bg-blue-500" />}
+        {!notif.read && (
+          <div className="flex-shrink-0 w-3 h-3 rounded-full bg-blue-500" />
+        )}
       </div>
     );
   };
@@ -287,23 +372,31 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
     <>
       <header
         className="fixed top-0 right-0 h-16 md:h-20 bg-white dark:bg-gray-900 shadow-sm z-30 flex items-center justify-between px-4 md:px-8 border-b border-gray-200 dark:border-gray-800 transition-all duration-300 text-gray-900 dark:text-gray-100"
-        style={{ left: window.innerWidth >= 1024 ? (collapsed ? "5rem" : "18rem") : "0" }}
+        style={{
+          left:
+            window.innerWidth >= 1024 ? (collapsed ? "5rem" : "18rem") : "0",
+        }}
       >
         <div className="absolute inset-0 pointer-events-none lg:hidden" />
         <div className="flex items-center">
-          <button onClick={onMobileMenuClick} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg lg:hidden">
+          <button
+            onClick={onMobileMenuClick}
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg lg:hidden"
+          >
             <FaBars className="text-xl" />
           </button>
         </div>
         <div className="flex-1" />
 
         <div className="flex items-center space-x-3 md:space-x-6">
-
           {/* ================== NOTIFICATIONS ================== */}
           <div className="relative" ref={notifRef}>
             <button
               type="button"
-              onClick={() => { setShowNotifications(!showNotifications); setShowProfileMenu(false); }}
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                setShowProfileMenu(false);
+              }}
               className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
             >
               <FaBell className="text-lg md:text-xl" />
@@ -329,7 +422,9 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-[#e4e6eb]">Notifications</h3>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-[#e4e6eb]">
+                    Notifications
+                  </h3>
                   <div className="relative">
                     <button
                       onClick={() => setShowDotsMenu((v) => !v)}
@@ -340,7 +435,10 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
                     {showDotsMenu && (
                       <div className="absolute right-0 top-11 w-56 bg-white dark:bg-[#242526] rounded-xl shadow-xl border border-gray-100 dark:border-[#3a3b3c] z-10 py-1 overflow-hidden">
                         <button
-                          onClick={() => { markAllAsRead(); setShowDotsMenu(false); }}
+                          onClick={() => {
+                            markAllAsRead();
+                            setShowDotsMenu(false);
+                          }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-[#e4e6eb] hover:bg-gray-100 dark:hover:bg-[#3a3b3c] transition-colors"
                         >
                           <FaCheck className="text-blue-500 text-xs" />
@@ -380,17 +478,25 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
                       {newNotifs.length > 0 && (
                         <>
                           <div className="px-4 py-2">
-                            <span className="text-sm font-bold text-gray-900 dark:text-[#e4e6eb]">Nouvelles</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-[#e4e6eb]">
+                              Nouvelles
+                            </span>
                           </div>
-                          {newNotifs.map((n) => <NotifRow key={n.id} notif={n} />)}
+                          {newNotifs.map((n) => (
+                            <NotifRow key={n.id} notif={n} />
+                          ))}
                         </>
                       )}
                       {earlierNotifs.length > 0 && (
                         <>
                           <div className="px-4 py-2 mt-1">
-                            <span className="text-sm font-bold text-gray-900 dark:text-[#e4e6eb]">Précédentes</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-[#e4e6eb]">
+                              Précédentes
+                            </span>
                           </div>
-                          {earlierNotifs.map((n) => <NotifRow key={n.id} notif={n} />)}
+                          {earlierNotifs.map((n) => (
+                            <NotifRow key={n.id} notif={n} />
+                          ))}
                         </>
                       )}
                     </>
@@ -436,31 +542,55 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
                     onError={() => setProfileImage(null)}
                   />
                 ) : (
-                  <span className="font-bold text-xs">{user?.prenom?.[0]?.toUpperCase() || "U"}</span>
+                  <span className="font-bold text-xs">
+                    {user?.prenom?.[0]?.toUpperCase() || "U"}
+                  </span>
                 )}
               </div>
               <div className="text-left hidden md:block">
-                <div className="text-sm font-semibold text-gray-700 dark:text-gray-100">{user?.prenom} {user?.nom}</div>
-                <div className="text-[10px] text-gray-500 dark:text-gray-400">{formatRole(user?.role)}</div>
+                <div className="text-sm font-semibold text-gray-700 dark:text-gray-100">
+                  {user?.prenom} {user?.nom}
+                </div>
+                <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                  {formatRole(user?.role)}
+                </div>
               </div>
-              <FaChevronDown className={`text-gray-400 dark:text-gray-300 text-xs hidden md:block transition-transform duration-200 ${showProfileMenu ? "rotate-180" : ""}`} />
+              <FaChevronDown
+                className={`text-gray-400 dark:text-gray-300 text-xs hidden md:block transition-transform duration-200 ${showProfileMenu ? "rotate-180" : ""}`}
+              />
             </button>
 
             {showProfileMenu && (
               <div className="absolute right-0 top-12 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 z-50 overflow-hidden py-2">
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 mb-1">
-                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">{user?.prenom} {user?.nom}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
-                  <p className="text-[10px] text-blue-500 dark:text-blue-400 font-semibold mt-0.5">{formatRole(user?.role)}</p>
+                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">
+                    {user?.prenom} {user?.nom}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {user?.email}
+                  </p>
+                  <p className="text-[10px] text-blue-500 dark:text-blue-400 font-semibold mt-0.5">
+                    {formatRole(user?.role)}
+                  </p>
                 </div>
-                <Link to={getProfileLink()} onClick={() => setShowProfileMenu(false)}
-                  className="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                  <FaUser className="text-sm" /><span>Mon Profil</span>
+                <Link
+                  to={getProfileLink()}
+                  onClick={() => setShowProfileMenu(false)}
+                  className="flex items-center space-x-3 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  <FaUser className="text-sm" />
+                  <span>Mon Profil</span>
                 </Link>
                 <div className="border-t border-gray-100 dark:border-gray-800 mt-1 pt-1">
-                  <button onClick={() => { setShowProfileMenu(false); setShowLogoutModal(true); }}
-                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
-                    <FaSignOutAlt className="text-sm" /><span>Déconnexion</span>
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setShowLogoutModal(true);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                  >
+                    <FaSignOutAlt className="text-sm" />
+                    <span>Déconnexion</span>
                   </button>
                 </div>
               </div>
@@ -471,7 +601,10 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
 
       {/* ================== MODAL NOTIFICATION ================== */}
       {showNotificationModal && selectedNotification && (
-        <div className="fixed inset-0 z-[300] notif-modal-overlay flex items-center justify-center bg-gray-900/40 backdrop-blur-sm" onClick={closeNotifModal}>
+        <div
+          className="fixed inset-0 z-[300] notif-modal-overlay flex items-center justify-center bg-gray-900/40 backdrop-blur-sm"
+          onClick={closeNotifModal}
+        >
           <div
             ref={modalRef}
             className="relative bg-white dark:bg-[#242526] shadow-2xl flex flex-col notif-modal-inner"
@@ -488,7 +621,9 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-[#3a3b3c] flex-shrink-0">
-              <h2 className="text-base font-bold text-gray-900 dark:text-[#e4e6eb]">Notification</h2>
+              <h2 className="text-base font-bold text-gray-900 dark:text-[#e4e6eb]">
+                Notification
+              </h2>
               <button
                 onClick={closeNotifModal}
                 className="w-9 h-9 rounded-full bg-gray-100 dark:bg-[#3a3b3c] flex items-center justify-center text-gray-600 dark:text-[#e4e6eb] hover:bg-gray-200 dark:hover:bg-[#4e4f50] transition-colors"
@@ -502,12 +637,22 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
               <div className="flex items-center gap-3 px-5 pt-5 pb-4">
                 <div className="relative flex-shrink-0">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-[#3a3b3c] dark:to-[#4e4f50] flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                    <svg
+                      className="w-8 h-8 text-gray-400 dark:text-gray-500"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
                     </svg>
                   </div>
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-6 h-6 ${NOTIF_ICONS[selectedNotification.type]?.bg || "bg-gray-500"} rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#242526]`}>
-                    {React.createElement(NOTIF_ICONS[selectedNotification.type]?.icon || NOTIF_ICONS.info.icon, { className: "text-white text-[10px]" })}
+                  <div
+                    className={`absolute -bottom-0.5 -right-0.5 w-6 h-6 ${NOTIF_ICONS[selectedNotification.type]?.bg || "bg-gray-500"} rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#242526]`}
+                  >
+                    {React.createElement(
+                      NOTIF_ICONS[selectedNotification.type]?.icon ||
+                        NOTIF_ICONS.info.icon,
+                      { className: "text-white text-[10px]" },
+                    )}
                   </div>
                 </div>
                 <div className="flex-1">
@@ -515,15 +660,22 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
                     {selectedNotification.title}
                   </p>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full text-white ${NOTIF_ICONS[selectedNotification.type]?.bg || "bg-gray-500"}`}>
-                      {NOTIF_ICONS[selectedNotification.type]?.label || "Information"}
+                    <span
+                      className={`text-xs font-semibold px-2.5 py-0.5 rounded-full text-white ${NOTIF_ICONS[selectedNotification.type]?.bg || "bg-gray-500"}`}
+                    >
+                      {NOTIF_ICONS[selectedNotification.type]?.label ||
+                        "Information"}
                     </span>
-                    <span className="text-xs text-gray-400 dark:text-[#b0b3b8]">{selectedNotification.time}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      selectedNotification.read
-                        ? "bg-gray-100 dark:bg-[#3a3b3c] text-gray-500 dark:text-[#b0b3b8]"
-                        : "bg-blue-100 dark:bg-[#263951] text-blue-600 dark:text-blue-400"
-                    }`}>
+                    <span className="text-xs text-gray-400 dark:text-[#b0b3b8]">
+                      {selectedNotification.time}
+                    </span>
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        selectedNotification.read
+                          ? "bg-gray-100 dark:bg-[#3a3b3c] text-gray-500 dark:text-[#b0b3b8]"
+                          : "bg-blue-100 dark:bg-[#263951] text-blue-600 dark:text-blue-400"
+                      }`}
+                    >
                       {selectedNotification.read ? "Lu" : "Non lu"}
                     </span>
                   </div>
@@ -542,7 +694,9 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
                 <div className="px-5 pb-6">
                   <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-[#3a3b3c] bg-gray-50 dark:bg-[#18191a]">
                     <div className="px-4 py-2.5 border-b border-gray-200 dark:border-[#3a3b3c] bg-gray-100 dark:bg-[#1e1e1e]">
-                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-[#b0b3b8]">Détails</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-[#b0b3b8]">
+                        Détails
+                      </p>
                     </div>
                     <div className="px-4 py-4">
                       <p className="text-sm text-gray-700 dark:text-[#b0b3b8] whitespace-pre-line leading-relaxed">
@@ -559,23 +713,37 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
 
       {/* ================== MODAL DÉCONNEXION ================== */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+          >
             <div className="p-6 text-center">
               <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/30 mb-6 ring-4 ring-red-50/50 dark:ring-red-900/40">
                 <FaSignOutAlt className="text-red-500 text-2xl" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Déconnexion</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                Déconnexion
+              </h3>
               <p className="text-gray-500 dark:text-gray-300 text-sm leading-relaxed mb-6">
-                Voulez-vous vraiment quitter ?<br />Vous devrez vous reconnecter pour accéder au tableau de bord.
+                Voulez-vous vraiment quitter ?<br />
+                Vous devrez vous reconnecter pour accéder au tableau de bord.
               </p>
               <div className="flex gap-3">
-                <button onClick={() => setShowLogoutModal(false)}
-                  className="flex-1 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="flex-1 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                >
                   Annuler
                 </button>
-                <button onClick={() => { setShowLogoutModal(false); if (onLogoutClick) onLogoutClick(); }}
-                  className="flex-1 px-5 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                <button
+                  onClick={() => {
+                    setShowLogoutModal(false);
+                    if (onLogoutClick) onLogoutClick();
+                  }}
+                  className="flex-1 px-5 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                >
                   Se déconnecter
                 </button>
               </div>
@@ -585,13 +753,32 @@ export default function Navbar({ collapsed, user, onLogoutClick, onMobileMenuCli
       )}
 
       <style jsx>{`
-        .notif-modal-overlay { animation: fadeIn 0.18s ease-out; }
-        .notif-modal-inner   { animation: slideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
-        .notif-panel         { animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .notif-modal-overlay {
+          animation: fadeIn 0.18s ease-out;
+        }
+        .notif-modal-inner {
+          animation: slideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .notif-panel {
+          animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
         @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(40px); }
-          to   { opacity: 1; transform: translateX(0); }
+          from {
+            opacity: 0;
+            transform: translateX(40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
       `}</style>
     </>
