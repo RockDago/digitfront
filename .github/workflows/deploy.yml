@@ -31,4 +31,4 @@ jobs:
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: build/
-          server-dir: ${{ secrets.FTP_PATH }}
+          server-dir: /var/www/html/
