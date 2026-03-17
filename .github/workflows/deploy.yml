@@ -24,17 +24,17 @@ jobs:
       - name: Build React
         run: npm run build
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+      - name: Clean server directory and Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: build/
-          server-dir: /var/www/html/
+          server-dir: /
           dangerous-clean-slate: true
 
-      - name: Run chown/chmod over SSH
+      - name: Run chown and chmod over SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
