@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
-import { AuthService, AnalyticsService } from "./services";
+import { AuthService } from "./services";
 
 // Theme
 import { ThemeProvider } from "./context/ThemeContext";
