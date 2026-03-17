@@ -1,4 +1,3 @@
-// C:\Users\hp\Desktop\Digitalisation\frontend\src\App.js
 import React, { useEffect } from "react";
 import {
   BrowserRouter as Router,
@@ -11,21 +10,21 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 import { AuthService } from "./services";
 
-// Theme
+
 import { ThemeProvider } from "./context/ThemeContext";
 
-// Components Home
+
 import Navbar from "./pages/Home/Navbar";
 import Home from "./pages/Home/Home";
 import AllActu from "./pages/Home/AllActu";
 import APropos from "./pages/Home/APropos";
 
-// Components Auth
+
 import Login from "./pages/Login/Login";
 import VerifyEmail from "./pages/Login/VerifyEmail";
 import ForgotPassword from "./pages/Login/ForgotPassword";
 
-// Dashboards (Layouts)
+
 import DashboardAdmin from "./pages/Dashboard/DashboardAdmin";
 import DashboardSicp from "./pages/Dashboard/DashboardSicp";
 import DashboardSae from "./pages/Dashboard/DashboardSae";

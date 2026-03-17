@@ -1,6 +1,4 @@
-// C:\Users\hp\Desktop\Digitalisation\frontend\src\pages\Dashboard\View\Admin\UserView.jsx
-
-import React, { useEffect, useMemo, useState, useContext } from "react";
+import React, { useEffect, useMemo, useState, useContext, useCallback } from "react";
 import { 
   Search, UserPlus, Eye, Trash2, Power, X, Edit3, RefreshCw, 
   ShieldAlert, User as UserIcon, Calendar, Phone, 
@@ -53,7 +51,7 @@ const PWD_CRITERIA = [
   { key: "uppercase",    regex: /[A-Z]/,                                           label: "Majuscule"    },
   { key: "lowercase",    regex: /[a-z]/,                                           label: "Minuscule"    },
   { key: "digit",        regex: /\d/,                                              label: "Chiffre"      },
-  { key: "validSymbols", regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,           label: "Symbole"      },
+  { key: "validSymbols", regex: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,           label: "Symbole"      },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -482,14 +480,13 @@ const EditUserModal = ({ user, onClose, onSave }) => {
 const ResetPasswordModal = ({ user, onClose, onConfirm }) => {
   const [pwd, setPwd]         = useState("");
   const [confirm, setConfirm] = useState("");
-  const [errors, setErrors]   = useState({});
+
 
   const handleConfirm = () => {
     const e = {};
-    if (!isValidPwd(pwd))      e.pwd     = "Mot de passe faible";
-    if (pwd !== confirm)       e.confirm = "Différent";
-    setErrors(e);
-    if (!Object.keys(e).length) onConfirm(pwd);
+    if (!isValidPwd(pwd))      return; // Simple return if invalid, PasswordBlock shows feedback
+    if (pwd !== confirm)       return;
+    onConfirm(pwd);
   };
 
   return (
@@ -557,7 +554,7 @@ export default function UserView() {
     inactifs: users.filter((u) => !u.isactive).length,
   }), [users]);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       const data = await UserService.getAll();
@@ -568,9 +565,9 @@ export default function UserView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadUsers(); }, [loadUsers]);
 
   // Filtrage
   const filteredUsers = useMemo(() => {
@@ -634,7 +631,7 @@ export default function UserView() {
     () => setConfirmToggle(null)
   );
 
-  const ALL_ROLES_TABS = ["Tous", ...ROLES];
+
   const hasFilter = searchTerm || roleFilter !== "Tous" || statusFilter !== "Tous";
 
   const resetFilters = () => {

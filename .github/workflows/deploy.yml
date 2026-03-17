@@ -10,21 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name:  Checkout code
         uses: actions/checkout@v3
 
-      - name: 🟢 Setup Node
+      - name:  Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: 📦 Install dependencies
+      - name:  Install dependencies
         run: npm install
 
-      - name: 🏗️ Build React
+      - name:  Build React
         run: npm run build
 
-      - name: 🚀 Deploy via FTP
+      - name:  Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_HOST }}

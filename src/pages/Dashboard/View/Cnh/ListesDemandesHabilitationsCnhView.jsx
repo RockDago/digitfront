@@ -178,18 +178,18 @@ const getStatutCfg = (statut, isDark) => {
 };
 
 // ─── CONFIG RÉSULTAT ─────────────────────────────────────────────────────────
-const getResultatCfg = (resultat, isDark) => {
-  if (resultat.includes("Favorable")) {
-    return isDark ? { lb:"rgba(22,163,74,0.15)", lt:"#86efac" } : { lb:"#f0fdf4", lt:"#166534" };
-  }
-  if (resultat.includes("Réserves") || resultat.includes("compléments")) {
-    return isDark ? { lb:"rgba(249,115,22,0.15)", lt:"#fdba74" } : { lb:"#fff7ed", lt:"#c2410c" };
-  }
-  if (resultat.includes("en cours") || resultat.includes("attente")) {
-    return isDark ? { lb:"rgba(37,99,235,0.15)", lt:"#93c5fd" } : { lb:"#eff6ff", lt:"#1d4ed8" };
-  }
-  return isDark ? { lb:"#1e293b", lt:"#94a3b8" } : { lb:"#f8fafc", lt:"#64748b" };
-};
+// const getResultatCfg = (resultat, isDark) => {
+//   if (resultat.includes("Favorable")) {
+//     return isDark ? { lb:"rgba(22,163,74,0.15)", lt:"#86efac" } : { lb:"#f0fdf4", lt:"#166534" };
+//   }
+//   if (resultat.includes("Réserves") || resultat.includes("compléments")) {
+//     return isDark ? { lb:"rgba(249,115,22,0.15)", lt:"#fdba74" } : { lb:"#fff7ed", lt:"#c2410c" };
+//   }
+//   if (resultat.includes("en cours") || resultat.includes("attente")) {
+//     return isDark ? { lb:"rgba(37,99,235,0.15)", lt:"#93c5fd" } : { lb:"#eff6ff", lt:"#1d4ed8" };
+//   }
+//   return isDark ? { lb:"#1e293b", lt:"#94a3b8" } : { lb:"#f8fafc", lt:"#64748b" };
+// };
 
 // ─── MENU EXPORT ──────────────────────────────────────────────────────────────
 function ExportMenu({ isDark }) {
@@ -209,7 +209,7 @@ function ExportMenu({ isDark }) {
   }, []);
 
   const handleExport = (format) => {
-    // TODO: exporter réellement (Excel/PDF)
+   
     setIsOpen(false);
   };
 
