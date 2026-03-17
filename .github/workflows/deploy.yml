@@ -31,8 +31,8 @@ jobs:
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: build/
-          server-dir: /var/www/html
-          delete-remote-dir: true
+          server-dir: /var/www/html/
+          dangerous-clean-slate: true
 
       - name: Run chown/chmod over SSH
         uses: appleboy/ssh-action@v1.0.0
