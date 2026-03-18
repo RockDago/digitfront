@@ -13,7 +13,7 @@ const actualiteService = {
    */
   getAllActualites: async () => {
     try {
-      const response = await API.get("/actualites");
+      const response = await API.get("/actualites/");
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la récupération des actualités:", error);
@@ -26,7 +26,7 @@ const actualiteService = {
    */
   getActiveFaqs: async () => {
     try {
-      const response = await API.get("/actualites/actives");
+      const response = await API.get("/actualites/actives/");
       return response.data;
     } catch (error) {
       console.error(
@@ -42,7 +42,7 @@ const actualiteService = {
    */
   getActualiteById: async (id) => {
     try {
-      const response = await API.get(`/actualites/${id}`);
+      const response = await API.get(`/actualites/${id}/`);
       return response.data;
     } catch (error) {
       console.error(
@@ -60,7 +60,7 @@ const actualiteService = {
    */
   incrementViews: async (id) => {
     try {
-      const response = await API.post(`/actualites/${id}/increment-views`);
+      const response = await API.post(`/actualites/${id}/increment-views/`);
       return response.data;
     } catch (error) {
       console.error(
@@ -78,7 +78,7 @@ const actualiteService = {
    */
   createActualite: async (formData, onProgress) => {
     try {
-      const response = await API.post("/actualites", formData, {
+      const response = await API.post("/actualites/", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -117,7 +117,7 @@ const actualiteService = {
    */
   updateActualite: async (id, formData, onProgress) => {
     try {
-      const response = await API.put(`/actualites/${id}`, formData, {
+      const response = await API.put(`/actualites/${id}/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -157,7 +157,7 @@ const actualiteService = {
    */
   toggleActif: async (id) => {
     try {
-      const response = await API.patch(`/actualites/${id}/toggle`);
+      const response = await API.patch(`/actualites/${id}/toggle/`);
       return response.data;
     } catch (error) {
       console.error(
@@ -178,7 +178,7 @@ const actualiteService = {
    */
   deleteActualite: async (id) => {
     try {
-      const response = await API.delete(`/actualites/${id}`);
+      const response = await API.delete(`/actualites/${id}/`);
       return response.data;
     } catch (error) {
       console.error(
@@ -200,7 +200,7 @@ const actualiteService = {
   deleteImageContenu: async (actualiteId, imageId) => {
     try {
       const response = await API.delete(
-        `/actualites/${actualiteId}/images/${imageId}`,
+        `/actualites/${actualiteId}/images/${imageId}/`,
       );
       return response.data;
     } catch (error) {

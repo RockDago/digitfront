@@ -6,7 +6,7 @@ import API from "../config/axios";
  * GET /api/apropos
  */
 export async function fetchApropos() {
-  const response = await API.get("/apropos");
+  const response = await API.get("/apropos/");
   // réponse: { id, titre, description, sections: [...] }
   return response.data;
 }
@@ -17,7 +17,7 @@ export async function fetchApropos() {
  * payload: { titre?: string, description?: string }
  */
 export async function updateAproposGlobal(payload) {
-  const response = await API.put("/apropos", payload);
+  const response = await API.put("/apropos/", payload);
   return response.data;
 }
 
@@ -26,7 +26,7 @@ export async function updateAproposGlobal(payload) {
  * GET /api/apropos/sections
  */
 export async function fetchSections() {
-  const response = await API.get("/apropos/sections");
+  const response = await API.get("/apropos/sections/");
   return response.data;
 }
 
@@ -36,7 +36,7 @@ export async function fetchSections() {
  * payload: { title, content, position }
  */
 export async function createSection(payload) {
-  const response = await API.post("/apropos/sections", payload);
+  const response = await API.post("/apropos/sections/", payload);
   return response.data;
 }
 
@@ -46,7 +46,7 @@ export async function createSection(payload) {
  * payload: { title?, content?, position? }
  */
 export async function updateSection(id, payload) {
-  const response = await API.put(`/apropos/sections/${id}`, payload);
+  const response = await API.put(`/apropos/sections/${id}/`, payload);
   return response.data;
 }
 
@@ -55,6 +55,6 @@ export async function updateSection(id, payload) {
  * DELETE /api/apropos/sections/{id}
  */
 export async function deleteSection(id) {
-  await API.delete(`/apropos/sections/${id}`);
+  await API.delete(`/apropos/sections/${id}/`);
   return true;
 }

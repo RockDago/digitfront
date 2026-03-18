@@ -284,7 +284,7 @@ export const formatContactData = (formData) => ({
 
 export const sendContactMessage = async (messageData) => {
   try {
-    const response = await API.post("/contact/message", messageData);
+    const response = await API.post("/contact/message/", messageData);
     return { success: true, data: response.data, error: null };
   } catch (error) {
     console.error("❌ Erreur lors de l'envoi du message:", error);

@@ -31,7 +31,7 @@ class SystemLogService {
         }
       });
 
-      const response = await API.get(`${SYSTEM_LOG_BASE}`, { params });
+      const response = await API.get(`${SYSTEM_LOG_BASE}/`, { params });
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la récupération des logs:", error);
@@ -46,7 +46,7 @@ class SystemLogService {
    */
   async getLogById(id) {
     try {
-      const response = await API.get(`${SYSTEM_LOG_BASE}/${id}`);
+      const response = await API.get(`${SYSTEM_LOG_BASE}/${id}/`);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la récupération du log ${id}:`, error);
@@ -61,7 +61,7 @@ class SystemLogService {
    */
   async createLog(logData) {
     try {
-      const response = await API.post(`${SYSTEM_LOG_BASE}`, logData);
+      const response = await API.post(`${SYSTEM_LOG_BASE}/`, logData);
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la création du log:", error);
@@ -77,7 +77,7 @@ class SystemLogService {
    */
   async updateLog(id, logData) {
     try {
-      const response = await API.put(`${SYSTEM_LOG_BASE}/${id}`, logData);
+      const response = await API.put(`${SYSTEM_LOG_BASE}/${id}/`, logData);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du log ${id}:`, error);
@@ -92,7 +92,7 @@ class SystemLogService {
    */
   async deleteLog(id) {
     try {
-      const response = await API.delete(`${SYSTEM_LOG_BASE}/${id}`);
+      const response = await API.delete(`${SYSTEM_LOG_BASE}/${id}/`);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la suppression du log ${id}:`, error);
@@ -106,7 +106,7 @@ class SystemLogService {
    */
   async getStatistics() {
     try {
-      const response = await API.get(`${SYSTEM_LOG_BASE}/statistics`);
+      const response = await API.get(`${SYSTEM_LOG_BASE}/statistics/`);
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la récupération des statistiques:", error);
@@ -120,7 +120,7 @@ class SystemLogService {
    */
   async getSources() {
     try {
-      const response = await API.get(`${SYSTEM_LOG_BASE}/sources`);
+      const response = await API.get(`${SYSTEM_LOG_BASE}/sources/`);
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la récupération des sources:", error);
@@ -135,7 +135,7 @@ class SystemLogService {
    */
   async cleanupOldLogs(days = 30) {
     try {
-      const response = await API.delete(`${SYSTEM_LOG_BASE}/cleanup/old`, {
+      const response = await API.delete(`${SYSTEM_LOG_BASE}/cleanup/old/`, {
         params: { days },
       });
       return response.data;

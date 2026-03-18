@@ -59,7 +59,7 @@ const AuthService = {
         payload.recaptchaToken = credentials.recaptchaToken;
       }
 
-      const response = await API.post("/users/login", payload);
+      const response = await API.post("/users/login/", payload);
 
       // ✅ CORRECTION : Sauvegarde automatique du user
       const user = response.data.user || response.data;
@@ -96,7 +96,7 @@ const AuthService = {
         payload.recaptchaToken = data.recaptchaToken;
       }
 
-      const response = await API.post("/users/auth/google", payload);
+      const response = await API.post("/users/auth/google/", payload);
 
       // ✅ CORRECTION : Sauvegarde automatique du user
       const user = response.data.user || response.data;
@@ -118,7 +118,7 @@ const AuthService = {
   logout: async () => {
     try {
       // Appeler le backend pour enregistrer la déconnexion
-      await API.post("/users/logout");
+      await API.post("/users/logout/");
     } catch (error) {
       console.warn("Impossible d'enregistrer la déconnexion au serveur", error);
       // Continuer même si l'appel échoue
@@ -164,7 +164,7 @@ const AuthService = {
    */
   forgotPassword: async (email) => {
     try {
-      const response = await API.post("/users/forgot-password", { email });
+      const response = await API.post("/users/forgot-password/", { email });
       return response.data;
     } catch (error) {
       throw error;
@@ -178,7 +178,7 @@ const AuthService = {
    */
   resetPassword: async (data) => {
     try {
-      const response = await API.post("/users/reset-password", data);
+      const response = await API.post("/users/reset-password/", data);
       return response.data;
     } catch (error) {
       throw error;

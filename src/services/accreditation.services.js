@@ -148,7 +148,7 @@ export const geocodeAddress = async (adresse, region, province) => {
 // ===========================================================================
 export const getMyAutoEvaluations = async () => {
   try {
-    const response = await API.get("/accreditation/auto-evaluations");
+    const response = await API.get("/accreditation/auto-evaluations/");
     const list = normalizeArray(response.data);
     console.log(`[getMyAutoEvaluations] ${list.length} évaluation(s)`);
     return list;
@@ -160,7 +160,7 @@ export const getMyAutoEvaluations = async () => {
 
 export const getAutoEvaluation = async (evalId) => {
   try {
-    const response = await API.get(`/accreditation/auto-evaluations/${evalId}`);
+    const response = await API.get(`/accreditation/auto-evaluations/${evalId}/`);
     const detail = normalizeObject(response.data);
     if (!Array.isArray(detail.criteres)) detail.criteres = [];
     detail.criteres = detail.criteres.map((c) => ({
@@ -190,7 +190,7 @@ const normalizeCritereId = (critereId) => {
 export const createOrUpdateAutoEvaluation = async (data) => {
   try {
     console.log(`[createOrUpdateAutoEvaluation] ${data.criteres?.length} critère(s)`);
-    const response = await API.post("/accreditation/auto-evaluations", data);
+    const response = await API.post("/accreditation/auto-evaluations/", data);
     const result = normalizeObject(response.data);
     console.log(`[createOrUpdateAutoEvaluation] → id=${result.id}`);
     return result;
@@ -202,7 +202,7 @@ export const createOrUpdateAutoEvaluation = async (data) => {
 
 export const deleteAutoEvaluation = async (evalId) => {
   try {
-    const response = await API.delete(`/accreditation/auto-evaluations/${evalId}`);
+    const response = await API.delete(`/accreditation/auto-evaluations/${evalId}/`);
     return response.data;
   } catch (error) {
     console.error(`[deleteAutoEvaluation] id=${evalId}`, error);
@@ -218,7 +218,7 @@ export const uploadCritereFichiers = async (evalId, critereId, files) => {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
     const response = await API.post(
-      `/accreditation/auto-evaluations/${evalId}/criteres/${critereId}/fichiers`,
+      `/accreditation/auto-evaluations/${evalId}/criteres/${critereId}/fichiers/`,
       formData,
       { headers: { "Content-Type": "multipart/form-data" } },
     );
@@ -240,7 +240,7 @@ export const uploadCritereFichiers = async (evalId, critereId, files) => {
 export const deleteCritereFichier = async (evalId, critereId, fichierId) => {
   try {
     const response = await API.delete(
-      `/accreditation/auto-evaluations/${evalId}/criteres/${critereId}/fichiers/${fichierId}`,
+      `/accreditation/auto-evaluations/${evalId}/criteres/${critereId}/fichiers/${fichierId}/`,
     );
     return response.data;
   } catch (error) {
@@ -254,7 +254,7 @@ export const deleteCritereFichier = async (evalId, critereId, fichierId) => {
 // ===========================================================================
 export const getMyDemandes = async () => {
   try {
-    const response = await API.get("/accreditation/demandes");
+    const response = await API.get("/accreditation/demandes/");
     const raw = normalizeArray(response.data);
     const normalized = raw.map(normalizeDemandeObject);
     console.log(`[getMyDemandes] ${normalized.length} demande(s)`);
@@ -267,7 +267,7 @@ export const getMyDemandes = async () => {
 
 export const getDemande = async (demandeId) => {
   try {
-    const response = await API.get(`/accreditation/demandes/${demandeId}`);
+    const response = await API.get(`/accreditation/demandes/${demandeId}/`);
     const raw = normalizeObject(response.data);
     const normalized = normalizeDemandeObject(raw);
     console.log(`[getDemande] id=${demandeId}, statut="${normalized.statut}", niveau="${normalized.niveau_conformite}"`);
@@ -320,7 +320,7 @@ export const createDemande = async (data) => {
     if (data.nombre_etudiants) formData.append("nombre_etudiants", String(data.nombre_etudiants));
     if (latitude  != null) formData.append("latitude",  String(latitude));
     if (longitude != null) formData.append("longitude", String(longitude));
-    const response = await API.post("/accreditation/demandes", formData, {
+    const response = await API.post("/accreditation/demandes/", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return normalizeDemandeObject(normalizeObject(response.data));
@@ -370,7 +370,7 @@ export const updateDemande = async (demandeId, data) => {
     if (data.nombre_etudiants  != null) formData.append("nombre_etudiants", String(data.nombre_etudiants));
     if (latitude  != null) formData.append("latitude",  String(latitude));
     if (longitude != null) formData.append("longitude", String(longitude));
-    const response = await API.put(`/accreditation/demandes/${demandeId}`, formData, {
+    const response = await API.put(`/accreditation/demandes/${demandeId}/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return normalizeDemandeObject(normalizeObject(response.data));
@@ -382,7 +382,7 @@ export const updateDemande = async (demandeId, data) => {
 
 export const deleteDemande = async (demandeId) => {
   try {
-    const response = await API.delete(`/accreditation/demandes/${demandeId}`);
+    const response = await API.delete(`/accreditation/demandes/${demandeId}/`);
     return response.data;
   } catch (error) {
     console.error(`[deleteDemande] id=${demandeId}`, error);
@@ -392,7 +392,7 @@ export const deleteDemande = async (demandeId) => {
 
 export const submitDemande = async (demandeId) => {
   try {
-    const response = await API.patch(`/accreditation/demandes/${demandeId}/soumettre`);
+    const response = await API.patch(`/accreditation/demandes/${demandeId}/soumettre/`);
     return normalizeDemandeObject(normalizeObject(response.data));
   } catch (error) {
     console.error(`[submitDemande] id=${demandeId}`, error);
@@ -404,7 +404,7 @@ export const updateDemandeStatut = async (demandeId, statut, notes = null) => {
   try {
     const payload = { statut };
     if (notes) payload.notes = notes;
-    const response = await API.patch(`/accreditation/demandes/${demandeId}/statut`, payload);
+    const response = await API.patch(`/accreditation/demandes/${demandeId}/statut/`, payload);
     const result = normalizeDemandeObject(normalizeObject(response.data));
     console.log(`[updateDemandeStatut] id=${demandeId} → statut="${result.statut}"`);
     return result;
@@ -422,7 +422,7 @@ export const uploadDemandeFichiers = async (demandeId, files) => {
   try {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
-    const response = await API.post(`/accreditation/demandes/${demandeId}/fichiers`, formData, {
+    const response = await API.post(`/accreditation/demandes/${demandeId}/fichiers/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     const raw = normalizeObject(response.data);
@@ -440,7 +440,7 @@ export const uploadDemandeFichiers = async (demandeId, files) => {
 
 export const downloadFichier = async (fichierId) => {
   try {
-    const response = await API.get(`/accreditation/fichiers/${fichierId}`, {
+    const response = await API.get(`/accreditation/fichiers/${fichierId}/`, {
       responseType: "blob",
       transformResponse: [(data) => data],
       validateStatus: (status) => status >= 200 && status < 300,
@@ -457,7 +457,7 @@ export const downloadFichier = async (fichierId) => {
 
 export const deleteDemandeFichier = async (demandeId, fichierId) => {
   try {
-    const response = await API.delete(`/accreditation/demandes/${demandeId}/fichiers/${fichierId}`);
+    const response = await API.delete(`/accreditation/demandes/${demandeId}/fichiers/${fichierId}/`);
     return response.data;
   } catch (error) {
     console.error(`[deleteDemandeFichier] fichier=${fichierId}`, error);
@@ -470,7 +470,7 @@ export const deleteDemandeFichier = async (demandeId, fichierId) => {
 // ===========================================================================
 export const getUniversitesGeolocalisations = async (inclureTous = true) => {
   try {
-    const response = await API.get("/accreditation/universites/geolocalisations", {
+    const response = await API.get("/accreditation/universites/geolocalisations/", {
       params: { inclure_tous: inclureTous },
     });
     const list = normalizeArray(response.data);
@@ -487,7 +487,7 @@ export const getUniversitesGeolocalisations = async (inclureTous = true) => {
 // ===========================================================================
 export const getArchivedDemandes = async () => {
   try {
-    const response = await API.get("/accreditation/demandes", { params: { include_archived: true } });
+    const response = await API.get("/accreditation/demandes/", { params: { include_archived: true } });
     const raw = normalizeArray(response.data);
     const normalized = raw.map(normalizeDemandeObject).filter((d) => d.is_archived === true || d.isArchived === true);
     console.log(`[getArchivedDemandes] ${normalized.length} dossier(s) archivé(s)`);
@@ -500,7 +500,7 @@ export const getArchivedDemandes = async () => {
 
 export const archiverDemande = async (demandeId, reason) => {
   try {
-    const response = await API.patch(`/accreditation/demandes/${demandeId}/archiver`, { reason });
+    const response = await API.patch(`/accreditation/demandes/${demandeId}/archiver/`, { reason });
     const result = normalizeDemandeObject(normalizeObject(response.data));
     console.log(`[archiverDemande] id=${demandeId} archivé`);
     return result;
@@ -513,7 +513,7 @@ export const archiverDemande = async (demandeId, reason) => {
 
 export const restaurerDemande = async (demandeId) => {
   try {
-    const response = await API.patch(`/accreditation/demandes/${demandeId}/restaurer`);
+    const response = await API.patch(`/accreditation/demandes/${demandeId}/restaurer/`);
     const result = normalizeDemandeObject(normalizeObject(response.data));
     console.log(`[restaurerDemande] id=${demandeId} restauré`);
     return result;

@@ -19,7 +19,7 @@ class FaqService {
       }
 
       const queryString = params.toString();
-      const url = queryString ? `/faqs?${queryString}` : "/faqs";
+      const url = queryString ? `/faqs/?${queryString}` : "/faqs/";
 
       const response = await API.get(url);
       return response.data;
@@ -36,7 +36,7 @@ class FaqService {
    */
   async getFaqById(id) {
     try {
-      const response = await API.get(`/faqs/${id}`);
+      const response = await API.get(`/faqs/${id}/`);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la récupération de la FAQ ${id}:`, error);
@@ -51,7 +51,7 @@ class FaqService {
    */
   async createFaq(faqData) {
     try {
-      const response = await API.post("/faqs", faqData);
+      const response = await API.post("/faqs/", faqData);
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la création de la FAQ:", error);
@@ -67,7 +67,7 @@ class FaqService {
    */
   async updateFaq(id, faqData) {
     try {
-      const response = await API.put(`/faqs/${id}`, faqData);
+      const response = await API.put(`/faqs/${id}/`, faqData);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la mise à jour de la FAQ ${id}:`, error);
@@ -82,7 +82,7 @@ class FaqService {
    */
   async deleteFaq(id) {
     try {
-      await API.delete(`/faqs/${id}`);
+      await API.delete(`/faqs/${id}/`);
       return true;
     } catch (error) {
       console.error(`Erreur lors de la suppression de la FAQ ${id}:`, error);
@@ -96,7 +96,7 @@ class FaqService {
    */
   async getCategories() {
     try {
-      const response = await API.get("/faqs/categories/list");
+      const response = await API.get("/faqs/categories/list/");
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la récupération des catégories:", error);

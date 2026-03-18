@@ -254,7 +254,7 @@ export class StatusManager {
 // Ajoutez ceci à la fin de vos services
 export const unarchiveContactMessage = async (id) => {
   try {
-    const response = await API.post(`/contact/messages/${id}/unarchive`);
+    const response = await API.post(`/contact/messages/${id}/unarchive/`);
     return {
       success: true,
       data: response.data,

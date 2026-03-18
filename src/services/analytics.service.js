@@ -9,7 +9,7 @@ const AnalyticsService = {
    */
   recordVisit: async (path = "/") => {
     try {
-      const response = await API.post("/analytics/visit", { path });
+      const response = await API.post("/analytics/visit/", { path });
       return response.data;
     } catch (error) {
       console.error("Erreur lors de l'enregistrement de la visite:", error);
@@ -24,7 +24,7 @@ const AnalyticsService = {
    */
   getStats: async () => {
     try {
-      const response = await API.get("/analytics/stats");
+      const response = await API.get("/analytics/stats/");
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la récupération des statistiques:", error);
