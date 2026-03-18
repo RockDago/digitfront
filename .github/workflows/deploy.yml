@@ -45,7 +45,7 @@ jobs:
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: build/
-          server-dir: /var/www/html/
+          server-dir: /
           dangerous-clean-slate: true
 
       # ÉTAPE 3 : Corriger les permissions APRÈS le déploiement FTP
