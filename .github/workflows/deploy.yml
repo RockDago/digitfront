@@ -24,17 +24,8 @@ jobs:
       - name: Build React
         run: npm run build
 
-      - name: Clean server directory and Deploy
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: build/
-          server-dir: /
-          dangerous-clean-slate: true
-
-      - name: Run chown and chmod over SSH
+      # ÉTAPE 1 : Corriger les permissions AVANT le déploiement FTP
+      - name: Fix permissions before deploy (SSH)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -42,5 +33,30 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: 22
           script: |
-            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chown -R qualite:qualite /var/www/html
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chown -R ${{ secrets.FTP_USER }}:www-data /var/www/html
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chmod -R 775 /var/www/html
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chmod g+s /var/www/html
+
+      # ÉTAPE 2 : Déployer les fichiers React via FTP
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: build/
+          server-dir: /var/www/html/
+          dangerous-clean-slate: true
+
+      # ÉTAPE 3 : Corriger les permissions APRÈS le déploiement FTP
+      - name: Fix permissions after deploy (SSH)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          script: |
+            echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chown -R www-data:www-data /var/www/html
             echo "${{ secrets.SSH_PASSWORD }}" | sudo -S chmod -R 755 /var/www/html
+            echo "✅ Permissions corrigées et déploiement terminé !"
