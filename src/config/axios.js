@@ -3,9 +3,18 @@
 import axios from "axios";
 
 // Utilisation d'une variable d'environnement ou fallback local/production
-// Pour créer une variable d'env, utiliser REACT_APP_API_URL dans .env
+let envApiUrl = process.env.REACT_APP_API_URL;
+
+if (
+  envApiUrl &&
+  window.location.protocol === "https:" &&
+  envApiUrl.startsWith("http://")
+) {
+  envApiUrl = envApiUrl.replace("http://", "https://");
+}
+
 export const API_URL =
-  process.env.REACT_APP_API_URL ||
+  envApiUrl ||
   (window.location.hostname === "localhost"
     ? "http://127.0.0.1:8000"
     : "https://qualite.mesupres.edu.mg");
@@ -21,10 +30,8 @@ const API = axios.create({
 
 API.interceptors.request.use(
   (config) => {
-   
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    // Envoyer l'ID utilisateur dans le header X-User-ID si disponible
     if (user && user.id) {
       config.headers["X-User-ID"] = user.id;
     }
