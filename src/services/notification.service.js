@@ -19,7 +19,7 @@ const NotificationService = {
    */
   getMyNotifications: async () => {
     try {
-      const response = await API.get("/notifications/me/");
+      const response = await API.get("/notifications/me");
       return response.data;
     } catch (error) {
       throw error;
@@ -31,7 +31,7 @@ const NotificationService = {
    */
   getSentNotifications: async () => {
     try {
-      const response = await API.get("/notifications/sent/");
+      const response = await API.get("/notifications/sent");
       return response.data;
     } catch (error) {
       throw error;
@@ -44,7 +44,7 @@ const NotificationService = {
    */
   markAsRead: async (id) => {
     try {
-      const response = await API.patch(`/notifications/${id}/read/`);
+      const response = await API.patch(`/notifications/${id}/read`);
       return response.data;
     } catch (error) {
       throw error;
@@ -56,7 +56,7 @@ const NotificationService = {
    */
   markAllAsRead: async () => {
     try {
-      const response = await API.post("/notifications/read-all/");
+      const response = await API.post("/notifications/read-all");
       return response.data;
     } catch (error) {
       throw error;
@@ -68,7 +68,7 @@ const NotificationService = {
    */
   updateNotification: async (id, data) => {
     try {
-      const response = await API.patch(`/notifications/${id}/`, data);
+      const response = await API.patch(`/notifications/${id}`, data);
       return response.data;
     } catch (error) {
       throw error;
@@ -80,7 +80,7 @@ const NotificationService = {
    */
   cancelNotification: async (id) => {
     try {
-      const response = await API.patch(`/notifications/${id}/cancel/`);
+      const response = await API.patch(`/notifications/${id}/cancel`);
       return response.data;
     } catch (error) {
       throw error;

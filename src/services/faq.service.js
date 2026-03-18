@@ -36,7 +36,7 @@ class FaqService {
    */
   async getFaqById(id) {
     try {
-      const response = await API.get(`/faqs/${id}/`);
+      const response = await API.get(`/faqs/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la récupération de la FAQ ${id}:`, error);
@@ -96,7 +96,7 @@ class FaqService {
    */
   async getCategories() {
     try {
-      const response = await API.get("/faqs/categories/list/");
+      const response = await API.get("/faqs/categories/list");
       return response.data;
     } catch (error) {
       console.error("Erreur lors de la récupération des catégories:", error);

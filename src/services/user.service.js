@@ -26,7 +26,7 @@ const UserService = {
    */
   getById: async (id) => {
     try {
-      const response = await API.get(`/users/${id}/`);
+      const response = await API.get(`/users/${id}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -69,7 +69,7 @@ const UserService = {
    */
   delete: async (id) => {
     try {
-      const response = await API.delete(`/users/${id}/`);
+      const response = await API.delete(`/users/${id}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -84,7 +84,7 @@ const UserService = {
    */
   resetPassword: async (id, newPassword) => {
     try {
-      const response = await API.put(`/users/${id}/reset-password/`, {
+      const response = await API.put(`/users/${id}/reset-password`, {
         new_password: newPassword,
       });
       return response.data;
@@ -120,7 +120,7 @@ const UserService = {
     try {
       // ✅ CORRECTION : L'interceptor Axios envoie automatiquement le header X-User-ID
       // Pas besoin de token JWT - le backend utilise X-User-ID
-      const response = await API.get("/users/me/profile/");
+      const response = await API.get("/users/me/profile");
 
       return response.data;
     } catch (error) {
@@ -160,7 +160,7 @@ const UserService = {
         data.append("image", imageFile);
       }
 
-      const response = await API.put("/users/me/profile/", data, {
+      const response = await API.put("/users/me/profile", data, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -278,7 +278,7 @@ const UserService = {
    */
   updateMyProfileJson: async (profileData) => {
     try {
-      const response = await API.patch("/users/me/profile/", profileData);
+      const response = await API.patch("/users/me/profile", profileData);
       return response.data;
     } catch (error) {
       throw error;
@@ -299,7 +299,7 @@ const UserService = {
    */
   deleteMyProfileImage: async () => {
     try {
-      const response = await API.delete("/users/me/image/");
+      const response = await API.delete("/users/me/image");
       await UserService.refreshProfileImageInStorage();
       return response.data;
     } catch (error) {
@@ -318,7 +318,7 @@ const UserService = {
    */
   getProfile: async (userId) => {
     try {
-      const response = await API.get(`/users/${userId}/profile/`);
+      const response = await API.get(`/users/${userId}/profile`);
       return response.data;
     } catch (error) {
       throw error;
@@ -358,7 +358,7 @@ const UserService = {
         formData.append("image", imageFile);
       }
 
-      const response = await API.put(`/users/${userId}/profile/`, formData, {
+      const response = await API.put(`/users/${userId}/profile`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -378,7 +378,7 @@ const UserService = {
    */
   updateProfileJson: async (userId, profileData) => {
     try {
-      const response = await API.patch(`/users/${userId}/profile/`, profileData);
+      const response = await API.patch(`/users/${userId}/profile`, profileData);
       return response.data;
     } catch (error) {
       throw error;
@@ -401,7 +401,7 @@ const UserService = {
    */
   deleteProfileImage: async (userId) => {
     try {
-      const response = await API.delete(`/users/${userId}/image/`);
+      const response = await API.delete(`/users/${userId}/image`);
       return response.data;
     } catch (error) {
       throw error;
@@ -417,7 +417,7 @@ const UserService = {
    */
   changePassword: async (data) => {
     try {
-      const response = await API.post("/users/change-password/", data);
+      const response = await API.post("/users/change-password", data);
       return response.data;
     } catch (error) {
       throw error;
@@ -429,7 +429,7 @@ const UserService = {
    */
   updateProfilePhoto: async (formData) => {
     try {
-      const response = await API.post("/users/profile-photo/", formData, {
+      const response = await API.post("/users/profile-photo", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

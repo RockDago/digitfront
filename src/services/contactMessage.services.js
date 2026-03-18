@@ -73,7 +73,7 @@ export const getContactMessages = async (filters = {}) => {
  */
 export const getContactMessageById = async (id) => {
   try {
-    const response = await API.get(`/contact/messages/${id}/`);
+    const response = await API.get(`/contact/messages/${id}`);
     return {
       success: true,
       data: response.data,
@@ -94,7 +94,7 @@ export const getContactMessageById = async (id) => {
  */
 export const markMessageAsRead = async (id) => {
   try {
-    const response = await API.post(`/contact/messages/${id}/mark-as-read/`);
+    const response = await API.post(`/contact/messages/${id}/mark-as-read`);
     return {
       success: true,
       data: response.data.data,
@@ -115,7 +115,7 @@ export const markMessageAsRead = async (id) => {
  */
 export const archiveContactMessage = async (id) => {
   try {
-    const response = await API.post(`/contact/messages/${id}/archive/`);
+    const response = await API.post(`/contact/messages/${id}/archive`);
     return {
       success: true,
       data: response.data.data,
@@ -136,7 +136,7 @@ export const archiveContactMessage = async (id) => {
  */
 export const deleteContactMessage = async (id) => {
   try {
-    const response = await API.delete(`/contact/messages/${id}/`);
+    const response = await API.delete(`/contact/messages/${id}`);
     return {
       success: true,
       message: response.data.message,
@@ -155,7 +155,7 @@ export const deleteContactMessage = async (id) => {
  */
 export const getMessageStatistics = async () => {
   try {
-    const response = await API.get("/contact/messages/stats/");
+    const response = await API.get("/contact/messages/stats");
     return {
       success: true,
       data: response.data.data,
@@ -254,7 +254,7 @@ export class StatusManager {
 // Ajoutez ceci à la fin de vos services
 export const unarchiveContactMessage = async (id) => {
   try {
-    const response = await API.post(`/contact/messages/${id}/unarchive/`);
+    const response = await API.post(`/contact/messages/${id}/unarchive`);
     return {
       success: true,
       data: response.data,

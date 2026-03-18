@@ -59,7 +59,7 @@ const AuthService = {
         payload.recaptchaToken = credentials.recaptchaToken;
       }
 
-      const response = await API.post("/users/login/", payload);
+      const response = await API.post("/users/login", payload);
 
       // ✅ CORRECTION : Sauvegarde automatique du user
       const user = response.data.user || response.data;
